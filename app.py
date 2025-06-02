@@ -1,6 +1,6 @@
 import os
 import replicate
-import base64 # <-- Импортируем новый модуль для кодирования
+import requests # <-- Наша новая библиотека для загрузки картинки
 from flask import Flask, request, jsonify, render_template_string
 
 # Инициализируем Flask приложение
@@ -111,19 +111,25 @@ def process_image():
     model_version = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
-        # --- НОВЫЙ, НАДЕЖНЫЙ МЕТОД ОТПРАВКИ ФАЙЛА ---
-        # 1. Читаем байты из загруженного файла
-        image_bytes = image_file.read()
-        # 2. Кодируем их в строку Base64
-        base64_encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-        # 3. Создаем Data URI
-        data_uri = f"data:application/octet-stream;base64,{base64_encoded_image}"
+        # --- ФИНАЛЬНЫЙ ПЛАН: ЗАГРУЗКА ФАЙЛА НА ХОСТИНГ И ПОЛУЧЕНИЕ URL ---
+        
+        # 1. Загружаем картинку на временный хостинг tinyimg.io
+        # Мы отправляем файл так, как будто это делает браузер
+        upload_response = requests.post(
+            'https://tinyimg.io/api/upload',
+            files={'file': (image_file.filename, image_file.read(), image_file.mimetype)}
+        )
+        upload_response.raise_for_status() # Проверяем, что загрузка прошла успешно
+        
+        # 2. Получаем публичную ссылку на нашу картинку из ответа хостинга
+        hosted_image_url = upload_response.json()['data']['url']
+        print(f"!!! Изображение загружено на: {hosted_image_url}")
 
-        # 4. Отправляем Data URI в Replicate
+        # 3. Отправляем в Replicate промпт и ПУБЛИЧНУЮ ССЫЛКУ на картинку
         output = replicate.run(
             model_version,
             input={
-                "image": data_uri, # <-- Передаем текстовую строку, а не файл
+                "image": hosted_image_url, # <-- Передаем URL!
                 "prompt": prompt_text
             }
         )
@@ -135,6 +141,5 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        # Убрали traceback для чистоты, так как основная логика верна
         print(f"!!! ОШИБКА В ПРОДАКШЕНЕ:\n{e}")
         return jsonify({'error': 'Произошла внутренняя ошибка сервера.'}), 500
