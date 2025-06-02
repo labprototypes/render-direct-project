@@ -24,64 +24,384 @@ if OPENAI_API_KEY:
 else:
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
 
-# HTML-шаблон (без изменений)
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-Редактор Изображений</title>
+    <title>Changer AI</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem;}
-        .container { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
-        h1 { margin-bottom: 0.5rem; }
-        p { margin-bottom: 1.5rem; color: #666; font-size: 0.9rem; }
-        form { display: flex; flex-direction: column; gap: 1rem; }
-        input[type="file"], input[type="text"] { padding: 0.75rem; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
-        button { background-color: #007bff; color: white; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
-        button:hover { background-color: #0056b3; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-container { margin-top: 2rem; min-height: 256px; }
-        img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
-        #loader { display: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.2rem; margin-top: 1rem; }
-        #error-box { display: none; text-align: center; color: #d93025; margin-top: 1rem; }
+        @font-face {
+            font-family: 'ChangerFont';
+            src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        :root {
+            --background-color: #FAF3D4; /* Примерный бежевый */
+            --primary-blue: #192E8C;    /* Примерный синий */
+            --input-area-bg: #FFFFFF;
+            --input-icon-bg: #F0F0F0; /* Светло-серый для иконки загрузки */
+            --text-placeholder: #757575;
+            --button-text-color: var(--primary-blue);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'ChangerFont', sans-serif;
+            background-color: var(--background-color);
+            color: var(--primary-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 900px; /* Максимальная ширина для десктопа */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px; /* Расстояние между основными блоками */
+        }
+
+        .app-header {
+            margin-bottom: 10px; /* Уменьшил отступ снизу лого */
+        }
+
+        .logo {
+            height: 40px; /* Примерная высота, подберите по макету */
+        }
+
+        .app-main {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .initial-view {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .main-text img {
+            width: 100%;
+            max-width: 700px; /* Ограничение для десктопа */
+            height: auto;
+        }
+
+        .desktop-main-text { display: block; }
+        .mobile-main-text { display: none; }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background-image: url("{{ url_for('static', filename='images/bubble.svg') }}");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-color: transparent;
+            border: none;
+            color: var(--button-text-color);
+            padding: 12px 28px; /* Примерные отступы, подберите по bubble.svg */
+            font-family: 'ChangerFont', sans-serif;
+            font-size: 1rem; /* 16px */
+            cursor: pointer;
+            min-width: 130px; /* Минимальная ширина */
+            text-align: center;
+            line-height: 1.2; /* Для центрирования текста, если нужно */
+        }
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .result-view {
+            width: 100%;
+            /* Changer_Desktop_2: Максимальная высота файла как на изображении */
+            /* Находится на равном расстоянии от логотипа и поля ввода - это будет сложно сделать чисто CSS без JS */
+            /* Попробуем задать максимальную высоту и отступы */
+            max-height: 60vh; /* Пример */
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #E9E9E9; /* Серый фон как на макете */
+            border-radius: 8px; /* Небольшое скругление */
+        }
+
+        #result-image {
+            max-width: 100%;
+            max-height: 100%; /* Чтобы вписывалась в контейнер */
+            object-fit: contain; /* Сохраняет пропорции */
+            border-radius: 4px;
+        }
+        
+        .input-area-wrapper { /* Новый враппер для отступов */
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 0 20px; /* Отступы по бокам для мобильных */
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            background-color: var(--input-area-bg);
+            border-radius: 12px;
+            padding: 8px; /* Уменьшил общий паддинг */
+            width: 100%;
+            max-width: 600px; /* Максимальная ширина инпут-области */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        #image-file {
+            display: none; /* Скрываем стандартный input type="file" */
+        }
+
+        .file-upload-label {
+            cursor: pointer;
+            padding: 12px; /* Отступы внутри "кнопки" загрузки */
+            background-color: var(--input-icon-bg);
+            border-radius: 8px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* Чтобы не сжималась */
+        }
+
+        .upload-icon {
+            height: 28px; /* Размер иконки */
+            width: 28px;
+        }
+        
+        #file-name-display {
+            margin-left: 10px;
+            font-size: 0.8em;
+            color: var(--text-placeholder);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px; /* Ограничение для имени файла */
+        }
+
+
+        #prompt {
+            flex-grow: 1;
+            border: none;
+            padding: 15px 10px;
+            font-size: 1rem;
+            background-color: transparent;
+            outline: none;
+            color: var(--primary-blue);
+        }
+        #prompt::placeholder {
+            color: var(--text-placeholder);
+            opacity: 0.7;
+        }
+
+        .magic-button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 10px; /* Отступы для кнопки "магии" */
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .magic-button img {
+            height: 30px; /* Размер иконки "магии" */
+            width: 30px;
+        }
+        .magic-button:hover img {
+            opacity: 0.8;
+        }
+
+        .loader-message, .error-message {
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+        .error-message {
+            color: #d93025; /* Красный для ошибок */
+            background-color: #fdd;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        /* Мобильная версия */
+        @media (max-width: 768px) {
+            .app-container, .app-main, .initial-view {
+                gap: 20px; /* Уменьшаем отступы */
+            }
+            .logo {
+                height: 30px;
+            }
+            .desktop-main-text { display: none; }
+            .mobile-main-text { display: block; }
+            .mobile-main-text img {
+                max-width: 100%; /* На всю ширину */
+            }
+
+            .action-buttons {
+                flex-direction: row; /* Кнопки в ряд и переносятся */
+                gap: 10px;
+                justify-content: center;
+            }
+            .action-btn {
+                font-size: 0.9rem;
+                padding: 10px 20px; /* Чуть меньше кнопки */
+                min-width: auto; /* Авто ширина для мобильных */
+                flex-basis: calc(50% - 5px); /* Две кнопки в ряд */
+            }
+
+            .input-area-wrapper {
+                padding: 0 10px; /* Меньше отступы по бокам */
+            }
+            .input-area {
+                padding: 10px; /* Внутренний паддинг */
+                max-width: 100%;
+            }
+            .file-upload-label {
+                padding: 10px;
+            }
+            .upload-icon { height: 24px; width: 24px; }
+            #prompt { padding: 12px 8px; font-size: 0.9rem;}
+            .magic-button { padding: 8px; }
+            .magic-button img { height: 26px; width: 26px; }
+            
+            #file-name-display { display: none; } /* Скроем имя файла на мобильных для экономии места */
+
+            .result-view {
+                /* Changer_MOB_2: По горизонтали файл не может быть шире чем левая и правая грани поля ввода. */
+                /* По высоте не может доходить до нижней границы логитипа и верхней границы поля ввода */
+                width: calc(100% - 20px); /* С учетом отступов .input-area-wrapper */
+                max-width: calc(100% - 20px);
+                max-height: 50vh; /* Примерное ограничение по высоте */
+                margin: 15px 0;
+            }
+        }
+         @media (max-width: 400px) {
+             .action-btn {
+                flex-basis: 100%; /* Одна кнопка в ряд на очень маленьких экранах */
+            }
+         }
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>AI-Редактор</h1>
-        <p>Загрузите изображение и опишите, что вы хотите получить в итоге.</p>
-        <form id="edit-form">
-            <input type="file" id="image-file" accept="image/*" required>
-            <input type="text" id="prompt" placeholder="Например: 'кот в очках, стиль киберпанк'" required>
-            <button type="submit" id="submit-button">Сгенерировать</button>
-        </form>
-        <div class="result-container">
-            <div id="loader">Обработка... это может занять больше времени ⏳</div>
-            <img id="result-image" src="">
-            <div id="error-box"></div>
-        </div>
+    <div class="app-container">
+        <header class="app-header">
+            <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
+        </header>
+
+        <main class="app-main">
+            <div class="initial-view">
+                <div class="main-text desktop-main-text">
+                    <img src="{{ url_for('static', filename='images/MAIN_Desktop.svg') }}" alt="CHANGE ANYTHING JUST DROP THE IMAGE">
+                </div>
+                <div class="main-text mobile-main-text">
+                    <img src="{{ url_for('static', filename='images/MAIN_MOB.svg') }}" alt="CHANGE ANYTHING JUST DROP THE IMAGE">
+                </div>
+
+                <nav class="action-buttons">
+                    <button class="action-btn">CREATE</button>
+                    <button class="action-btn">RELIGHT</button>
+                    <button class="action-btn">REMOVE</button>
+                    <button class="action-btn">CHANGE</button>
+                </nav>
+            </div>
+
+            <div class="result-view" style="display: none;">
+                <img id="result-image" src="" alt="Generated Image">
+            </div>
+            
+            <div class="input-area-wrapper">
+                <form id="edit-form" class="input-area">
+                    <label for="image-file" class="file-upload-label">
+                        <img src="{{ url_for('static', filename='images/Icon.png') }}" alt="Upload Icon" class="upload-icon">
+                        <span id="file-name-display"></span>
+                    </label>
+                    <input type="file" id="image-file" accept="image/*" required>
+                    
+                    <input type="text" id="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE" required>
+                    
+                    <button type="submit" id="submit-button" class="magic-button">
+                        <img src="{{ url_for('static', filename='images/Magic.png') }}" alt="Generate">
+                    </button>
+                </form>
+            </div>
+
+            <div id="loader" class="loader-message" style="display: none;">Обработка... это может занять больше времени ⏳</div>
+            <div id="error-box" class="error-message" style="display: none;"></div>
+        </main>
     </div>
 
     <script>
-        document.getElementById('edit-form').addEventListener('submit', async (event) => {
+        const imageFileInput = document.getElementById('image-file');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const editForm = document.getElementById('edit-form');
+        
+        const initialView = document.querySelector('.initial-view');
+        const resultView = document.querySelector('.result-view');
+        const resultImage = document.getElementById('result-image');
+        
+        const loader = document.getElementById('loader');
+        const errorBox = document.getElementById('error-box');
+        const submitButton = document.getElementById('submit-button');
+
+        imageFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                // Показываем имя файла, если нужно (на десктопе)
+                if (window.innerWidth > 768) {
+                     fileNameDisplay.textContent = this.files[0].name;
+                } else {
+                    fileNameDisplay.textContent = ''; // Скрываем на мобильных, если там нет места
+                }
+            } else {
+                fileNameDisplay.textContent = '';
+            }
+        });
+
+        editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const fileInput = document.getElementById('image-file');
             const promptInput = document.getElementById('prompt');
-            const submitButton = document.getElementById('submit-button');
-            const loader = document.getElementById('loader');
-            const resultImage = document.getElementById('result-image');
-            const errorBox = document.getElementById('error-box');
             
             submitButton.disabled = true;
             loader.style.display = 'block';
             resultImage.src = '';
             resultImage.style.display = 'none';
             errorBox.style.display = 'none';
+            errorBox.textContent = ''; 
+            
+            // Прячем начальный вид и показываем контейнер результата (пока пустой)
+            initialView.style.display = 'none';
+            resultView.style.display = 'flex'; // Используем flex для центрирования изображения
 
             const formData = new FormData();
-            formData.append('image', fileInput.files[0]);
+            formData.append('image', imageFileInput.files[0]);
             formData.append('prompt', promptInput.value);
             try {
                 const response = await fetch('/process-image', {
@@ -99,6 +419,9 @@ INDEX_HTML = """
                 console.error('Ошибка:', error);
                 errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
                 errorBox.style.display = 'block';
+                // Если ошибка, возможно, стоит вернуть начальный вид? Или оставить как есть.
+                // initialView.style.display = 'flex'; 
+                // resultView.style.display = 'none';
             } finally {
                 loader.style.display = 'none';
                 submitButton.disabled = false;
@@ -112,8 +435,11 @@ INDEX_HTML = """
 # Маршрут для главной страницы
 @app.route('/')
 def index():
+    # Если пользователь захочет начать заново, он просто обновит страницу, 
+    # или мы можем добавить кнопку "New" которая делает GET запрос на '/'
     return render_template_string(INDEX_HTML)
 
+# Python-часть для обработки запросов (остается без изменений от последней рабочей версии)
 def improve_prompt_with_openai(user_prompt):
     if not OPENAI_API_KEY:
         print("OpenAI API ключ не настроен, возвращаем оригинальный промпт.")
@@ -150,12 +476,10 @@ def process_image():
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         object_name = f"{uuid.uuid4()}-{image_file.filename}"
         
-        # !!! ИСПРАВЛЕНИЕ ЗДЕСЬ: Убрали ExtraArgs={'ACL': 'public-read'} !!!
         s3_client.upload_fileobj(
             image_file,
             AWS_S3_BUCKET_NAME,
             object_name
-            # ExtraArgs={'ACL': 'public-read'} # <-- ЭТА СТРОЧКА БЫЛА ОШИБОЧНО ВОЗВРАЩЕНА И ТЕПЕРЬ УДАЛЕНА
         )
         
         hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
@@ -196,7 +520,8 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        print(f"!!! ОШИБКА:\n{e}") # Оставляем простой вывод в лог Render
-        # Для пользователя возвращаем общее сообщение, чтобы не пугать traceback'ом,
-        # так как основная логика должна быть уже отлажена.
-        return jsonify({'error': 'Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте позже.'}), 500
+        print(f"!!! ОШИБКА:\n{e}")
+        return jsonify({'error': 'Произошла внутренняя ошибка сервера. Пожалуйста, проверьте логи на Render для деталей.'}), 500
+
+if __name__ == '__main__': # Это для локального запуска, Render использует Gunicorn
+    app.run(debug=True, port=os.getenv("PORT", 5000))
