@@ -40,11 +40,12 @@ INDEX_HTML = """
         }
 
         :root {
-            --background-color: #FAF3D4; 
+            --background-color: #DDD290; /* НОВЫЙ ЦВЕТ ФОНА */
             --primary-blue: #192E8C;    
             --input-area-bg: #FFFFFF;   
             --input-icon-bg: #F0F0F0; 
             --text-placeholder: #757575;
+            --mobile-spacing-unit: 25px; /* Базовая единица отступа для мобилки */
         }
 
         * {
@@ -102,10 +103,12 @@ INDEX_HTML = """
 
         .main-text img {
             width: 100%;
-            max-width: 800px; 
             height: auto;
         }
 
+        .desktop-main-text img {
+             max-width: 1040px; /* УВЕЛИЧЕНО НА 30% (было 800px) */
+        }
         .desktop-main-text { display: block; }
         .mobile-main-text { display: none; }
 
@@ -192,8 +195,8 @@ INDEX_HTML = """
 
         .file-upload-label {
             cursor: pointer;
-            width: 60px; /* Фиксированная ширина для квадратика */
-            height: 60px; /* Фиксированная высота для квадратика */
+            width: 60px; 
+            height: 60px; 
             background-color: var(--input-icon-bg);
             border-radius: 8px;
             margin-right: 10px;
@@ -201,20 +204,20 @@ INDEX_HTML = """
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            overflow: hidden; /* Чтобы превью не вылезало */
-            position: relative; /* Для позиционирования иконки и превью */
+            overflow: hidden; 
+            position: relative; 
         }
 
         .upload-icon { 
             height: 28px; 
             width: 28px;
-            display: block; /* Показываем по умолчанию */
+            display: block; 
         }
         #image-preview {
-            display: none; /* Скрываем по умолчанию */
+            display: none; 
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Заполняет область, обрезая лишнее */
+            object-fit: cover; 
         }
         
         #prompt {
@@ -225,8 +228,14 @@ INDEX_HTML = """
             background-color: transparent;
             outline: none;
             color: var(--primary-blue);
+            line-height: 1.4; /* Для возможного переноса строки в плейсхолдере */
+            white-space: pre-wrap; /* Для обработки \\n в плейсхолдере через JS */
         }
-        #prompt::placeholder { color: var(--text-placeholder); opacity: 0.9; }
+        #prompt::placeholder { 
+            color: var(--text-placeholder); 
+            opacity: 0.9;
+            white-space: pre-wrap; /* Для плейсхолдера в несколько строк */
+        }
 
         .magic-button {
             background-color: transparent;
@@ -250,27 +259,41 @@ INDEX_HTML = """
         @media (max-width: 768px) {
             body { padding: 20px 15px 30px 15px; }
             .app-container { gap: 20px; } 
-            .app-main { gap: 30px; } 
-            .initial-view { gap: 30px; } 
+            
+            .app-header { 
+                margin-bottom: 0; /* Управляем отступом через gap в .app-main */
+            }
+             .app-main { 
+                gap: 0; /* Убираем общий gap, будем настраивать маржинами */
+            }
+            .initial-view { 
+                gap: 0; /* Убираем общий gap, будем настраивать маржинами */
+                width:100%;
+            }
 
-            .logo { height: 35px; }
-            .app-header { margin-bottom: 10px; } 
+
+            .logo { height: 35px; margin-bottom: var(--mobile-spacing-unit); } /* Отступ от лого */
 
             .desktop-main-text { display: none; }
-            .mobile-main-text { display: block; }
-            .mobile-main-text img { max-width: 100%; margin-bottom: 0; } 
+            .mobile-main-text { display: block; margin-bottom: var(--mobile-spacing-unit); } /* ОТСТУП B */
+            .mobile-main-text img { max-width: 100%; }
 
-            .action-buttons-wrapper { max-width: 100%; margin-top: 0; }
+            .action-buttons-wrapper { 
+                max-width: 100%; 
+                margin-bottom: calc(var(--mobile-spacing-unit) * 3); /* ОТСТУП C = 3 * B */
+            }
              .action-buttons-container { padding-bottom: 14%; } 
 
 
             .input-area-wrapper { 
-                padding: 15px 10px; 
+                padding: 0 10px; /* Отступы для мобильных для input-area-wrapper */
+                margin-top: auto; /* Прижимаем к низу */
+                margin-bottom: 10px; /* Небольшой отступ от самого низа экрана */
             }
             .input-area { 
                 max-width: 100%; 
             }
-            .file-upload-label { width: 50px; height: 50px; } /* Чуть меньше для мобильных */
+            .file-upload-label { width: 50px; height: 50px; } 
             .upload-icon { height: 24px; width: 24px; }
             .magic-button img { height: 28px; width: 28px; }
             
@@ -278,13 +301,14 @@ INDEX_HTML = """
                 width: calc(100% - 20px); 
                 max-width: calc(100% - 20px);
                 max-height: 45vh; 
-                margin: 10px 0; 
+                margin: 10px auto; /* Центрируем и добавляем вертикальные отступы */
             }
             #result-image { max-height: calc(45vh - 20px); }
         }
          @media (max-width: 480px) {
-            .logo { height: 30px; }
-            .app-main, .initial-view { gap: 25px; }
+            .logo { height: 30px; margin-bottom: calc(var(--mobile-spacing-unit) * 0.8); }
+            .mobile-main-text { margin-bottom: calc(var(--mobile-spacing-unit) * 0.8); }
+            .action-buttons-wrapper { margin-bottom: calc(var(--mobile-spacing-unit) * 0.8 * 3); }
             .action-buttons-container { padding-bottom: 16%; } 
             .file-upload-label { width: 45px; height: 45px; }
             .upload-icon { height: 20px; width: 20px; }
@@ -333,7 +357,7 @@ INDEX_HTML = """
                     </label>
                     <input type="file" id="image-file" name="image" accept="image/*" required>
                     
-                    <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE" required>
+                    <input type="text" id="prompt" name="prompt" required> 
                     
                     <button type="submit" id="submit-button" class="magic-button">
                         <img src="{{ url_for('static', filename='images/Magic.png') }}" alt="Generate">
@@ -359,6 +383,23 @@ INDEX_HTML = """
         const loader = document.getElementById('loader');
         const errorBox = document.getElementById('error-box');
         const submitButton = document.getElementById('submit-button'); 
+        const promptInput = document.getElementById('prompt'); // Получаем инпут для плейсхолдера
+
+        // --- JS для многострочного плейсхолдера на мобильных ---
+        const mobilePlaceholderText = "TYPE WHAT YOU WANT\\nTO CHANGE";
+        const desktopPlaceholderText = "TYPE WHAT YOU WANT TO CHANGE";
+
+        function updatePromptPlaceholder() {
+            if (window.innerWidth <= 768) {
+                promptInput.placeholder = mobilePlaceholderText.replace(/\\n/g, '\\n');
+            } else {
+                promptInput.placeholder = desktopPlaceholderText;
+            }
+        }
+        updatePromptPlaceholder(); // Устанавливаем при загрузке
+        window.addEventListener('resize', updatePromptPlaceholder); // Обновляем при изменении размера окна
+        // -----------------------------------------------------
+
 
         imageFileInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
@@ -380,12 +421,11 @@ INDEX_HTML = """
             imagePreview.src = '#';
             imagePreview.style.display = 'none';
             if(uploadIcon) uploadIcon.style.display = 'block';
-            imageFileInput.value = ''; // Сбрасываем сам input file
+            imageFileInput.value = ''; 
         }
 
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const promptInput = document.getElementById('prompt');
             
             submitButton.disabled = true;
             loader.style.display = 'block';
@@ -420,16 +460,11 @@ INDEX_HTML = """
                 }
                 resultImage.src = data.output_url;
                 resultImage.style.display = 'block';
-                // Не сбрасываем превью здесь, чтобы пользователь видел, что загружал
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз."; // Более общее сообщение
+                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
                 errorBox.style.display = 'block';
-                // Можно вернуть начальный вид, если ошибка критична
-                // initialView.style.display = 'flex'; 
-                // resultView.style.display = 'none';
-                // resetUploadArea(); 
             } finally {
                 loader.style.display = 'none';
                 submitButton.disabled = false;
@@ -444,8 +479,6 @@ INDEX_HTML = """
             });
         });
 
-        // Если мы хотим, чтобы после показа результата можно было начать заново,
-        // можно, например, по клику на логотип сбрасывать состояние:
         const logo = document.querySelector('.logo');
         if (logo) {
             logo.addEventListener('click', () => {
@@ -455,7 +488,8 @@ INDEX_HTML = """
                 resultImage.style.display = 'none';
                 errorBox.style.display = 'none';
                 resetUploadArea();
-                document.getElementById('prompt').value = '';
+                promptInput.value = ''; // Очищаем промпт
+                updatePromptPlaceholder(); // Восстанавливаем плейсхолдер
             });
         }
 
