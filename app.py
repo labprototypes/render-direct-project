@@ -3,7 +3,7 @@ import boto3
 import uuid
 import requests
 import time
-import traceback # <-- СНОВА ВКЛЮЧАЕМ ДЛЯ ПОЛНОЙ ОШИБКИ
+import traceback
 from flask import Flask, request, jsonify, render_template_string
 
 # --- Настройки для подключения к Amazon S3 ---
@@ -18,7 +18,7 @@ app = Flask(__name__)
 # API токен Replicate
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
-# HTML-шаблон (с JavaScript, который покажет детальную ошибку)
+# HTML-шаблон (с JavaScript, который покажет детальную ошибку, если она останется)
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -36,7 +36,7 @@ INDEX_HTML = """
         button { background-color: #007bff; color: white; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-container { margin-top: 2rem; min-height: 100px; } /* Уменьшил min-height для ошибки */
+        .result-container { margin-top: 2rem; min-height: 100px; }
         img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
         #loader { display: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.2rem; margin-top: 1rem; }
         #error-box { text-align: left; background: #eee; padding: 1rem; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 0.8rem; margin-top: 1rem;}
@@ -54,7 +54,8 @@ INDEX_HTML = """
         <div class="result-container">
             <div id="loader">Обработка... это может занять больше времени ⏳</div>
             <img id="result-image" src="">
-            <div id="error-box" style="display: none;"></div> </div>
+            <div id="error-box" style="display: none;"></div>
+        </div>
     </div>
 
     <script>
@@ -72,7 +73,7 @@ INDEX_HTML = """
             resultImage.src = '';
             resultImage.style.display = 'none';
             errorBox.style.display = 'none';
-            errorBox.textContent = ''; // Очищаем предыдущую ошибку
+            errorBox.textContent = '';
 
             const formData = new FormData();
             formData.append('image', fileInput.files[0]);
@@ -84,7 +85,6 @@ INDEX_HTML = """
                 });
                 const data = await response.json();
                 if (!response.ok) {
-                    // JavaScript покажет текст ошибки, который пришлет сервер (с полным traceback)
                     throw new Error(data.error || 'Неизвестная ошибка сервера');
                 }
                 resultImage.src = data.output_url;
@@ -92,7 +92,7 @@ INDEX_HTML = """
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = error.message; // Показываем полный текст ошибки
+                errorBox.textContent = error.message;
                 errorBox.style.display = 'block';
             } finally {
                 loader.style.display = 'none';
@@ -130,11 +130,12 @@ def process_image():
         
         object_name = f"{uuid.uuid4()}-{image_file.filename}"
         
+        # !!! ИЗМЕНЕНИЕ ЗДЕСЬ: Убираем ExtraArgs с ACL !!!
         s3_client.upload_fileobj(
             image_file,
             AWS_S3_BUCKET_NAME,
-            object_name,
-            ExtraArgs={'ACL': 'public-read'}
+            object_name
+            # ExtraArgs={'ACL': 'public-read'} # <-- ЭТУ СТРОЧКУ УДАЛИЛИ
         )
         
         hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
@@ -184,8 +185,6 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        # !!! ВОЗВРАЩАЕМ РЕЖИМ ОТЛАДКИ В PYTHON !!!
         tb_str = traceback.format_exc()
         print(f"!!! TRACEBACK:\n{tb_str}")
-        # Возвращаем ПОЛНЫЙ текст ошибки на фронтенд
         return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
