@@ -1,6 +1,6 @@
 import os
 import replicate
-import traceback # <-- ДОБАВИЛИ НОВЫЙ МОДУЛЬ ДЛЯ ДИАГНОСТИКИ
+import traceback
 from flask import Flask, request, jsonify, render_template_string
 
 # Инициализируем Flask приложение
@@ -9,7 +9,7 @@ app = Flask(__name__)
 # Получаем API токен из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
-# HTML-шаблон для нашей главной страницы. Весь визуал находится здесь.
+# HTML-шаблон (без изменений)
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -50,41 +50,31 @@ INDEX_HTML = """
     <script>
         document.getElementById('edit-form').addEventListener('submit', async (event) => {
             event.preventDefault();
-
             const fileInput = document.getElementById('image-file');
             const promptInput = document.getElementById('prompt');
             const submitButton = document.getElementById('submit-button');
             const loader = document.getElementById('loader');
             const resultImage = document.getElementById('result-image');
             const resultContainer = document.querySelector('.result-container');
-
-
             submitButton.disabled = true;
             loader.style.display = 'block';
             resultImage.src = '';
             resultImage.alt = '';
             resultContainer.style.background = '#eee';
-
-
             const formData = new FormData();
             formData.append('image', fileInput.files[0]);
             formData.append('prompt', promptInput.value);
-
             try {
                 const response = await fetch('/process-image', {
                     method: 'POST',
                     body: formData
                 });
-                
                 const data = await response.json();
-
                 if (!response.ok) {
                     throw new Error(data.error || 'Неизвестная ошибка сервера');
                 }
-                
                 resultImage.src = data.output_url;
                 resultContainer.style.background = 'none';
-
             } catch (error) {
                 console.error('Ошибка:', error);
                 resultImage.alt = error.message;
@@ -113,23 +103,35 @@ def process_image():
     prompt_text = request.form['prompt']
     
     model_version = "black-forest-labs/flux-kontext-max:039ab64f89920875e5425af6e355e45a2c26207865c370776b19597dc8344e4e"
-
+    
+    # --- НАШ ФИНАЛЬНЫЙ ФИКС ЗДЕСЬ ---
+    image_path = "temp_image.jpg" # Имя временного файла
     try:
-        output = replicate.run(
-            model_version,
-            input={
-                "image": image_file,
-                "prompt": prompt_text
-            }
-        )
+        # 1. Сохраняем загруженный файл на диск сервера
+        image_file.save(image_path)
+        
+        # 2. Открываем этот сохраненный файл и передаем его в Replicate
+        with open(image_path, "rb") as file_to_upload:
+            output = replicate.run(
+                model_version,
+                input={
+                    "image": file_to_upload,
+                    "prompt": prompt_text
+                }
+            )
+        
         output_url = output[0] if output else None
         
         if not output_url:
             return jsonify({'error': 'API Replicate не вернуло результат'}), 500
         return jsonify({'output_url': output_url})
+        
     except Exception as e:
-        # !!! ИЗМЕНЕНИЕ ЗДЕСЬ !!!
-        # Мы ловим ошибку и возвращаем ее полный текст прямо пользователю
         tb_str = traceback.format_exc()
-        print(f"!!! TRACEBACK:\n{tb_str}") # Также печатаем в лог на всякий случай
+        print(f"!!! TRACEBACK:\n{tb_str}")
         return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
+    finally:
+        # 3. Удаляем временный файл, чтобы не засорять сервер
+        if os.path.exists(image_path):
+            os.remove(image_path)
+    # --- КОНЕЦ ФИКСА ---
