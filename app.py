@@ -102,15 +102,13 @@ def process_image():
     image_file = request.files['image']
     prompt_text = request.form['prompt']
     
-    model_version = "black-forest-labs/flux-kontext-max:039ab64f89920875e5425af6e355e45a2c26207865c370776b19597dc8344e4e"
+    # !!! ИЗМЕНЕНИЕ ЗДЕСЬ: Вставили актуальный и проверенный ID версии !!!
+    model_version = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
-    # --- НАШ ФИНАЛЬНЫЙ ФИКС ЗДЕСЬ ---
-    image_path = "temp_image.jpg" # Имя временного файла
+    image_path = "temp_image.jpg"
     try:
-        # 1. Сохраняем загруженный файл на диск сервера
         image_file.save(image_path)
         
-        # 2. Открываем этот сохраненный файл и передаем его в Replicate
         with open(image_path, "rb") as file_to_upload:
             output = replicate.run(
                 model_version,
@@ -131,7 +129,5 @@ def process_image():
         print(f"!!! TRACEBACK:\n{tb_str}")
         return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
     finally:
-        # 3. Удаляем временный файл, чтобы не засорять сервер
         if os.path.exists(image_path):
             os.remove(image_path)
-    # --- КОНЕЦ ФИКСА ---
