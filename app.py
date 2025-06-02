@@ -1,6 +1,5 @@
 import os
 import replicate
-import traceback
 from flask import Flask, request, jsonify, render_template_string
 
 # Инициализируем Flask приложение
@@ -27,10 +26,10 @@ INDEX_HTML = """
         button { background-color: #007bff; color: white; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-container { margin-top: 2rem; min-height: 100px; }
+        .result-container { margin-top: 2rem; min-height: 256px; }
         img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
         #loader { display: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.2rem; margin-top: 1rem; }
-        #error-box { text-align: left; background: #eee; padding: 1rem; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; }
+        #error-box { display: none; text-align: center; color: #d93025; margin-top: 1rem; }
     </style>
 </head>
 <body>
@@ -45,7 +44,7 @@ INDEX_HTML = """
         <div class="result-container">
             <div id="loader">Обработка... это может занять больше времени ⏳</div>
             <img id="result-image" src="">
-            <div id="error-box" style="display: none;"></div>
+            <div id="error-box"></div>
         </div>
     </div>
 
@@ -64,7 +63,6 @@ INDEX_HTML = """
             resultImage.src = '';
             resultImage.style.display = 'none';
             errorBox.style.display = 'none';
-            errorBox.textContent = '';
 
             const formData = new FormData();
             formData.append('image', fileInput.files[0]);
@@ -78,18 +76,12 @@ INDEX_HTML = """
                 if (!response.ok) {
                     throw new Error(data.error || 'Неизвестная ошибка сервера');
                 }
-                
-                // !!! ИЗМЕНЕНИЕ ДЛЯ ДИАГНОСТИКИ ЗДЕСЬ !!!
-                // Мы покажем полученный URL как текст, чтобы увидеть, что нам приходит
-                errorBox.textContent = "Полученный URL: " + data.output_url;
-                errorBox.style.display = 'block';
-
                 resultImage.src = data.output_url;
                 resultImage.style.display = 'block';
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = error.message;
+                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
                 errorBox.style.display = 'block';
             } finally {
                 loader.style.display = 'none';
@@ -127,6 +119,7 @@ def process_image():
                 input={
                     "image": file_to_upload,
                     "prompt": prompt_text
+                    # !!! ИЗМЕНЕНИЕ: Убрали параметр 'strength' по вашему запросу !!!
                 }
             )
         
@@ -137,9 +130,8 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        tb_str = traceback.format_exc()
-        print(f"!!! TRACEBACK:\n{tb_str}")
-        return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
+        print(f"!!! ОШИБКА В ПРОДАКШЕНЕ:\n{e}")
+        return jsonify({'error': 'Произошла внутренняя ошибка сервера.'}), 500
     finally:
         if os.path.exists(image_path):
             os.remove(image_path)
