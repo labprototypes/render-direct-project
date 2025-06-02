@@ -3,7 +3,7 @@ import boto3
 import uuid
 import requests
 import time
-import openai # <-- Добавили OpenAI
+import openai
 from flask import Flask, request, jsonify, render_template_string
 
 # --- Настройки для подключения к Amazon S3 ---
@@ -17,14 +17,12 @@ app = Flask(__name__)
 
 # API ключи из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') # <-- Считываем ключ OpenAI
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
-# Инициализируем клиент OpenAI, если ключ есть
 if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
 else:
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
-
 
 # HTML-шаблон (без изменений)
 INDEX_HTML = """
@@ -116,37 +114,18 @@ INDEX_HTML = """
 def index():
     return render_template_string(INDEX_HTML)
 
-# --- Новая функция для улучшения промпта через OpenAI ---
 def improve_prompt_with_openai(user_prompt):
     if not OPENAI_API_KEY:
         print("OpenAI API ключ не настроен, возвращаем оригинальный промпт.")
-        return user_prompt # Если ключа нет, просто возвращаем как есть
-
+        return user_prompt
     try:
         completion = openai.chat.completions.create(
-            model="gpt-3.5-turbo", # Можно использовать "gpt-4" для лучшего качества, но дороже
+            model="gpt-3.5-turbo",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert prompt engineer for an image editing AI. "
-                        "A user will provide a request, possibly in any language, to modify an existing uploaded image. "
-                        "Your tasks are: "
-                        "1. Understand the user's core intent for image modification. "
-                        "2. Translate the request to concise and clear English if it's not already. "
-                        "3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. "
-                        "This prompt will be given to an AI that modifies the uploaded image based on this prompt. "
-                        "Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
-                        "The output should be only the refined prompt, no explanations or conversational fluff."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt
-                }
+                {"role": "system", "content": "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."},
+                {"role": "user", "content": user_prompt}
             ],
-            temperature=0.5, # Небольшая креативность
-            max_tokens=100
+            temperature=0.5, max_tokens=100
         )
         improved_prompt = completion.choices[0].message.content.strip()
         print(f"!!! Оригинальный промпт: {user_prompt}")
@@ -154,37 +133,38 @@ def improve_prompt_with_openai(user_prompt):
         return improved_prompt
     except Exception as e:
         print(f"Ошибка при обращении к OpenAI: {e}")
-        return user_prompt # В случае ошибки возвращаем оригинальный промпт
+        return user_prompt
 
-# Маршрут для обработки изображения
 @app.route('/process-image', methods=['POST'])
 def process_image():
     if 'image' not in request.files or 'prompt' not in request.form:
         return jsonify({'error': 'Отсутствует изображение или промпт'}), 400
 
     image_file = request.files['image']
-    original_prompt_text = request.form['prompt'] # Оригинальный промпт от пользователя
-    
-    # --- УЛУЧШАЕМ ПРОМПТ ЧЕРЕЗ OPENAI ---
+    original_prompt_text = request.form['prompt']
     final_prompt_text = improve_prompt_with_openai(original_prompt_text)
-    # ------------------------------------
     
     model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         object_name = f"{uuid.uuid4()}-{image_file.filename}"
-        s3_client.upload_fileobj(image_file, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ACL': 'public-read'})
+        
+        # !!! ИСПРАВЛЕНИЕ ЗДЕСЬ: Убрали ExtraArgs={'ACL': 'public-read'} !!!
+        s3_client.upload_fileobj(
+            image_file,
+            AWS_S3_BUCKET_NAME,
+            object_name
+            # ExtraArgs={'ACL': 'public-read'} # <-- ЭТА СТРОЧКА БЫЛА ОШИБОЧНО ВОЗВРАЩЕНА И ТЕПЕРЬ УДАЛЕНА
+        )
+        
         hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
         print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {
             "version": model_version_id,
-            "input": {
-                "input_image": hosted_image_url, 
-                "prompt": final_prompt_text # <-- Используем улучшенный промпт
-            }
+            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text}
         }
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
@@ -203,10 +183,8 @@ def process_image():
             print(f"Статус генерации Replicate: {status_data['status']}")
             
             if status_data["status"] == "succeeded":
-                if isinstance(status_data["output"], list):
-                    output_url = status_data["output"][0] 
-                else:
-                    output_url = str(status_data["output"])
+                if isinstance(status_data["output"], list): output_url = status_data["output"][0] 
+                else: output_url = str(status_data["output"])
                 break
             elif status_data["status"] in ["failed", "canceled"]:
                 error_detail = status_data.get('error', 'неизвестная ошибка Replicate')
@@ -218,5 +196,7 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        print(f"!!! ОШИБКА:\n{e}")
-        return jsonify({'error': 'Произошла внутренняя ошибка сервера. Пожалуйста, проверьте логи на Render для деталей.'}), 500
+        print(f"!!! ОШИБКА:\n{e}") # Оставляем простой вывод в лог Render
+        # Для пользователя возвращаем общее сообщение, чтобы не пугать traceback'ом,
+        # так как основная логика должна быть уже отлажена.
+        return jsonify({'error': 'Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте позже.'}), 500
