@@ -1,7 +1,8 @@
 import os
 import boto3
 import uuid
-import replicate # <-- ВОТ ОНА, СТРОЧКА, КОТОРУЮ Я СЛУЧАЙНО УДАЛИЛ.
+import requests # <-- Используем requests напрямую
+import time     # <-- Добавляем модуль для пауз
 from flask import Flask, request, jsonify, render_template_string
 
 # --- Настройки для подключения к Selectel S3 ---
@@ -14,7 +15,7 @@ S3_REGION = 'ru-7'
 # Инициализируем Flask приложение
 app = Flask(__name__)
 
-# Получаем API токен из переменных окружения
+# API токен Replicate теперь используется в заголовке запроса
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
 # HTML-шаблон
@@ -116,44 +117,59 @@ def process_image():
     image_file = request.files['image']
     prompt_text = request.form['prompt']
     
-    model_version = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+    model_version_id = "0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
-        s3_client = boto3.client(
-            's3',
-            endpoint_url=S3_ENDPOINT_URL,
-            region_name=S3_REGION,
-            aws_access_key_id=S3_ACCESS_KEY_ID,
-            aws_secret_access_key=S3_SECRET_ACCESS_KEY
-        )
-        
+        # --- Этап 1: Загрузка на Selectel S3 (остается без изменений) ---
+        s3_client = boto3.client('s3', endpoint_url=S3_ENDPOINT_URL, region_name=S3_REGION, aws_access_key_id=S3_ACCESS_KEY_ID, aws_secret_access_key=S3_SECRET_ACCESS_KEY)
         object_name = f"{uuid.uuid4()}-{image_file.filename}"
-        
-        s3_client.upload_fileobj(
-            image_file,
-            S3_CONTAINER_NAME,
-            object_name,
-            ExtraArgs={'ACL': 'public-read'}
-        )
-        
+        s3_client.upload_fileobj(image_file, S3_CONTAINER_NAME, object_name, ExtraArgs={'ACL': 'public-read'})
         hosted_image_url = f"https://{S3_CONTAINER_NAME}.s3.ru-7.storage.selcloud.ru/{object_name}"
         print(f"!!! Изображение загружено на Selectel: {hosted_image_url}")
 
-        output = replicate.run(
-            model_version,
-            input={
+        # --- Этап 2: Прямой вызов Replicate API через requests ---
+        headers = {
+            "Authorization": f"Bearer {REPLICATE_API_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        # Тело запроса для ЗАПУСКА генерации
+        post_payload = {
+            "version": model_version_id,
+            "input": {
                 "image": hosted_image_url,
                 "prompt": prompt_text
             }
-        )
+        }
         
-        output_url = str(output) if output else None
+        # 1. Отправляем запрос на старт
+        start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
+        start_response.raise_for_status()
+        prediction_data = start_response.json()
+        
+        get_url = prediction_data["urls"]["get"]
+        
+        # 2. Ждем и проверяем результат
+        output_url = None
+        for _ in range(100): # Максимум ~3 минуты ожидания
+            time.sleep(2) # Пауза 2 секунды
+            get_response = requests.get(get_url, headers=headers)
+            get_response.raise_for_status()
+            status_data = get_response.json()
+            
+            print(f"Статус генерации: {status_data['status']}")
+            
+            if status_data["status"] == "succeeded":
+                output_url = status_data["output"][0] if isinstance(status_data["output"], list) else str(status_data["output"])
+                break
+            elif status_data["status"] in ["failed", "canceled"]:
+                raise Exception(f"Генерация не удалась: {status_data['error']}")
         
         if not output_url:
-            return jsonify({'error': 'API Replicate не вернуло результат'}), 500
+            return jsonify({'error': 'Генерация заняла слишком много времени.'}), 500
+            
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        # Возвращаем простую ошибку для пользователя
         print(f"!!! ОШИБКА В ПРОДАКШЕНЕ:\n{e}")
-        return jsonify({'error': 'Произошла внутренняя ошибка сервера.'}), 500
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера. {e}'}), 500
