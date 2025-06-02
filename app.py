@@ -40,9 +40,9 @@ INDEX_HTML = """
         }
 
         :root {
-            --background-color: #FAF3D4; /* Бежевый фон */
-            --primary-blue: #192E8C;    /* Синий для текста и лого */
-            --input-area-bg: #FFFFFF;   /* Белый для области ввода */
+            --background-color: #FAF3D4; 
+            --primary-blue: #192E8C;    
+            --input-area-bg: #FFFFFF;   
             --input-icon-bg: #F0F0F0; 
             --text-placeholder: #757575;
         }
@@ -57,25 +57,26 @@ INDEX_HTML = """
             font-family: 'ChangerFont', sans-serif;
             background-color: var(--background-color);
             color: var(--primary-blue);
-            display: flex;
+            display: flex; /* Для управления высотой и прижатия инпута вниз */
             flex-direction: column;
-            align-items: center;
             min-height: 100vh;
-            padding: 20px 15px; /* Добавил боковые отступы */
+            align-items: center;
+            padding: 30px 15px; /* Увеличен вертикальный padding */
             text-align: center;
         }
 
         .app-container {
             width: 100%;
-            max-width: 800px; 
+            max-width: 850px; 
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px; /* Увеличил основной вертикальный отступ */
+            gap: 30px; 
+            flex-grow: 1; /* Позволяет .app-main растягиваться */
         }
 
         .app-header {
-            margin-bottom: 10px; 
+             margin-bottom: 20px; /* Отступ от лого до текста */
         }
 
         .logo {
@@ -87,7 +88,8 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px; /* Увеличил основной вертикальный отступ */
+            gap: 45px; /* Увеличен отступ между initial-view и input-area-wrapper */
+            flex-grow: 1; /* Позволяет этому блоку растягиваться */
         }
 
         .initial-view {
@@ -95,32 +97,28 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px; /* Увеличил основной вертикальный отступ */
+            gap: 45px; /* Увеличен отступ между текстом и кнопками */
         }
 
         .main-text img {
             width: 100%;
-            max-width: 750px; 
+            max-width: 800px; /* Увеличен текст для десктопа */
             height: auto;
         }
 
         .desktop-main-text { display: block; }
         .mobile-main-text { display: none; }
 
-        /* --- Стили для блока с bubble.svg --- */
         .action-buttons-wrapper {
             width: 100%;
-            max-width: 600px; /* Ширина SVG с кнопками, подберите по вашему SVG */
-            margin: 0 auto; /* Центрирование */
+            max-width: 680px; /* Немного увеличил */
+            margin: 0 auto; 
         }
         
         .action-buttons-container {
-            position: relative; /* Для позиционирования оверлеев */
+            position: relative; 
             width: 100%;
-            /* Сохраняем пропорции SVG - вам нужно будет узнать их у вашего bubble.svg */
-            /* Например, если SVG 600px на 60px, то padding-bottom: 10% */
-            /* Это нужно будет настроить под ваш конкретный SVG */
-             padding-bottom: 12%; /* ПРИМЕРНОЕ ЗНАЧЕНИЕ, НАСТРОЙТЕ ПОД ВАШ SVG */
+            padding-bottom: 12%; /* Это значение нужно будет точно подобрать под ваш SVG */
         }
 
         .action-buttons-svg {
@@ -129,7 +127,7 @@ INDEX_HTML = """
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* или cover, в зависимости от SVG */
+            object-fit: contain; 
         }
 
         .action-button-overlays {
@@ -138,43 +136,35 @@ INDEX_HTML = """
             left: 0;
             width: 100%;
             height: 100%;
-            display: flex; /* Для расположения оверлеев */
-            justify-content: space-around; /* Примерное распределение */
+            display: flex; 
+            justify-content: space-around; 
         }
 
         .overlay-btn {
-            /* Прозрачные кнопки-оверлеи */
             background-color: transparent;
             border: none; 
             cursor: pointer;
-            /* Эти размеры и позиционирование - самые сложные и зависят от вашего SVG */
-            /* Я предполагаю 4 кнопки, занимающие примерно по 23-24% ширины каждая, с отступами */
             width: 23%; 
             height: 100%; 
-            /* Для отладки можно добавить рамку: border: 1px solid red; */
         }
-        /* Можно добавить data-action атрибуты в HTML и здесь задать отступы */
-        /* .overlay-btn[data-action="create"] { left: 1%; } */
-        /* .overlay-btn[data-action="relight"] { left: 26%; } ... и т.д. */
-
 
         .result-view {
             width: 100%;
-            max-width: 700px; /* Ширина области результата */
-            max-height: 60vh; 
-            margin-top: 0; /* Убрал лишний отступ, теперь все через gap */
+            max-width: 700px; 
+            max-height: 55vh; /* Немного уменьшил, чтобы было место для инпута */
+            margin-top: 0; 
             margin-bottom: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             background-color: #E9E9E9; 
             border-radius: 12px; 
-            padding: 10px; /* небольшой внутренний отступ */
+            padding: 10px; 
         }
 
         #result-image {
             max-width: 100%;
-            max-height: calc(60vh - 20px); /* С учетом паддинга контейнера */
+            max-height: calc(55vh - 20px); 
             object-fit: contain; 
             border-radius: 8px;
         }
@@ -183,17 +173,18 @@ INDEX_HTML = """
             width: 100%;
             display: flex;
             justify-content: center;
-            padding: 0; /* Убрал, будет в .input-area */
+            margin-top: auto; /* Прижимает этот блок к низу .app-main */
+            padding: 20px 0; /* Отступ сверху и снизу от этого блока */
         }
 
         .input-area {
             display: flex;
             align-items: center;
             background-color: var(--input-area-bg);
-            border-radius: 12px; /* Скругление по макету */
+            border-radius: 12px; 
             padding: 10px 12px;
             width: 100%;
-            max-width: 550px; /* Ширина по макету */
+            max-width: 600px; /* Увеличил ширину инпут-области */
             box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
 
@@ -201,7 +192,7 @@ INDEX_HTML = """
 
         .file-upload-label {
             cursor: pointer;
-            padding: 10px; 
+            padding: 12px; 
             background-color: var(--input-icon-bg);
             border-radius: 8px;
             margin-right: 10px;
@@ -213,15 +204,11 @@ INDEX_HTML = """
 
         .upload-icon { height: 28px; width: 28px; }
         
-        #file-name-display {
-            display: none; /* По макету имя файла не отображается */
-        }
-
         #prompt {
             flex-grow: 1;
             border: none;
             padding: 12px 10px;
-            font-size: 0.9rem; /* Немного меньше */
+            font-size: 1rem; /* Увеличил шрифт в инпуте */
             background-color: transparent;
             outline: none;
             color: var(--primary-blue);
@@ -239,8 +226,8 @@ INDEX_HTML = """
             justify-content: center;
             flex-shrink: 0;
         }
-        .magic-button img { height: 32px; width: 32px; } /* Размер иконки магии */
-        .magic-button:hover img { transform: scale(1.1); } /* Небольшой эффект при наведении */
+        .magic-button img { height: 32px; width: 32px; }
+        .magic-button:hover img { transform: scale(1.1); }
 
 
         .loader-message, .error-message { margin-top: 20px; font-size: 1rem; }
@@ -248,49 +235,43 @@ INDEX_HTML = """
 
         /* Мобильная версия */
         @media (max-width: 768px) {
-            body { padding: 15px; }
-            .app-container, .app-main, .initial-view { gap: 25px; }
+            body { padding: 20px 15px 30px 15px; /* Увеличил нижний паддинг */}
+            .app-container { gap: 20px; } /* Уменьшил основной gap */
+            .app-main { gap: 30px; } /* Уменьшил gap */
+            .initial-view { gap: 30px; } /* Уменьшил gap */
+
             .logo { height: 35px; }
-            
+            .app-header { margin-bottom: 10px; } /* Отступ от лого до текста моб */
+
             .desktop-main-text { display: none; }
             .mobile-main-text { display: block; }
-            .mobile-main-text img { max-width: 100%; }
+            .mobile-main-text img { max-width: 100%; margin-bottom: 0; } /* Убрал отступ снизу */
 
-            .action-buttons-wrapper { max-width: 100%; }
-            /* padding-bottom для action-buttons-container может нуждаться в корректировке для мобильных */
-            /* .action-buttons-container { padding-bottom: 15%; } */
+            .action-buttons-wrapper { max-width: 100%; margin-top: 0; } /* Убрал отступ сверху */
+             /* padding-bottom для action-buttons-container возможно нужно будет уменьшить для мобильных */
+             .action-buttons-container { padding-bottom: 14%; } 
 
-            .input-area { flex-direction: row; /* оставляем в ряд, как на мобильном макете */ max-width: calc(100% - 20px); margin: 0 10px;}
-            .file-upload-label { padding: 12px; margin-right:8px;}
-            .upload-icon { height: 26px; width: 26px; }
-            #prompt { padding: 12px 8px; font-size: 0.9rem; }
-            .magic-button { padding: 10px; }
-            .magic-button img { height: 28px; width: 28px; }
+
+            .input-area-wrapper { 
+                padding: 15px 10px; /* отступы для мобильных */
+            }
+            .input-area { 
+                max-width: 100%; 
+            }
+            /* .file-upload-label, #prompt, .magic-button уже адаптируются из-за flex в .input-area */
             
             .result-view {
                 width: calc(100% - 20px); 
                 max-width: calc(100% - 20px);
-                max-height: 45vh; 
-                margin: 15px 0;
+                max-height: 40vh; 
+                margin: 10px 0; /* Уменьшил отступы для блока результата */
             }
-            #result-image { max-height: calc(45vh - 20px); }
+            #result-image { max-height: calc(40vh - 20px); }
         }
          @media (max-width: 480px) {
             .logo { height: 30px; }
-            .app-container, .app-main, .initial-view { gap: 20px; }
-            .main-text img { margin-bottom: 0px; } /* Уменьшим отступ текста */
-            .action-buttons-wrapper { margin-top: -10px; } /* Придвинем кнопки к тексту */
-
-            /* Для очень маленьких экранов, возможно, кнопки должны идти в два ряда. */
-            /* Это потребует другого SVG или 4 отдельных кнопки, как мы обсуждали ранее */
-            /* Пока оставляем один SVG, он будет масштабироваться */
-
-            .input-area { padding: 8px 10px; }
-            .file-upload-label { padding: 10px; }
-            .upload-icon { height: 22px; width: 22px; }
-            #prompt { font-size: 0.85rem; }
-            .magic-button { padding: 8px; }
-            .magic-button img { height: 24px; width: 24px; }
+            .app-main, .initial-view { gap: 25px; }
+            .action-buttons-container { padding-bottom: 16%; } /* Может понадобиться еще подстройка */
          }
 
     </style>
@@ -331,7 +312,7 @@ INDEX_HTML = """
                 <form id="edit-form" class="input-area">
                     <label for="image-file" class="file-upload-label">
                         <img src="{{ url_for('static', filename='images/Icon.png') }}" alt="Upload Icon" class="upload-icon">
-                        </label>
+                    </label>
                     <input type="file" id="image-file" name="image" accept="image/*" required>
                     
                     <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE" required>
@@ -349,7 +330,6 @@ INDEX_HTML = """
 
     <script>
         const imageFileInput = document.getElementById('image-file');
-        // const fileNameDisplay = document.getElementById('file-name-display'); // Больше не используем по макету
         const editForm = document.getElementById('edit-form');
         
         const initialView = document.querySelector('.initial-view');
@@ -358,9 +338,9 @@ INDEX_HTML = """
         
         const loader = document.getElementById('loader');
         const errorBox = document.getElementById('error-box');
-        const submitButton = document.getElementById('submit-button'); // Это наша кнопка "Magic"
+        const submitButton = document.getElementById('submit-button'); 
 
-        // Убрали отображение имени файла, так как его нет на макетах
+        // Убрали отображение имени файла
         // imageFileInput.addEventListener('change', function() { ... });
 
         editForm.addEventListener('submit', async (event) => {
@@ -375,16 +355,15 @@ INDEX_HTML = """
             errorBox.textContent = ''; 
             
             initialView.style.display = 'none';
-            resultView.style.display = 'flex';
+            resultView.style.display = 'flex'; 
 
             const formData = new FormData();
-            // Убедимся, что imageFileInput.files[0] существует
             if (!imageFileInput.files || imageFileInput.files.length === 0) {
                 errorBox.textContent = "Пожалуйста, выберите файл для загрузки.";
                 errorBox.style.display = 'block';
                 loader.style.display = 'none';
                 submitButton.disabled = false;
-                initialView.style.display = 'flex'; // Возвращаем начальный вид
+                initialView.style.display = 'flex'; 
                 resultView.style.display = 'none';
                 return;
             }
@@ -404,25 +383,20 @@ INDEX_HTML = """
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = error.message; // Показываем ошибку с сервера
+                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
                 errorBox.style.display = 'block';
-                // Если ошибка при генерации, оставляем resultView видимым, чтобы показать ошибку
-                // initialView.style.display = 'flex'; 
-                // resultView.style.display = 'none';
             } finally {
                 loader.style.display = 'none';
                 submitButton.disabled = false;
             }
         });
 
-        // Добавим обработчики для кнопок-оверлеев (пока просто для примера)
         const overlayButtons = document.querySelectorAll('.overlay-btn');
         overlayButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 const action = e.target.dataset.action;
                 console.log("Action button clicked:", action);
-                // Здесь в будущем будет логика для этих кнопок
-                // alert("Нажата кнопка: " + action); 
+                // alert("Нажата кнопка: " + action); // Для будущей функциональности
             });
         });
 
@@ -471,15 +445,10 @@ def process_image():
     
     try:
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-        # Генерируем уникальное имя файла, чтобы избежать перезаписи в S3
         _, f_ext = os.path.splitext(image_file.filename)
-        object_name = f"{uuid.uuid4()}{f_ext}" # Используем расширение исходного файла
+        object_name = f"{uuid.uuid4()}{f_ext}"
         
-        s3_client.upload_fileobj(
-            image_file.stream, # Передаем поток байтов
-            AWS_S3_BUCKET_NAME,
-            object_name
-        )
+        s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name)
         
         hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
         print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
@@ -522,6 +491,5 @@ def process_image():
         print(f"!!! ОШИБКА:\n{e}")
         return jsonify({'error': 'Произошла внутренняя ошибка сервера. Пожалуйста, проверьте логи на Render для деталей.'}), 500
 
-if __name__ == '__main__':
-    # Эта строка нужна для локального запуска, Render будет использовать Gunicorn из Procfile
+if __name__ == '__main__': 
     app.run(debug=True, port=int(os.environ.get("PORT", 5001)))
