@@ -57,11 +57,11 @@ INDEX_HTML = """
             font-family: 'ChangerFont', sans-serif;
             background-color: var(--background-color);
             color: var(--primary-blue);
-            display: flex; /* Для управления высотой и прижатия инпута вниз */
+            display: flex; 
             flex-direction: column;
             min-height: 100vh;
             align-items: center;
-            padding: 30px 15px; /* Увеличен вертикальный padding */
+            padding: 30px 15px; 
             text-align: center;
         }
 
@@ -72,11 +72,11 @@ INDEX_HTML = """
             flex-direction: column;
             align-items: center;
             gap: 30px; 
-            flex-grow: 1; /* Позволяет .app-main растягиваться */
+            flex-grow: 1; 
         }
 
         .app-header {
-             margin-bottom: 20px; /* Отступ от лого до текста */
+             margin-bottom: 20px; 
         }
 
         .logo {
@@ -88,8 +88,8 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 45px; /* Увеличен отступ между initial-view и input-area-wrapper */
-            flex-grow: 1; /* Позволяет этому блоку растягиваться */
+            gap: 45px; 
+            flex-grow: 1; 
         }
 
         .initial-view {
@@ -97,12 +97,12 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 45px; /* Увеличен отступ между текстом и кнопками */
+            gap: 45px; 
         }
 
         .main-text img {
             width: 100%;
-            max-width: 800px; /* Увеличен текст для десктопа */
+            max-width: 800px; 
             height: auto;
         }
 
@@ -111,14 +111,14 @@ INDEX_HTML = """
 
         .action-buttons-wrapper {
             width: 100%;
-            max-width: 680px; /* Немного увеличил */
+            max-width: 680px; 
             margin: 0 auto; 
         }
         
         .action-buttons-container {
             position: relative; 
             width: 100%;
-            padding-bottom: 12%; /* Это значение нужно будет точно подобрать под ваш SVG */
+            padding-bottom: 12%; 
         }
 
         .action-buttons-svg {
@@ -151,7 +151,7 @@ INDEX_HTML = """
         .result-view {
             width: 100%;
             max-width: 700px; 
-            max-height: 55vh; /* Немного уменьшил, чтобы было место для инпута */
+            max-height: 55vh; 
             margin-top: 0; 
             margin-bottom: 0;
             display: flex;
@@ -173,8 +173,8 @@ INDEX_HTML = """
             width: 100%;
             display: flex;
             justify-content: center;
-            margin-top: auto; /* Прижимает этот блок к низу .app-main */
-            padding: 20px 0; /* Отступ сверху и снизу от этого блока */
+            margin-top: auto; 
+            padding: 20px 0; 
         }
 
         .input-area {
@@ -184,7 +184,7 @@ INDEX_HTML = """
             border-radius: 12px; 
             padding: 10px 12px;
             width: 100%;
-            max-width: 600px; /* Увеличил ширину инпут-области */
+            max-width: 600px; 
             box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
 
@@ -192,23 +192,36 @@ INDEX_HTML = """
 
         .file-upload-label {
             cursor: pointer;
-            padding: 12px; 
+            width: 60px; /* Фиксированная ширина для квадратика */
+            height: 60px; /* Фиксированная высота для квадратика */
             background-color: var(--input-icon-bg);
             border-radius: 8px;
             margin-right: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0; 
+            flex-shrink: 0;
+            overflow: hidden; /* Чтобы превью не вылезало */
+            position: relative; /* Для позиционирования иконки и превью */
         }
 
-        .upload-icon { height: 28px; width: 28px; }
+        .upload-icon { 
+            height: 28px; 
+            width: 28px;
+            display: block; /* Показываем по умолчанию */
+        }
+        #image-preview {
+            display: none; /* Скрываем по умолчанию */
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Заполняет область, обрезая лишнее */
+        }
         
         #prompt {
             flex-grow: 1;
             border: none;
             padding: 12px 10px;
-            font-size: 1rem; /* Увеличил шрифт в инпуте */
+            font-size: 1rem; 
             background-color: transparent;
             outline: none;
             color: var(--primary-blue);
@@ -235,43 +248,47 @@ INDEX_HTML = """
 
         /* Мобильная версия */
         @media (max-width: 768px) {
-            body { padding: 20px 15px 30px 15px; /* Увеличил нижний паддинг */}
-            .app-container { gap: 20px; } /* Уменьшил основной gap */
-            .app-main { gap: 30px; } /* Уменьшил gap */
-            .initial-view { gap: 30px; } /* Уменьшил gap */
+            body { padding: 20px 15px 30px 15px; }
+            .app-container { gap: 20px; } 
+            .app-main { gap: 30px; } 
+            .initial-view { gap: 30px; } 
 
             .logo { height: 35px; }
-            .app-header { margin-bottom: 10px; } /* Отступ от лого до текста моб */
+            .app-header { margin-bottom: 10px; } 
 
             .desktop-main-text { display: none; }
             .mobile-main-text { display: block; }
-            .mobile-main-text img { max-width: 100%; margin-bottom: 0; } /* Убрал отступ снизу */
+            .mobile-main-text img { max-width: 100%; margin-bottom: 0; } 
 
-            .action-buttons-wrapper { max-width: 100%; margin-top: 0; } /* Убрал отступ сверху */
-             /* padding-bottom для action-buttons-container возможно нужно будет уменьшить для мобильных */
+            .action-buttons-wrapper { max-width: 100%; margin-top: 0; }
              .action-buttons-container { padding-bottom: 14%; } 
 
 
             .input-area-wrapper { 
-                padding: 15px 10px; /* отступы для мобильных */
+                padding: 15px 10px; 
             }
             .input-area { 
                 max-width: 100%; 
             }
-            /* .file-upload-label, #prompt, .magic-button уже адаптируются из-за flex в .input-area */
+            .file-upload-label { width: 50px; height: 50px; } /* Чуть меньше для мобильных */
+            .upload-icon { height: 24px; width: 24px; }
+            .magic-button img { height: 28px; width: 28px; }
             
             .result-view {
                 width: calc(100% - 20px); 
                 max-width: calc(100% - 20px);
-                max-height: 40vh; 
-                margin: 10px 0; /* Уменьшил отступы для блока результата */
+                max-height: 45vh; 
+                margin: 10px 0; 
             }
-            #result-image { max-height: calc(40vh - 20px); }
+            #result-image { max-height: calc(45vh - 20px); }
         }
          @media (max-width: 480px) {
             .logo { height: 30px; }
             .app-main, .initial-view { gap: 25px; }
-            .action-buttons-container { padding-bottom: 16%; } /* Может понадобиться еще подстройка */
+            .action-buttons-container { padding-bottom: 16%; } 
+            .file-upload-label { width: 45px; height: 45px; }
+            .upload-icon { height: 20px; width: 20px; }
+            .magic-button img { height: 26px; width: 26px; }
          }
 
     </style>
@@ -312,6 +329,7 @@ INDEX_HTML = """
                 <form id="edit-form" class="input-area">
                     <label for="image-file" class="file-upload-label">
                         <img src="{{ url_for('static', filename='images/Icon.png') }}" alt="Upload Icon" class="upload-icon">
+                        <img id="image-preview" src="#" alt="Image preview" style="display: none;">
                     </label>
                     <input type="file" id="image-file" name="image" accept="image/*" required>
                     
@@ -330,6 +348,8 @@ INDEX_HTML = """
 
     <script>
         const imageFileInput = document.getElementById('image-file');
+        const uploadIcon = document.querySelector('.file-upload-label .upload-icon');
+        const imagePreview = document.getElementById('image-preview');
         const editForm = document.getElementById('edit-form');
         
         const initialView = document.querySelector('.initial-view');
@@ -340,8 +360,28 @@ INDEX_HTML = """
         const errorBox = document.getElementById('error-box');
         const submitButton = document.getElementById('submit-button'); 
 
-        // Убрали отображение имени файла
-        // imageFileInput.addEventListener('change', function() { ... });
+        imageFileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    if(uploadIcon) uploadIcon.style.display = 'none';
+                }
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                imagePreview.src = '#';
+                imagePreview.style.display = 'none';
+                if(uploadIcon) uploadIcon.style.display = 'block';
+            }
+        });
+
+        function resetUploadArea() {
+            imagePreview.src = '#';
+            imagePreview.style.display = 'none';
+            if(uploadIcon) uploadIcon.style.display = 'block';
+            imageFileInput.value = ''; // Сбрасываем сам input file
+        }
 
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -380,11 +420,16 @@ INDEX_HTML = """
                 }
                 resultImage.src = data.output_url;
                 resultImage.style.display = 'block';
+                // Не сбрасываем превью здесь, чтобы пользователь видел, что загружал
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
+                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз."; // Более общее сообщение
                 errorBox.style.display = 'block';
+                // Можно вернуть начальный вид, если ошибка критична
+                // initialView.style.display = 'flex'; 
+                // resultView.style.display = 'none';
+                // resetUploadArea(); 
             } finally {
                 loader.style.display = 'none';
                 submitButton.disabled = false;
@@ -396,9 +441,23 @@ INDEX_HTML = """
             button.addEventListener('click', (e) => {
                 const action = e.target.dataset.action;
                 console.log("Action button clicked:", action);
-                // alert("Нажата кнопка: " + action); // Для будущей функциональности
             });
         });
+
+        // Если мы хотим, чтобы после показа результата можно было начать заново,
+        // можно, например, по клику на логотип сбрасывать состояние:
+        const logo = document.querySelector('.logo');
+        if (logo) {
+            logo.addEventListener('click', () => {
+                initialView.style.display = 'flex';
+                resultView.style.display = 'none';
+                resultImage.src = '';
+                resultImage.style.display = 'none';
+                errorBox.style.display = 'none';
+                resetUploadArea();
+                document.getElementById('prompt').value = '';
+            });
+        }
 
     </script>
 </body>
