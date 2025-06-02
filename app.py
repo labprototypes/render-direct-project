@@ -1,5 +1,6 @@
 import os
 import replicate
+import traceback # <-- ДОБАВИЛИ НОВЫЙ МОДУЛЬ ДЛЯ ДИАГНОСТИКИ
 from flask import Flask, request, jsonify, render_template_string
 
 # Инициализируем Flask приложение
@@ -26,9 +27,9 @@ INDEX_HTML = """
         button { background-color: #007bff; color: white; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-container { margin-top: 2rem; min-height: 100px; }
+        .result-container { margin-top: 2rem; min-height: 100px; text-align: left; background: #eee; padding: 1rem; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word;}
         img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
-        #loader { display: none; font-size: 1.2rem; margin-top: 1rem; }
+        #loader { display: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.2rem; margin-top: 1rem; }
     </style>
 </head>
 <body>
@@ -55,11 +56,15 @@ INDEX_HTML = """
             const submitButton = document.getElementById('submit-button');
             const loader = document.getElementById('loader');
             const resultImage = document.getElementById('result-image');
+            const resultContainer = document.querySelector('.result-container');
+
 
             submitButton.disabled = true;
             loader.style.display = 'block';
             resultImage.src = '';
             resultImage.alt = '';
+            resultContainer.style.background = '#eee';
+
 
             const formData = new FormData();
             formData.append('image', fileInput.files[0]);
@@ -70,15 +75,19 @@ INDEX_HTML = """
                     method: 'POST',
                     body: formData
                 });
-
-                if (!response.ok) { throw new Error(`Ошибка сервера: ${response.statusText}`); }
+                
                 const data = await response.json();
-                if (data.output_url) { resultImage.src = data.output_url; } 
-                else { throw new Error(data.error || 'Не удалось получить результат'); }
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Неизвестная ошибка сервера');
+                }
+                
+                resultImage.src = data.output_url;
+                resultContainer.style.background = 'none';
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                resultImage.alt = `Произошла ошибка: ${error.message}`;
+                resultImage.alt = error.message;
             } finally {
                 loader.style.display = 'none';
                 submitButton.disabled = false;
@@ -103,7 +112,6 @@ def process_image():
     image_file = request.files['image']
     prompt_text = request.form['prompt']
     
-    # !!! ИЗМЕНЕНИЕ ЗДЕСЬ: Поменяли модель на flux-kontext-max !!!
     model_version = "black-forest-labs/flux-kontext-max:039ab64f89920875e5425af6e355e45a2c26207865c370776b19597dc8344e4e"
 
     try:
@@ -120,4 +128,8 @@ def process_image():
             return jsonify({'error': 'API Replicate не вернуло результат'}), 500
         return jsonify({'output_url': output_url})
     except Exception as e:
-        return jsonify({'error': f'Внутренняя ошибка сервера: {e}'}), 500
+        # !!! ИЗМЕНЕНИЕ ЗДЕСЬ !!!
+        # Мы ловим ошибку и возвращаем ее полный текст прямо пользователю
+        tb_str = traceback.format_exc()
+        print(f"!!! TRACEBACK:\n{tb_str}") # Также печатаем в лог на всякий случай
+        return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
