@@ -1,7 +1,7 @@
 import os
 import boto3
 import uuid
-import traceback # <-- Снова включаем наш модуль для отладки
+import replicate # <-- ВОТ ОНА, СТРОЧКА, КОТОРУЮ Я СЛУЧАЙНО УДАЛИЛ.
 from flask import Flask, request, jsonify, render_template_string
 
 # --- Настройки для подключения к Selectel S3 ---
@@ -17,7 +17,7 @@ app = Flask(__name__)
 # Получаем API токен из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
-# HTML-шаблон с отладочным выводом
+# HTML-шаблон
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -35,10 +35,10 @@ INDEX_HTML = """
         button { background-color: #007bff; color: white; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-container { margin-top: 2rem; min-height: 100px; }
+        .result-container { margin-top: 2rem; min-height: 256px; }
         img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
         #loader { display: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.2rem; margin-top: 1rem; }
-        #error-box { text-align: left; background: #eee; padding: 1rem; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 0.8rem; }
+        #error-box { display: none; text-align: center; color: #d93025; margin-top: 1rem; }
     </style>
 </head>
 <body>
@@ -53,7 +53,7 @@ INDEX_HTML = """
         <div class="result-container">
             <div id="loader">Обработка... это может занять больше времени ⏳</div>
             <img id="result-image" src="">
-            <div id="error-box" style="display: none;"></div>
+            <div id="error-box"></div>
         </div>
     </div>
 
@@ -90,7 +90,7 @@ INDEX_HTML = """
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = error.message;
+                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
                 errorBox.style.display = 'block';
             } finally {
                 loader.style.display = 'none';
@@ -154,8 +154,6 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        # !!! ВОЗВРАЩАЕМ РЕЖИМ ОТЛАДКИ !!!
-        # Ловим ошибку и возвращаем ее полный текст прямо пользователю
-        tb_str = traceback.format_exc()
-        print(f"!!! TRACEBACK:\n{tb_str}")
-        return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
+        # Возвращаем простую ошибку для пользователя
+        print(f"!!! ОШИБКА В ПРОДАКШЕНЕ:\n{e}")
+        return jsonify({'error': 'Произошла внутренняя ошибка сервера.'}), 500
