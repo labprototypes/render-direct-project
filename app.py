@@ -1,15 +1,16 @@
 import os
 import boto3
 import uuid
-import requests # Для прямых запросов к Replicate API
-import time     # Для пауз при ожидании результата
+import requests
+import time
+import traceback # <-- СНОВА ВКЛЮЧАЕМ ДЛЯ ПОЛНОЙ ОШИБКИ
 from flask import Flask, request, jsonify, render_template_string
 
 # --- Настройки для подключения к Amazon S3 ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
-AWS_S3_REGION = os.environ.get('AWS_S3_REGION') # Например, 'us-east-1'
+AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
@@ -17,7 +18,7 @@ app = Flask(__name__)
 # API токен Replicate
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
-# HTML-шаблон
+# HTML-шаблон (с JavaScript, который покажет детальную ошибку)
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -35,10 +36,10 @@ INDEX_HTML = """
         button { background-color: #007bff; color: white; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-container { margin-top: 2rem; min-height: 256px; }
+        .result-container { margin-top: 2rem; min-height: 100px; } /* Уменьшил min-height для ошибки */
         img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
         #loader { display: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.2rem; margin-top: 1rem; }
-        #error-box { display: none; text-align: center; color: #d93025; margin-top: 1rem; }
+        #error-box { text-align: left; background: #eee; padding: 1rem; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 0.8rem; margin-top: 1rem;}
     </style>
 </head>
 <body>
@@ -53,8 +54,7 @@ INDEX_HTML = """
         <div class="result-container">
             <div id="loader">Обработка... это может занять больше времени ⏳</div>
             <img id="result-image" src="">
-            <div id="error-box"></div>
-        </div>
+            <div id="error-box" style="display: none;"></div> </div>
     </div>
 
     <script>
@@ -72,6 +72,7 @@ INDEX_HTML = """
             resultImage.src = '';
             resultImage.style.display = 'none';
             errorBox.style.display = 'none';
+            errorBox.textContent = ''; // Очищаем предыдущую ошибку
 
             const formData = new FormData();
             formData.append('image', fileInput.files[0]);
@@ -83,6 +84,7 @@ INDEX_HTML = """
                 });
                 const data = await response.json();
                 if (!response.ok) {
+                    // JavaScript покажет текст ошибки, который пришлет сервер (с полным traceback)
                     throw new Error(data.error || 'Неизвестная ошибка сервера');
                 }
                 resultImage.src = data.output_url;
@@ -90,7 +92,7 @@ INDEX_HTML = """
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
+                errorBox.textContent = error.message; // Показываем полный текст ошибки
                 errorBox.style.display = 'block';
             } finally {
                 loader.style.display = 'none';
@@ -119,10 +121,9 @@ def process_image():
     model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
-        # --- Этап 1: Загрузка на Amazon S3 ---
         s3_client = boto3.client(
             's3',
-            region_name=AWS_S3_REGION, # Используем регион из переменных окружения
+            region_name=AWS_S3_REGION,
             aws_access_key_id=AWS_ACCESS_KEY_ID,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY
         )
@@ -131,17 +132,14 @@ def process_image():
         
         s3_client.upload_fileobj(
             image_file,
-            AWS_S3_BUCKET_NAME, # Используем имя бакета из переменных окружения
+            AWS_S3_BUCKET_NAME,
             object_name,
-            ExtraArgs={'ACL': 'public-read'} # Делаем файл публично доступным
+            ExtraArgs={'ACL': 'public-read'}
         )
         
-        # Формируем публичную ссылку на загруженный файл в Amazon S3
-        # Формат URL для S3: https://<bucket-name>.s3.<region>.amazonaws.com/<object-name>
         hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
         print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
 
-        # --- Этап 2: Прямой вызов Replicate API через requests ---
         headers = {
             "Authorization": f"Bearer {REPLICATE_API_TOKEN}",
             "Content-Type": "application/json"
@@ -156,13 +154,13 @@ def process_image():
         }
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-        start_response.raise_for_status() # Вызовет ошибку, если запрос не успешен (4xx, 5xx)
+        start_response.raise_for_status()
         prediction_data = start_response.json()
         
         get_url = prediction_data["urls"]["get"]
         
         output_url = None
-        for _ in range(100): # Ждем примерно 3 минуты 20 секунд максимум (100 * 2сек)
+        for _ in range(100): 
             time.sleep(2) 
             get_response = requests.get(get_url, headers=headers)
             get_response.raise_for_status()
@@ -171,7 +169,6 @@ def process_image():
             print(f"Статус генерации: {status_data['status']}")
             
             if status_data["status"] == "succeeded":
-                # Результат может быть списком или одной строкой
                 if isinstance(status_data["output"], list):
                     output_url = status_data["output"][0] 
                 else:
@@ -187,7 +184,8 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        # В случае любой ошибки, печатаем ее в лог Render
-        print(f"!!! ОШИБКА:\n{e}")
-        # И возвращаем общее сообщение пользователю
-        return jsonify({'error': 'Произошла внутренняя ошибка сервера. Пожалуйста, проверьте логи на Render для деталей.'}), 500
+        # !!! ВОЗВРАЩАЕМ РЕЖИМ ОТЛАДКИ В PYTHON !!!
+        tb_str = traceback.format_exc()
+        print(f"!!! TRACEBACK:\n{tb_str}")
+        # Возвращаем ПОЛНЫЙ текст ошибки на фронтенд
+        return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
