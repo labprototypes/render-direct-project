@@ -1,6 +1,7 @@
 import os
-import boto3 # <-- Наша новая библиотека для работы с S3
-import uuid  # <-- Модуль для создания уникальных имен файлов
+import boto3
+import uuid
+import traceback # <-- Снова включаем наш модуль для отладки
 from flask import Flask, request, jsonify, render_template_string
 
 # --- Настройки для подключения к Selectel S3 ---
@@ -16,7 +17,7 @@ app = Flask(__name__)
 # Получаем API токен из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
-# HTML-шаблон (без изменений)
+# HTML-шаблон с отладочным выводом
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -34,10 +35,10 @@ INDEX_HTML = """
         button { background-color: #007bff; color: white; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-container { margin-top: 2rem; min-height: 256px; }
+        .result-container { margin-top: 2rem; min-height: 100px; }
         img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
         #loader { display: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.2rem; margin-top: 1rem; }
-        #error-box { display: none; text-align: center; color: #d93025; margin-top: 1rem; }
+        #error-box { text-align: left; background: #eee; padding: 1rem; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -52,7 +53,7 @@ INDEX_HTML = """
         <div class="result-container">
             <div id="loader">Обработка... это может занять больше времени ⏳</div>
             <img id="result-image" src="">
-            <div id="error-box"></div>
+            <div id="error-box" style="display: none;"></div>
         </div>
     </div>
 
@@ -89,7 +90,7 @@ INDEX_HTML = """
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                errorBox.textContent = "Произошла ошибка. Попробуйте еще раз.";
+                errorBox.textContent = error.message;
                 errorBox.style.display = 'block';
             } finally {
                 loader.style.display = 'none';
@@ -118,9 +119,6 @@ def process_image():
     model_version = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
-        # --- НАША НОВАЯ НАДЕЖНАЯ ЛОГИКА С SELECTEL S3 ---
-        
-        # 1. Создаем S3 клиент для работы с хранилищем Selectel
         s3_client = boto3.client(
             's3',
             endpoint_url=S3_ENDPOINT_URL,
@@ -129,22 +127,18 @@ def process_image():
             aws_secret_access_key=S3_SECRET_ACCESS_KEY
         )
         
-        # 2. Генерируем уникальное имя для файла, чтобы не было конфликтов
         object_name = f"{uuid.uuid4()}-{image_file.filename}"
         
-        # 3. Загружаем файл в ваш контейнер 'labcontainer'
         s3_client.upload_fileobj(
             image_file,
             S3_CONTAINER_NAME,
             object_name,
-            ExtraArgs={'ACL': 'public-read'} # Делаем файл публично доступным
+            ExtraArgs={'ACL': 'public-read'}
         )
         
-        # 4. Формируем публичную ссылку на загруженный файл
         hosted_image_url = f"https://{S3_CONTAINER_NAME}.s3.ru-7.storage.selcloud.ru/{object_name}"
         print(f"!!! Изображение загружено на Selectel: {hosted_image_url}")
 
-        # 5. Отправляем в Replicate промпт и ПУБЛИЧНУЮ ССЫЛКУ на картинку
         output = replicate.run(
             model_version,
             input={
@@ -160,5 +154,8 @@ def process_image():
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        print(f"!!! ОШИБКА В ПРОДАКШЕНЕ:\n{e}")
-        return jsonify({'error': f'Произошла внутренняя ошибка сервера. {e}'}), 500
+        # !!! ВОЗВРАЩАЕМ РЕЖИМ ОТЛАДКИ !!!
+        # Ловим ошибку и возвращаем ее полный текст прямо пользователю
+        tb_str = traceback.format_exc()
+        print(f"!!! TRACEBACK:\n{tb_str}")
+        return jsonify({'error': f'ПОЛНЫЙ ТЕКСТ ОШИБКИ:\n\n{tb_str}'}), 500
