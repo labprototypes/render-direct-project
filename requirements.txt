@@ -1,4 +1,4 @@
 flask
 replicate
 gunicorn
-requests
+boto3
