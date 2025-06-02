@@ -1,8 +1,8 @@
 import os
 import boto3
 import uuid
-import requests # <-- Используем requests напрямую
-import time     # <-- Добавляем модуль для пауз
+import requests
+import time
 from flask import Flask, request, jsonify, render_template_string
 
 # --- Настройки для подключения к Selectel S3 ---
@@ -15,7 +15,7 @@ S3_REGION = 'ru-7'
 # Инициализируем Flask приложение
 app = Flask(__name__)
 
-# API токен Replicate теперь используется в заголовке запроса
+# API токен Replicate
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
 # HTML-шаблон
@@ -120,39 +120,35 @@ def process_image():
     model_version_id = "0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
-        # --- Этап 1: Загрузка на Selectel S3 (остается без изменений) ---
         s3_client = boto3.client('s3', endpoint_url=S3_ENDPOINT_URL, region_name=S3_REGION, aws_access_key_id=S3_ACCESS_KEY_ID, aws_secret_access_key=S3_SECRET_ACCESS_KEY)
         object_name = f"{uuid.uuid4()}-{image_file.filename}"
         s3_client.upload_fileobj(image_file, S3_CONTAINER_NAME, object_name, ExtraArgs={'ACL': 'public-read'})
         hosted_image_url = f"https://{S3_CONTAINER_NAME}.s3.ru-7.storage.selcloud.ru/{object_name}"
         print(f"!!! Изображение загружено на Selectel: {hosted_image_url}")
 
-        # --- Этап 2: Прямой вызов Replicate API через requests ---
         headers = {
             "Authorization": f"Bearer {REPLICATE_API_TOKEN}",
             "Content-Type": "application/json"
         }
         
-        # Тело запроса для ЗАПУСКА генерации
         post_payload = {
             "version": model_version_id,
             "input": {
-                "image": hosted_image_url,
+                # !!! ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ: МЕНЯЕМ 'image' НА 'input_image' !!!
+                "input_image": hosted_image_url, 
                 "prompt": prompt_text
             }
         }
         
-        # 1. Отправляем запрос на старт
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
         prediction_data = start_response.json()
         
         get_url = prediction_data["urls"]["get"]
         
-        # 2. Ждем и проверяем результат
         output_url = None
-        for _ in range(100): # Максимум ~3 минуты ожидания
-            time.sleep(2) # Пауза 2 секунды
+        for _ in range(100):
+            time.sleep(2)
             get_response = requests.get(get_url, headers=headers)
             get_response.raise_for_status()
             status_data = get_response.json()
