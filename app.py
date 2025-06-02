@@ -9,7 +9,7 @@ app = Flask(__name__)
 # Получаем API токен из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
-# HTML-шаблон (без изменений)
+# HTML-шаблон
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -78,6 +78,12 @@ INDEX_HTML = """
                 if (!response.ok) {
                     throw new Error(data.error || 'Неизвестная ошибка сервера');
                 }
+                
+                // !!! ИЗМЕНЕНИЕ ДЛЯ ДИАГНОСТИКИ ЗДЕСЬ !!!
+                // Мы покажем полученный URL как текст, чтобы увидеть, что нам приходит
+                errorBox.textContent = "Полученный URL: " + data.output_url;
+                errorBox.style.display = 'block';
+
                 resultImage.src = data.output_url;
                 resultImage.style.display = 'block';
 
@@ -124,8 +130,6 @@ def process_image():
                 }
             )
         
-        # !!! ФИНАЛЬНЫЙ ФИКС ЗДЕСЬ !!!
-        # Модель возвращает не список, а один объект. Превращаем его в строку (URL).
         output_url = str(output) if output else None
         
         if not output_url:
