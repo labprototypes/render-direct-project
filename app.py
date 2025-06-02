@@ -1,7 +1,15 @@
 import os
-import requests # <-- Наша ключевая библиотека
-import time
+import boto3
+import uuid
+import requests # Для прямых запросов к Replicate API
+import time     # Для пауз при ожидании результата
 from flask import Flask, request, jsonify, render_template_string
+
+# --- Настройки для подключения к Amazon S3 ---
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
+AWS_S3_REGION = os.environ.get('AWS_S3_REGION') # Например, 'us-east-1'
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
@@ -108,32 +116,54 @@ def process_image():
     image_file = request.files['image']
     prompt_text = request.form['prompt']
     
-    model_version_id = "0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+    model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
-        # --- Этап 1: Загрузка файла на публичный хостинг 0x0.st ---
-        files = {'file': (image_file.filename, image_file.read(), image_file.mimetype)}
-        upload_response = requests.post('https://0x0.st', files=files)
-        upload_response.raise_for_status()
-        hosted_image_url = upload_response.text.strip()
-        print(f"!!! Изображение загружено на 0x0.st: {hosted_image_url}")
+        # --- Этап 1: Загрузка на Amazon S3 ---
+        s3_client = boto3.client(
+            's3',
+            region_name=AWS_S3_REGION, # Используем регион из переменных окружения
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        )
+        
+        object_name = f"{uuid.uuid4()}-{image_file.filename}"
+        
+        s3_client.upload_fileobj(
+            image_file,
+            AWS_S3_BUCKET_NAME, # Используем имя бакета из переменных окружения
+            object_name,
+            ExtraArgs={'ACL': 'public-read'} # Делаем файл публично доступным
+        )
+        
+        # Формируем публичную ссылку на загруженный файл в Amazon S3
+        # Формат URL для S3: https://<bucket-name>.s3.<region>.amazonaws.com/<object-name>
+        hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
+        print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
 
         # --- Этап 2: Прямой вызов Replicate API через requests ---
-        headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {REPLICATE_API_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
         post_payload = {
             "version": model_version_id,
-            "input": {"input_image": hosted_image_url, "prompt": prompt_text}
+            "input": {
+                "input_image": hosted_image_url, 
+                "prompt": prompt_text
+            }
         }
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-        start_response.raise_for_status()
+        start_response.raise_for_status() # Вызовет ошибку, если запрос не успешен (4xx, 5xx)
         prediction_data = start_response.json()
         
         get_url = prediction_data["urls"]["get"]
         
         output_url = None
-        for _ in range(100):
-            time.sleep(2)
+        for _ in range(100): # Ждем примерно 3 минуты 20 секунд максимум (100 * 2сек)
+            time.sleep(2) 
             get_response = requests.get(get_url, headers=headers)
             get_response.raise_for_status()
             status_data = get_response.json()
@@ -141,16 +171,23 @@ def process_image():
             print(f"Статус генерации: {status_data['status']}")
             
             if status_data["status"] == "succeeded":
-                output_url = status_data["output"][0] if isinstance(status_data["output"], list) else str(status_data["output"])
+                # Результат может быть списком или одной строкой
+                if isinstance(status_data["output"], list):
+                    output_url = status_data["output"][0] 
+                else:
+                    output_url = str(status_data["output"])
                 break
             elif status_data["status"] in ["failed", "canceled"]:
-                raise Exception(f"Генерация не удалась: {status_data['error']}")
+                error_detail = status_data.get('error', 'неизвестная ошибка Replicate')
+                raise Exception(f"Генерация Replicate не удалась: {error_detail}")
         
         if not output_url:
-            return jsonify({'error': 'Генерация заняла слишком много времени.'}), 500
+            return jsonify({'error': 'Генерация заняла слишком много времени или не вернула результат.'}), 500
             
         return jsonify({'output_url': output_url})
         
     except Exception as e:
-        print(f"!!! ОШИБКА В ПРОДАКШЕНЕ:\n{e}")
-        return jsonify({'error': f'Произошла внутренняя ошибка сервера. {e}'}), 500
+        # В случае любой ошибки, печатаем ее в лог Render
+        print(f"!!! ОШИБКА:\n{e}")
+        # И возвращаем общее сообщение пользователю
+        return jsonify({'error': 'Произошла внутренняя ошибка сервера. Пожалуйста, проверьте логи на Render для деталей.'}), 500
