@@ -1,7 +1,14 @@
 import os
-import replicate
-import requests # <-- Наша новая библиотека для загрузки картинки
+import boto3 # <-- Наша новая библиотека для работы с S3
+import uuid  # <-- Модуль для создания уникальных имен файлов
 from flask import Flask, request, jsonify, render_template_string
+
+# --- Настройки для подключения к Selectel S3 ---
+S3_ACCESS_KEY_ID = os.environ.get('S3_ACCESS_KEY_ID')
+S3_SECRET_ACCESS_KEY = os.environ.get('S3_SECRET_ACCESS_KEY')
+S3_CONTAINER_NAME = os.environ.get('S3_CONTAINER_NAME')
+S3_ENDPOINT_URL = 'https://s3.ru-7.storage.selcloud.ru'
+S3_REGION = 'ru-7'
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
@@ -9,7 +16,7 @@ app = Flask(__name__)
 # Получаем API токен из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 
-# HTML-шаблон
+# HTML-шаблон (без изменений)
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -111,25 +118,37 @@ def process_image():
     model_version = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
     
     try:
-        # --- ФИНАЛЬНЫЙ ПЛАН: ЗАГРУЗКА ФАЙЛА НА ХОСТИНГ И ПОЛУЧЕНИЕ URL ---
+        # --- НАША НОВАЯ НАДЕЖНАЯ ЛОГИКА С SELECTEL S3 ---
         
-        # 1. Загружаем картинку на временный хостинг tinyimg.io
-        # Мы отправляем файл так, как будто это делает браузер
-        upload_response = requests.post(
-            'https://tinyimg.io/api/upload',
-            files={'file': (image_file.filename, image_file.read(), image_file.mimetype)}
+        # 1. Создаем S3 клиент для работы с хранилищем Selectel
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=S3_ENDPOINT_URL,
+            region_name=S3_REGION,
+            aws_access_key_id=S3_ACCESS_KEY_ID,
+            aws_secret_access_key=S3_SECRET_ACCESS_KEY
         )
-        upload_response.raise_for_status() # Проверяем, что загрузка прошла успешно
         
-        # 2. Получаем публичную ссылку на нашу картинку из ответа хостинга
-        hosted_image_url = upload_response.json()['data']['url']
-        print(f"!!! Изображение загружено на: {hosted_image_url}")
+        # 2. Генерируем уникальное имя для файла, чтобы не было конфликтов
+        object_name = f"{uuid.uuid4()}-{image_file.filename}"
+        
+        # 3. Загружаем файл в ваш контейнер 'labcontainer'
+        s3_client.upload_fileobj(
+            image_file,
+            S3_CONTAINER_NAME,
+            object_name,
+            ExtraArgs={'ACL': 'public-read'} # Делаем файл публично доступным
+        )
+        
+        # 4. Формируем публичную ссылку на загруженный файл
+        hosted_image_url = f"https://{S3_CONTAINER_NAME}.s3.ru-7.storage.selcloud.ru/{object_name}"
+        print(f"!!! Изображение загружено на Selectel: {hosted_image_url}")
 
-        # 3. Отправляем в Replicate промпт и ПУБЛИЧНУЮ ССЫЛКУ на картинку
+        # 5. Отправляем в Replicate промпт и ПУБЛИЧНУЮ ССЫЛКУ на картинку
         output = replicate.run(
             model_version,
             input={
-                "image": hosted_image_url, # <-- Передаем URL!
+                "image": hosted_image_url,
                 "prompt": prompt_text
             }
         )
@@ -142,4 +161,4 @@ def process_image():
         
     except Exception as e:
         print(f"!!! ОШИБКА В ПРОДАКШЕНЕ:\n{e}")
-        return jsonify({'error': 'Произошла внутренняя ошибка сервера.'}), 500
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера. {e}'}), 500
