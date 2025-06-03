@@ -169,6 +169,11 @@ INDEX_HTML = """
             cursor: pointer;
             position: relative;
             overflow: hidden; 
+            border: 2px dashed rgba(248, 248, 248, 0.3); /* Added for drag feedback */
+        }
+        .image-drop-area-mobile.dragover {
+            border-color: var(--text-accent-color);
+            background-color: rgba(217, 244, 122, 0.1);
         }
         .image-drop-area-mobile .mob-drop-placeholder-img {
             width: 100%;
@@ -213,11 +218,12 @@ INDEX_HTML = """
         .action-btn img {
             height: 45px; 
             width: auto; 
-            max-width: 100px; /* Added max-width for individual SVGs on mobile */
+            max-width: 100px; 
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
-            display: block; 
+            display: block !important; /* Added important for debugging visibility */
+            visibility: visible !important; /* Added important for debugging visibility */
         }
         .action-btn img:hover {
             transform: scale(1.05);
@@ -272,47 +278,18 @@ INDEX_HTML = """
             display: flex; 
         }
         .pulsating-dot {
-            width: 25px; 
-            height: 25px;
+            width: 100px; /* Increased size (25px * 4) */
+            height: 100px; /* Increased size (25px * 4) */
             background-color: var(--text-accent-color);
             border-radius: 50%;
             position: relative; 
-            animation: elegantPulse 1.8s infinite ease-out;
+            animation: pulse 1.5s infinite ease-in-out; /* Simplified animation */
         }
-        .pulsating-dot::before, .pulsating-dot::after { 
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            background-color: var(--text-accent-color);
-            opacity: 0.7;
-        }
-        .pulsating-dot::before {
-            width: 100%;
-            height: 100%;
-            animation: elegantPulseOuter1 1.8s infinite ease-out;
-            animation-delay: 0.2s;
-        }
-        .pulsating-dot::after {
-            width: 100%;
-            height: 100%;
-            animation: elegantPulseOuter2 1.8s infinite ease-out;
-            animation-delay: 0.4s;
-        }
+        /* Removed ::before and ::after for pulsating-dot for a single dot */
 
-        @keyframes elegantPulse { 
-            0%, 100% { transform: scale(0.8); opacity: 0.8; }
-            50% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes elegantPulseOuter1 { 
-            0%, 20% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(2.5); opacity: 0; }
-        }
-        @keyframes elegantPulseOuter2 { 
-            0%, 40% { transform: scale(1); opacity: 0.3; }
-            100% { transform: scale(3.5); opacity: 0; }
+        @keyframes pulse { /* Simplified pulse for single dot */
+            0%, 100% { transform: scale(0.8); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
         }
 
 
@@ -341,6 +318,11 @@ INDEX_HTML = """
 
         .file-upload-label-desktop { 
             display: none; 
+            border: 2px dashed rgba(248, 248, 248, 0.3); /* Added for drag feedback */
+        }
+         .file-upload-label-desktop.dragover {
+            border-color: var(--text-accent-color);
+            background-color: rgba(217, 244, 122, 0.1);
         }
         
         #prompt {
@@ -435,9 +417,9 @@ INDEX_HTML = """
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img {
                 display: block;
-                max-width: 800px; /* Increased max-width */
+                max-width: 800px; 
                 width: auto; 
-                max-height: 75vh; /* Increased max-height */
+                max-height: 75vh; 
                 object-fit: contain; 
             }
 
@@ -445,23 +427,24 @@ INDEX_HTML = """
             
             .action-buttons {
                 max-width: 700px; 
-                gap: 15px; /* Adjusted gap */
-                justify-content: center; /* Changed from space-around for more consistent spacing */
+                gap: 15px; 
+                justify-content: center; 
                 flex-wrap: nowrap; 
                 padding-bottom: 0; 
                 margin-top: var(--desktop-spacing-unit); 
                 width: 100%; 
             }
             .action-btn { 
-                /* Removed flex-basis and flex-grow to let content define width up to a max */
                 display: flex;
                 justify-content: center;
             }
             .action-btn img {
                 height: 48px; 
-                width: auto; /* Let height control size, up to max-width */
-                max-width: 150px; /* Prevent individual SVGs from becoming too wide */
+                width: auto; 
+                max-width: 150px; 
                 object-fit: contain;
+                display: block !important; /* Added important for debugging visibility */
+                visibility: visible !important; /* Added important for debugging visibility */
             }
 
             #result-image {
@@ -487,10 +470,11 @@ INDEX_HTML = """
                 align-items: center;
                 justify-content: center;
                 position: relative;
-                width: 56px; 
-                height: 56px;
+                /* width: 56px; Original size */
+                width: calc(56px / 1.5); /* Reduced by 1.5 times */
+                height: calc(56px / 1.5); /* Reduced by 1.5 times */
                 background-color: transparent; 
-                border-radius: 18px; 
+                border-radius: 12px; /* Adjusted for smaller size */
                 flex-shrink: 0;
                 overflow: hidden;
             }
@@ -665,7 +649,7 @@ INDEX_HTML = """
         if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         if (loaderContainer) loaderContainer.style.display = 'none';
         
-        if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex'; // Default to flex
+        if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
 
 
         if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
@@ -729,13 +713,51 @@ INDEX_HTML = """
     window.addEventListener('resize', () => {
         updateView(currentView); 
     });
+    
+    function handleFileSelect(file) {
+        if (file) {
+            imageFileInput.files = new DataTransfer().files; // Clear previous files if any
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            imageFileInput.files = dataTransfer.files;
+            
+            // Trigger change event manually for preview
+            const event = new Event('change', { bubbles: true });
+            imageFileInput.dispatchEvent(event);
+        }
+    }
 
-    if (mobileDropArea) {
-        mobileDropArea.addEventListener('click', () => imageFileInput.click());
+    function setupDragAndDrop(dropZoneElement) {
+        if (!dropZoneElement) return;
+
+        dropZoneElement.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            dropZoneElement.classList.add('dragover');
+        });
+
+        dropZoneElement.addEventListener('dragleave', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            dropZoneElement.classList.remove('dragover');
+        });
+
+        dropZoneElement.addEventListener('drop', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            dropZoneElement.classList.remove('dragover');
+            
+            if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+                handleFileSelect(event.dataTransfer.files[0]);
+            }
+        });
+        // Clicking still works
+        dropZoneElement.addEventListener('click', () => imageFileInput.click());
     }
-    if (desktopUploadLabel) {
-        desktopUploadLabel.addEventListener('click', () => imageFileInput.click());
-    }
+
+    setupDragAndDrop(mobileDropArea);
+    setupDragAndDrop(desktopUploadLabel);
+
 
     if (imageFileInput) {
         imageFileInput.addEventListener('change', function() {
