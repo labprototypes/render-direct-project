@@ -121,7 +121,7 @@ INDEX_HTML = """
             justify-content: flex-start; 
             flex-grow: 1;
             padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
-            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + 48px + var(--mob-spacing-unit)); 
+            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + 24px + var(--mob-spacing-unit)); /* Adjusted for smaller bubbles */
             gap: var(--mob-spacing-unit); 
             text-align: center;
         }
@@ -215,10 +215,8 @@ INDEX_HTML = """
             padding-bottom: var(--mob-spacing-unit); 
             flex-shrink: 0; 
         }
-        .action-btn img { /* Simplified for debugging */
-            height: 45px; 
-            /* width: auto; remove for now */
-            /* max-width: 100px; remove for now */
+        .action-btn img { 
+            height: calc(45px / 2); /* Reduced size */
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
@@ -425,22 +423,20 @@ INDEX_HTML = """
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
-                max-width: 700px; 
-                gap: 15px; 
+                /* max-width: 700px; Removed as per request */
+                gap: 10px; /* Adjusted gap for smaller bubbles */
                 justify-content: center; 
                 flex-wrap: nowrap; 
                 padding-bottom: 0; 
                 margin-top: var(--desktop-spacing-unit); 
-                width: 100%; 
+                width: auto; /* Allow container to shrink to content */
             }
             .action-btn { 
                 display: flex;
                 justify-content: center;
             }
-            .action-btn img { /* Simplified for debugging */
-                height: 48px; 
-                /* width: auto; remove for now */
-                /* max-width: 150px; remove for now */
+            .action-btn img { 
+                height: calc(48px / 2); /* Reduced size */
                 object-fit: contain;
                 display: block; 
                 visibility: visible; 
@@ -521,6 +517,9 @@ INDEX_HTML = """
                 gap: 8px; 
                 max-width: 320px; 
             }
+            .action-btn img {
+                 height: calc(45px / 2); /* Reduced size for mobile */
+            }
             .result-image-wrapper.active {
                 flex-grow: 1; 
                 display: flex;
@@ -569,7 +568,8 @@ INDEX_HTML = """
                 <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.png') }}" alt="Create"></div>
                 <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/Relight.png') }}" alt="Relight"></div>
                 <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/Remove.png') }}" alt="Remove"></div>
-                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div> </div>
+                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div>
+            </div>
         </main>
 
         <footer class="app-footer">
