@@ -169,7 +169,7 @@ INDEX_HTML = """
             cursor: pointer;
             position: relative;
             overflow: hidden; 
-            border: 2px dashed rgba(248, 248, 248, 0.3); /* Added for drag feedback */
+            border: 2px dashed rgba(248, 248, 248, 0.3); 
         }
         .image-drop-area-mobile.dragover {
             border-color: var(--text-accent-color);
@@ -222,8 +222,8 @@ INDEX_HTML = """
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
-            display: block !important; /* Added important for debugging visibility */
-            visibility: visible !important; /* Added important for debugging visibility */
+            display: block; /* Ensure image is block for proper rendering */
+            visibility: visible; /* Ensure image is visible */
         }
         .action-btn img:hover {
             transform: scale(1.05);
@@ -278,16 +278,15 @@ INDEX_HTML = """
             display: flex; 
         }
         .pulsating-dot {
-            width: 100px; /* Increased size (25px * 4) */
-            height: 100px; /* Increased size (25px * 4) */
+            width: 100px; 
+            height: 100px; 
             background-color: var(--text-accent-color);
             border-radius: 50%;
             position: relative; 
-            animation: pulse 1.5s infinite ease-in-out; /* Simplified animation */
+            animation: pulse 1.5s infinite ease-in-out; 
         }
-        /* Removed ::before and ::after for pulsating-dot for a single dot */
-
-        @keyframes pulse { /* Simplified pulse for single dot */
+        
+        @keyframes pulse { 
             0%, 100% { transform: scale(0.8); opacity: 0.7; }
             50% { transform: scale(1.2); opacity: 1; }
         }
@@ -318,7 +317,7 @@ INDEX_HTML = """
 
         .file-upload-label-desktop { 
             display: none; 
-            border: 2px dashed rgba(248, 248, 248, 0.3); /* Added for drag feedback */
+            border: 2px dashed rgba(248, 248, 248, 0.3); 
         }
          .file-upload-label-desktop.dragover {
             border-color: var(--text-accent-color);
@@ -443,8 +442,8 @@ INDEX_HTML = """
                 width: auto; 
                 max-width: 150px; 
                 object-fit: contain;
-                display: block !important; /* Added important for debugging visibility */
-                visibility: visible !important; /* Added important for debugging visibility */
+                display: block; /* Removed !important */
+                visibility: visible; /* Removed !important */
             }
 
             #result-image {
@@ -470,11 +469,10 @@ INDEX_HTML = """
                 align-items: center;
                 justify-content: center;
                 position: relative;
-                /* width: 56px; Original size */
-                width: calc(56px / 1.5); /* Reduced by 1.5 times */
-                height: calc(56px / 1.5); /* Reduced by 1.5 times */
+                width: calc(56px / 1.5); 
+                height: calc(56px / 1.5); 
                 background-color: transparent; 
-                border-radius: 12px; /* Adjusted for smaller size */
+                border-radius: 12px; 
                 flex-shrink: 0;
                 overflow: hidden;
             }
@@ -568,10 +566,10 @@ INDEX_HTML = """
             </div>
 
             <div class="action-buttons">
-                <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.svg') }}" alt="Create"></div>
-                <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/Relight.svg') }}" alt="Relight"></div>
-                <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/Remove.svg') }}" alt="Remove"></div>
-                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/Change.svg') }}" alt="Change"></div>
+                <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.png') }}" alt="Create"></div>
+                <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/Relight.png') }}" alt="Relight"></div>
+                <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/Remove.png') }}" alt="Remove"></div>
+                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/Change.png') }}" alt="Change"></div>
             </div>
         </main>
 
@@ -715,13 +713,11 @@ INDEX_HTML = """
     });
     
     function handleFileSelect(file) {
-        if (file) {
-            imageFileInput.files = new DataTransfer().files; // Clear previous files if any
+        if (file && imageFileInput) { // Added check for imageFileInput
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             imageFileInput.files = dataTransfer.files;
             
-            // Trigger change event manually for preview
             const event = new Event('change', { bubbles: true });
             imageFileInput.dispatchEvent(event);
         }
@@ -751,12 +747,13 @@ INDEX_HTML = """
                 handleFileSelect(event.dataTransfer.files[0]);
             }
         });
-        // Clicking still works
-        dropZoneElement.addEventListener('click', () => imageFileInput.click());
+        // Clicking still works via the label's for attribute
+        // dropZoneElement.addEventListener('click', () => imageFileInput.click()); // This can be removed if label `for` is used
     }
 
-    setupDragAndDrop(mobileDropArea);
-    setupDragAndDrop(desktopUploadLabel);
+    // Setup for both mobile and desktop drop zones
+    if (mobileDropArea) setupDragAndDrop(mobileDropArea);
+    if (desktopUploadLabel) setupDragAndDrop(desktopUploadLabel);
 
 
     if (imageFileInput) {
@@ -834,8 +831,16 @@ INDEX_HTML = """
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Неизвестная ошибка сервера');
+                    // Attempt to parse more detailed error from Replicate if available
+                    let errorDetail = 'Неизвестная ошибка сервера';
+                    if (data && data.error) { // General error from our backend
+                        errorDetail = data.error;
+                    } else if (data && data.detail) { // Error structure from Replicate
+                         errorDetail = data.detail;
+                    }
+                    throw new Error(errorDetail);
                 }
+
 
                 if(resultImage) resultImage.src = data.output_url;
                 if(downloadLink) downloadLink.href = data.output_url;
@@ -851,7 +856,7 @@ INDEX_HTML = """
                 tempImg.src = data.output_url;
                 
             } catch (error) {
-                console.error('Ошибка:', error);
+                console.error('Ошибка при отправке/обработке:', error);
                 showError("Произошла ошибка: " + error.message);
                 updateView('initial'); 
             } finally {
@@ -896,7 +901,7 @@ INDEX_HTML = """
 def index():
     return render_template_string(INDEX_HTML)
 
-# Python-часть для обработки запросов (остается без изменений от последней рабочей версии)
+# Python-часть для обработки запросов
 def improve_prompt_with_openai(user_prompt):
     if not OPENAI_API_KEY:
         print("OpenAI API ключ не настроен, возвращаем оригинальный промпт.")
@@ -927,8 +932,8 @@ def process_image():
     original_prompt_text = request.form['prompt']
     final_prompt_text = improve_prompt_with_openai(original_prompt_text)
     
-    model_version_id = "lucataco/sdxl-lcm-lora:a27457f2b866969151b3e6c1434add815009910d89c6006f0932a9abd572789b"
-
+    # Возвращаем модель и структуру payload к версии, которая работала у пользователя изначально
+    model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
 
     try:
         if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
@@ -937,6 +942,7 @@ def process_image():
         
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         _, f_ext = os.path.splitext(image_file.filename)
+        # Генерируем уникальное имя объекта для S3
         object_name = f"uploads/{uuid.uuid4()}{f_ext}" 
         
         s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': image_file.content_type})
@@ -949,15 +955,25 @@ def process_image():
             return jsonify({'error': 'Ошибка конфигурации сервера для генерации изображений.'}), 500
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+        # Возвращаем ключ "input_image" для модели black-forest-labs/flux-kontext-max
         post_payload = {
             "version": model_version_id,
-            "input": {"image": hosted_image_url, "prompt": final_prompt_text} 
+            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text} 
         }
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-        start_response.raise_for_status() 
-        prediction_data = start_response.json()
         
+        # Более детальная обработка ошибок от Replicate
+        if start_response.status_code >= 400:
+            print(f"!!! Ошибка от Replicate при запуске предсказания: {start_response.status_code} - {start_response.text}")
+            try:
+                error_data = start_response.json()
+                detail = error_data.get("detail", start_response.text)
+                return jsonify({'error': f'Ошибка API Replicate: {detail}'}), start_response.status_code
+            except ValueError: # Если ответ не JSON
+                 return jsonify({'error': f'Ошибка API Replicate: {start_response.text}'}), start_response.status_code
+
+        prediction_data = start_response.json()
         get_url = prediction_data["urls"]["get"]
         
         output_url = None
@@ -966,9 +982,16 @@ def process_image():
         while retries < max_retries:
             time.sleep(2) 
             get_response = requests.get(get_url, headers=headers)
-            get_response.raise_for_status()
+            if get_response.status_code >= 400:
+                print(f"!!! Ошибка от Replicate при получении статуса: {get_response.status_code} - {get_response.text}")
+                try:
+                    error_data = get_response.json()
+                    detail = error_data.get("detail", get_response.text)
+                    raise Exception(f"Ошибка API Replicate при проверке статуса: {detail}")
+                except ValueError:
+                    raise Exception(f"Ошибка API Replicate при проверке статуса: {get_response.text}")
+
             status_data = get_response.json()
-            
             print(f"Статус генерации Replicate: {status_data['status']}")
             
             if status_data["status"] == "succeeded":
@@ -987,20 +1010,12 @@ def process_image():
             
         return jsonify({'output_url': output_url})
         
-    except requests.exceptions.HTTPError as http_err:
-        print(f"!!! HTTP ОШИБКА при обращении к Replicate: {http_err} - {http_err.response.text}")
-        return jsonify({'error': f'Ошибка связи с сервисом генерации: {http_err.response.status_code}'}), 500
+    except requests.exceptions.HTTPError as http_err: # Эта ошибка уже обрабатывается выше при status_code >= 400
+        print(f"!!! HTTP ОШИБКА (не должна возникать здесь, если обработка выше корректна): {http_err}")
+        return jsonify({'error': f'Ошибка связи с сервисом генерации: {str(http_err)}'}), 500
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
-        error_message_detail = str(e)
-        if hasattr(e, 'response') and e.response is not None:
-             try:
-                error_details_from_replicate = e.response.json()
-                error_message_detail = error_details_from_replicate.get("detail", str(e))
-             except ValueError: 
-                error_message_detail = e.response.text if e.response.text else str(e)
-
-        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {error_message_detail}'}), 500
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
 if __name__ == '__main__':  
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
