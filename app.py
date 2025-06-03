@@ -215,15 +215,15 @@ INDEX_HTML = """
             padding-bottom: var(--mob-spacing-unit); 
             flex-shrink: 0; 
         }
-        .action-btn img {
+        .action-btn img { /* Simplified for debugging */
             height: 45px; 
-            width: auto; 
-            max-width: 100px; 
+            /* width: auto; remove for now */
+            /* max-width: 100px; remove for now */
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
-            display: block; /* Ensure image is block for proper rendering */
-            visibility: visible; /* Ensure image is visible */
+            display: block; 
+            visibility: visible; 
         }
         .action-btn img:hover {
             transform: scale(1.05);
@@ -437,13 +437,13 @@ INDEX_HTML = """
                 display: flex;
                 justify-content: center;
             }
-            .action-btn img {
+            .action-btn img { /* Simplified for debugging */
                 height: 48px; 
-                width: auto; 
-                max-width: 150px; 
+                /* width: auto; remove for now */
+                /* max-width: 150px; remove for now */
                 object-fit: contain;
-                display: block; /* Removed !important */
-                visibility: visible; /* Removed !important */
+                display: block; 
+                visibility: visible; 
             }
 
             #result-image {
@@ -569,8 +569,7 @@ INDEX_HTML = """
                 <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.png') }}" alt="Create"></div>
                 <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/Relight.png') }}" alt="Relight"></div>
                 <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/Remove.png') }}" alt="Remove"></div>
-                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/Change.png') }}" alt="Change"></div>
-            </div>
+                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div> </div>
         </main>
 
         <footer class="app-footer">
@@ -713,7 +712,7 @@ INDEX_HTML = """
     });
     
     function handleFileSelect(file) {
-        if (file && imageFileInput) { // Added check for imageFileInput
+        if (file && imageFileInput) { 
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             imageFileInput.files = dataTransfer.files;
@@ -747,11 +746,8 @@ INDEX_HTML = """
                 handleFileSelect(event.dataTransfer.files[0]);
             }
         });
-        // Clicking still works via the label's for attribute
-        // dropZoneElement.addEventListener('click', () => imageFileInput.click()); // This can be removed if label `for` is used
     }
 
-    // Setup for both mobile and desktop drop zones
     if (mobileDropArea) setupDragAndDrop(mobileDropArea);
     if (desktopUploadLabel) setupDragAndDrop(desktopUploadLabel);
 
@@ -831,11 +827,10 @@ INDEX_HTML = """
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    // Attempt to parse more detailed error from Replicate if available
                     let errorDetail = 'Неизвестная ошибка сервера';
-                    if (data && data.error) { // General error from our backend
+                    if (data && data.error) { 
                         errorDetail = data.error;
-                    } else if (data && data.detail) { // Error structure from Replicate
+                    } else if (data && data.detail) { 
                          errorDetail = data.detail;
                     }
                     throw new Error(errorDetail);
@@ -932,7 +927,6 @@ def process_image():
     original_prompt_text = request.form['prompt']
     final_prompt_text = improve_prompt_with_openai(original_prompt_text)
     
-    # Возвращаем модель и структуру payload к версии, которая работала у пользователя изначально
     model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
 
     try:
@@ -942,7 +936,6 @@ def process_image():
         
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         _, f_ext = os.path.splitext(image_file.filename)
-        # Генерируем уникальное имя объекта для S3
         object_name = f"uploads/{uuid.uuid4()}{f_ext}" 
         
         s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': image_file.content_type})
@@ -955,7 +948,6 @@ def process_image():
             return jsonify({'error': 'Ошибка конфигурации сервера для генерации изображений.'}), 500
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-        # Возвращаем ключ "input_image" для модели black-forest-labs/flux-kontext-max
         post_payload = {
             "version": model_version_id,
             "input": {"input_image": hosted_image_url, "prompt": final_prompt_text} 
@@ -963,14 +955,13 @@ def process_image():
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         
-        # Более детальная обработка ошибок от Replicate
         if start_response.status_code >= 400:
             print(f"!!! Ошибка от Replicate при запуске предсказания: {start_response.status_code} - {start_response.text}")
             try:
                 error_data = start_response.json()
                 detail = error_data.get("detail", start_response.text)
                 return jsonify({'error': f'Ошибка API Replicate: {detail}'}), start_response.status_code
-            except ValueError: # Если ответ не JSON
+            except ValueError: 
                  return jsonify({'error': f'Ошибка API Replicate: {start_response.text}'}), start_response.status_code
 
         prediction_data = start_response.json()
@@ -1010,7 +1001,7 @@ def process_image():
             
         return jsonify({'output_url': output_url})
         
-    except requests.exceptions.HTTPError as http_err: # Эта ошибка уже обрабатывается выше при status_code >= 400
+    except requests.exceptions.HTTPError as http_err: 
         print(f"!!! HTTP ОШИБКА (не должна возникать здесь, если обработка выше корректна): {http_err}")
         return jsonify({'error': f'Ошибка связи с сервисом генерации: {str(http_err)}'}), 500
     except Exception as e:
