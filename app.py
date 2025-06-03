@@ -207,7 +207,7 @@ INDEX_HTML = """
             display: flex;
             justify-content: center; 
             align-items: center;
-            gap: 30px; /* Doubled from 15px for mobile */
+            gap: 60px; /* Doubled gap: 30px * 2 for mobile */
             flex-wrap: wrap; 
             width: 100%;
             max-width: 320px; 
@@ -427,7 +427,7 @@ INDEX_HTML = """
             .action-buttons {
                 width: auto; 
                 max-width: none; 
-                gap: 50px; /* Doubled from 25px for desktop */
+                gap: 100px; /* Doubled from 50px for desktop */
                 justify-content: center; 
                 flex-wrap: nowrap; 
                 padding-bottom: 0; 
@@ -518,8 +518,9 @@ INDEX_HTML = """
             .action-buttons {
                 margin-top: 0; 
                 padding-bottom: 0; 
-                gap: 30px; /* Doubled from 15px for mobile */
-                max-width: 320px; 
+                gap: 60px; /* Doubled from 30px for mobile */
+                max-width: 320px; /* Keep max-width to prevent overflow on small screens with large gaps */
+                /* If bubbles still wrap, consider reducing max-width or gap for very small screens */
             }
             .action-btn img {
                  height: calc(45px / 2); 
@@ -571,9 +572,7 @@ INDEX_HTML = """
 
             <div class="action-buttons">
                 <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.png') }}" alt="Create"></div>
-                <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/Relight.png') }}" alt="Relight"></div>
-                <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/Remove.png') }}" alt="Remove"></div>
-                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div>
+                <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/relight.png') }}" alt="Relight"></div> <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/remove.png') }}" alt="Remove"></div> <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div>
             </div>
         </main>
 
