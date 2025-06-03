@@ -137,13 +137,13 @@ INDEX_HTML = """
             display: flex;
         }
         
-        /* This container will hold initial text and mobile drop area */
         .initial-top-group {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: inherit;
             width: 100%;
+            flex-shrink: 0; /* Prevent this group from shrinking if app-main is space-between */
         }
 
 
@@ -198,22 +198,25 @@ INDEX_HTML = """
             z-index: 1;
         }
         
-        /* Action Buttons are now positioned at the bottom of app-main, before app-footer */
         .action-buttons { 
             display: flex;
             justify-content: center; 
             align-items: center;
             gap: 8px; 
-            flex-wrap: wrap; /* Allow wrapping on very small screens if necessary */
+            flex-wrap: wrap; 
             width: 100%;
             max-width: 320px; 
-            margin-top: auto; /* Pushes to the bottom of flex container if space allows */
-            padding-bottom: var(--mob-spacing-unit); /* Space above footer */
+            margin-top: auto; 
+            padding-bottom: var(--mob-spacing-unit); 
+            flex-shrink: 0; /* Prevent shrinking */
         }
         .action-btn img {
             height: 45px; 
+            width: auto; /* Added for aspect ratio */
+            object-fit: contain; /* Added for better SVG scaling */
             cursor: pointer;
             transition: transform 0.2s ease;
+            display: block; /* Good for images */
         }
         .action-btn img:hover {
             transform: scale(1.05);
@@ -221,9 +224,10 @@ INDEX_HTML = """
 
         .result-image-wrapper {
              justify-content: center; 
-             flex-grow: 1; /* Allow it to take space */
-             display: flex; /* Ensure it's flex for alignment */
-             align-items: center; /* Vertical centering of image */
+             flex-grow: 1; 
+             display: flex; 
+             align-items: center; 
+             width: 100%; /* Ensure it can take width */
         }
         #result-image {
             max-width: 90%; 
@@ -263,8 +267,8 @@ INDEX_HTML = """
             align-items: center;
             min-height: 200px; 
             z-index: 101;
-            flex-grow: 1; /* Allow it to take space */
-            display: flex; /* Ensure it's flex for alignment */
+            flex-grow: 1; 
+            display: flex; 
         }
         .pulsating-dot {
             width: 25px; 
@@ -415,47 +419,55 @@ INDEX_HTML = """
                  top: var(--desktop-spacing-unit);
             }
             .app-main {
-                /* Adjusted padding to accommodate action buttons within the main flow */
                 padding-top: calc(35px + var(--desktop-spacing-unit) + 15px); 
-                padding-bottom: calc(80px + var(--desktop-spacing-unit) + 48px + var(--desktop-spacing-unit)); /* Footer height + input bar height + bubbles + gap */
+                padding-bottom: calc(80px + var(--desktop-spacing-unit)); /* Adjusted for footer height */
                 gap: var(--desktop-spacing-unit);
-                justify-content: space-between; /* To space out elements including bubbles */
+                justify-content: space-between; 
             }
             
-            .initial-top-group { /* On desktop, this group will be at the top */
-                 margin-bottom: var(--desktop-spacing-unit); /* Space before action buttons */
+            .initial-top-group { 
+                 margin-bottom: 0; /* Let app-main gap handle spacing */
+                 flex-grow: 1; /* Allow this to take available space if result is not shown */
+                 justify-content: center; /* Center its content if it grows */
             }
 
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img {
                 display: block;
-                max-width: 650px; 
-                height: auto; 
-                max-height: 60vh; /* Changed to 60vh */
+                max-width: 700px; /* Allow it to be wider if aspect ratio dictates */
+                width: auto; 
+                max-height: 60vh; /* User request */
                 object-fit: contain; 
-                /* margin-bottom is removed, gap from parent .initial-top-group or .app-main will handle spacing */
             }
 
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
-                max-width: 700px; /* Match input area width */
-                gap: 15px; 
-                justify-content: space-around; /* Distribute bubbles to fill width */
-                padding-bottom: 0; /* No extra padding at bottom, handled by app-main gap */
-                margin-top: 0; /* Reset margin-top, rely on app-main gap or parent */
-                /* Order: Should be after result image or initial text, before footer (conceptually) */
-                /* In the new structure, it's a direct child of app-main */
+                max-width: 700px; 
+                gap: 20px; /* Increased gap for better spacing with space-around */
+                justify-content: space-around; 
+                flex-wrap: nowrap; /* Ensure they stay on one line */
+                padding-bottom: 0; 
+                margin-top: var(--desktop-spacing-unit); /* Add some space above bubbles if initial content is short */
+                width: 100%; /* Ensure it tries to take up the 700px width */
+            }
+            .action-btn { /* Added to help with flex distribution */
+                flex-basis: 0; /* Allow items to grow based on content but start from 0 */
+                flex-grow: 1; /* Allow items to grow to fill space */
+                display: flex;
+                justify-content: center;
             }
             .action-btn img {
                 height: 48px; 
+                width: auto;
+                object-fit: contain;
             }
 
             #result-image {
-                max-height: 65vh; /* Allow slightly taller result image on desktop */
+                max-height: 65vh; 
             }
              #result-image.result-aspect-landscape { 
-                max-width: min(700px, 90%); /* Max width can be wider, up to action button line */
+                max-width: min(700px, 90%); 
             }
 
             .app-footer {
@@ -506,7 +518,6 @@ INDEX_HTML = """
                  font-size: 1rem;
             }
         }
-         /* Mobile specific layout for initial view using space-between for app-main children */
         @media (max-width: 768px) {
             .app-container-wrapper {
                  background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}");
@@ -514,14 +525,18 @@ INDEX_HTML = """
             .app-main {
                 justify-content: space-between; 
                 min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (70px + var(--mob-spacing-unit)) - (2 * var(--mob-spacing-unit)) );
-                padding-bottom: calc(70px + var(--mob-spacing-unit)); /* Original padding bottom for mobile */
+                padding-bottom: calc(70px + var(--mob-spacing-unit)); 
             }
-             .initial-top-group { /* On mobile, this group + action buttons are spaced by app-main */
+             .initial-top-group { 
                   gap: var(--mob-spacing-unit); 
+                  margin-bottom: 0; /* Reset for mobile */
+                  flex-grow: 0; /* Reset for mobile */
             }
             .action-buttons {
-                margin-top: 0; /* No extra top margin, space-between from app-main */
-                padding-bottom: 0; /* No extra bottom padding */
+                margin-top: 0; 
+                padding-bottom: 0; 
+                gap: 8px; /* Mobile gap */
+                max-width: 320px; /* Mobile max width */
             }
             .result-image-wrapper.active {
                 flex-grow: 1; 
@@ -613,7 +628,6 @@ INDEX_HTML = """
     const magicButtonIconImg = document.getElementById('magic-button-icon-img');
     const submitButtonTextContent = document.getElementById('submit-button-text-content');
 
-    // Changed initialContent to initialTopGroup to reflect new HTML structure
     const initialTopGroup = document.querySelector('.initial-top-group'); 
     const resultImageWrapper = document.querySelector('.result-image-wrapper');
     const resultImage = document.getElementById('result-image');
@@ -632,26 +646,29 @@ INDEX_HTML = """
     }
 
     function showError(message) {
-        errorBox.textContent = message;
-        errorBox.style.display = 'block';
-        setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
+        if(errorBox) {
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+            setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
+        } else {
+            console.error("Error box not found for message:", message);
+        }
     }
 
     function updateView(viewName) {
         currentView = viewName;
         
-        appBgWrapper.classList.remove('bg-blur');
-        // Hide all main sections by default
+        if(appBgWrapper) appBgWrapper.classList.remove('bg-blur');
+        
         if (initialTopGroup) initialTopGroup.style.display = 'none';
         if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         if (loaderContainer) loaderContainer.style.display = 'none';
         
-        // Action buttons are generally visible unless loading
         if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
 
 
-        if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; // Hide by default
-        if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; // Hide by default
+        if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
+        if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; 
         if (mobileDropArea) mobileDropArea.style.display = 'none'; 
         if (downloadLink) downloadLink.style.display = 'none';
 
@@ -660,7 +677,7 @@ INDEX_HTML = """
             if (initialTopGroup) initialTopGroup.style.display = 'flex';
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
-            } else { // Mobile
+            } else { 
                 if (mobileMainTextImg) mobileMainTextImg.style.display = 'block';
                 if (mobileDropArea) mobileDropArea.style.display = 'flex';
             }
@@ -672,8 +689,7 @@ INDEX_HTML = """
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
-            if (actionButtonsContainer) actionButtonsContainer.style.display = 'none'; // Hide bubbles during loading
-            // Ensure other content is hidden
+            if (actionButtonsContainer) actionButtonsContainer.style.display = 'none'; 
             if (initialTopGroup) initialTopGroup.style.display = 'none';
             if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         } else if (viewName === 'result') {
@@ -770,16 +786,16 @@ INDEX_HTML = """
                 return;
             }
 
-            if (!imageFileInput.files || imageFileInput.files.length === 0) {
+            if (!imageFileInput || !imageFileInput.files || imageFileInput.files.length === 0) {
                 showError("Пожалуйста, выберите файл для загрузки.");
                 return;
             }
-            if (!promptInput.value.trim()) {
+            if (!promptInput || !promptInput.value.trim()) {
                 showError("Пожалуйста, введите текстовый промпт.");
                 return;
             }
 
-            submitButton.disabled = true;
+            if(submitButton) submitButton.disabled = true;
             if (errorBox) errorBox.style.display = 'none';
             updateView('loading');
 
@@ -846,8 +862,6 @@ INDEX_HTML = """
         });
     }
 
-
-    // Initial call to set up the view
     updateView('initial');
     </script>
 </body>
