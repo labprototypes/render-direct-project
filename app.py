@@ -207,7 +207,7 @@ INDEX_HTML = """
             display: flex;
             justify-content: center; 
             align-items: center;
-            gap: 60px; /* Doubled gap: 30px * 2 for mobile */
+            gap: 30px; /* Reduced from 60px (was doubled) */
             flex-wrap: wrap; 
             width: 100%;
             max-width: 320px; 
@@ -427,7 +427,7 @@ INDEX_HTML = """
             .action-buttons {
                 width: auto; 
                 max-width: none; 
-                gap: 100px; /* Doubled from 50px for desktop */
+                gap: 50px; /* Reduced from 100px (was doubled) */
                 justify-content: center; 
                 flex-wrap: nowrap; 
                 padding-bottom: 0; 
@@ -518,9 +518,8 @@ INDEX_HTML = """
             .action-buttons {
                 margin-top: 0; 
                 padding-bottom: 0; 
-                gap: 60px; /* Doubled from 30px for mobile */
-                max-width: 320px; /* Keep max-width to prevent overflow on small screens with large gaps */
-                /* If bubbles still wrap, consider reducing max-width or gap for very small screens */
+                gap: 30px; /* Reduced from 60px (was doubled) */
+                max-width: 320px; 
             }
             .action-btn img {
                  height: calc(45px / 2); 
@@ -572,7 +571,9 @@ INDEX_HTML = """
 
             <div class="action-buttons">
                 <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.png') }}" alt="Create"></div>
-                <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/relight.png') }}" alt="Relight"></div> <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/remove.png') }}" alt="Remove"></div> <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div>
+                <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/relight.png') }}" alt="Relight"></div>
+                <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/remove.png') }}" alt="Remove"></div>
+                <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div>
             </div>
         </main>
 
@@ -868,10 +869,15 @@ INDEX_HTML = """
         button.addEventListener('click', (e) => {
             const action = e.currentTarget.dataset.action;
             let prefillText = "";
-            if (action === "create") prefillText = "Create ";
-            else if (action === "relight") prefillText = "Relight the image to ";
-            else if (action === "remove") prefillText = "Remove ";
-            else if (action === "change") prefillText = "Change to ";
+            if (action === "create") {
+                prefillText = "Based on a [object] from the image create [describe the scene]";
+            } else if (action === "relight") {
+                prefillText = "Relight [object or scene] and make it [describe the light]";
+            } else if (action === "remove") {
+                prefillText = "Remove [object] from the image";
+            } else if (action === "change") {
+                prefillText = "Change the [object you want to be changed] to the [object you want to be added]";
+            }
             
             if(promptInput) {
                 promptInput.value = prefillText;
