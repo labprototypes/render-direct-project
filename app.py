@@ -46,9 +46,9 @@ INDEX_HTML = """
             --blur-intensity: 8px;
             --mob-spacing-unit: 20px;
             --desktop-spacing-unit: 30px;
-            --download-icon-size: 28px; /* Размер иконки скачивания */
-            --footer-height: 70px; /* Approximate height of the footer */
-            --action-buttons-height: 60px; /* Approximate height of the action buttons row */
+            --download-icon-size: 28px; 
+            --footer-height: 70px; 
+            --action-buttons-height: 60px; 
         }
 
         * {
@@ -124,7 +124,7 @@ INDEX_HTML = """
             justify-content: flex-start; 
             flex-grow: 1;
             padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
-            padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); /* Increased bottom padding */
+            padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); 
             gap: var(--mob-spacing-unit); 
             text-align: center;
         }
@@ -163,7 +163,8 @@ INDEX_HTML = """
         .image-drop-area-mobile {
             width: 80%;
             max-width: 280px; 
-            aspect-ratio: 300 / 350; 
+            /* aspect-ratio: 300 / 350; Removed aspect ratio */
+            height: 165px; /* Height reduced by half (approx from 326px) */
             background-color: transparent; 
             border-radius: 25px; 
             display: flex;
@@ -178,12 +179,14 @@ INDEX_HTML = """
             border-color: var(--text-accent-color);
             background-color: rgba(217, 244, 122, 0.1);
         }
-        .image-drop-area-mobile .mob-drop-placeholder-img {
-            width: 100%;
-            height: 100%;
+        .image-drop-area-mobile .mob-drop-placeholder-img { /* This will now hold JDTI.png */
+            width: auto; /* Adjust to let JDTI.png define its size */
+            max-width: 90%; /* Prevent it from being too wide */
+            max-height: 80%; /* Prevent it from being too tall within the drop area */
+            height: auto; 
             object-fit: contain; 
-            position: absolute; 
-            top: 0; left: 0;
+            /* position: absolute; Removed, let flex center it */
+            /* top: 0; left: 0; */
         }
          .image-drop-area-mobile::before { 
             content: "";
@@ -210,24 +213,23 @@ INDEX_HTML = """
             display: flex;
             justify-content: center; 
             align-items: center;
-            gap: 30px; 
-            flex-wrap: wrap; 
+            gap: 10px; /* Reduced gap for mobile */
+            flex-wrap: nowrap; /* Ensure single line */
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
-            max-width: 500px; 
+            max-width: 320px; /* Might need slight adjustment based on final bubble size */
             padding: 10px 0; 
             
             position: fixed; 
-            bottom: calc(var(--footer-height) + var(--mob-spacing-unit) + 15px); /* Increased bottom offset */
+            bottom: calc(var(--footer-height) + var(--mob-spacing-unit) + 15px); 
             left: 50%;
             transform: translateX(-50%);
             z-index: 99; 
-            /* Removed background and backdrop-filter */
             border-radius: 20px; 
         }
         .action-btn img { 
-            height: calc(45px / 2); 
+            height: 22px; /* Reduced size for mobile */
             width: auto; 
-            max-width: 80px; 
+            max-width: 70px; /* Adjusted max-width */
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
@@ -388,7 +390,7 @@ INDEX_HTML = """
             padding: 10px 15px;
             border-radius: 8px;
             position: fixed;
-            bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); /* Adjusted for increased padding-bottom of app-main */
+            bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); 
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
@@ -417,7 +419,7 @@ INDEX_HTML = """
             }
             .app-main {
                 padding-top: calc(35px + var(--desktop-spacing-unit) + 15px); 
-                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--desktop-spacing-unit) * 3); /* Increased bottom padding */
+                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--desktop-spacing-unit) * 3); 
                 gap: var(--desktop-spacing-unit);
                 justify-content: space-between; 
             }
@@ -440,11 +442,15 @@ INDEX_HTML = """
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
+                width: auto; 
+                max-width: none; 
                 gap: 50px; 
-                margin-top: 0; 
-                bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) + 15px); /* Increased bottom offset */
+                justify-content: center; 
+                flex-wrap: nowrap; 
+                padding-bottom: 0; 
+                margin-top: 0; /* Removed margin-top as it's fixed */
+                bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) + 15px); 
                 max-width: 700px; 
-                /* Removed background and backdrop-filter */
             }
             .action-btn { 
                 display: flex;
@@ -519,44 +525,10 @@ INDEX_HTML = """
             }
         }
         @media (max-width: 768px) {
-            .app-container-wrapper {
-                 background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}");
-            }
+            /* Mobile specific styles for action buttons and drop area are now primary */
             .app-main {
-                justify-content: space-between; 
-                min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3) );
-                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); /* Increased bottom padding */
+                 padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2 + 10px); /* ensure enough space for fixed elements */
             }
-             .initial-top-group { 
-                  gap: var(--mob-spacing-unit); 
-                  margin-bottom: 0; 
-                  flex-grow: 0; 
-            }
-            .action-buttons {
-                margin-top: 0; 
-                padding-bottom: 0; 
-                gap: 30px; 
-                max-width: calc(100% - 40px); 
-                bottom: calc(var(--footer-height) + var(--mob-spacing-unit) + 10px); /* Adjusted for more space */
-                padding: 5px 0;
-                /* Removed background and backdrop-filter */
-            }
-            .action-btn img {
-                 height: calc(45px / 2); 
-                 max-width: 80px; 
-            }
-            .result-image-wrapper.active {
-                flex-grow: 1; 
-                display: flex;
-                align-items: center; 
-                justify-content: center; 
-            }
-             #result-image.result-aspect-landscape {
-                max-width: calc(100% - 20px); 
-                width: auto; 
-                max-height: 35vh; 
-            }
-
         }
     </style>
 </head>
@@ -573,7 +545,7 @@ INDEX_HTML = """
                 <img src="{{ url_for('static', filename='images/MOB_MAIN.svg') }}" alt="Change Everything" class="main-text-display-img mobile-main-text-img">
 
                 <label for="image-file-common" class="image-drop-area-mobile">
-                    <img src="{{ url_for('static', filename='images/MOB_DROP.png') }}" alt="Just drop the image" class="mob-drop-placeholder-img">
+                    <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="mob-drop-placeholder-img">
                     <img id="image-preview-mobile" src="#" alt="Preview" class="image-preview-mobile-img">
                 </label>
             </div>
@@ -631,7 +603,7 @@ INDEX_HTML = """
 
     const editForm = document.getElementById('edit-form');
     const promptInput = document.getElementById('prompt');
-    const inputArea = document.querySelector('.input-area'); // Get the input area for drag-drop
+    const inputArea = document.querySelector('.input-area'); 
     const submitButton = document.getElementById('submit-button');
     const magicButtonIconImg = document.getElementById('magic-button-icon-img');
     const submitButtonTextContent = document.getElementById('submit-button-text-content');
@@ -673,7 +645,6 @@ INDEX_HTML = """
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
-        // Action buttons are now fixed, their display is managed based on view
         if (actionButtonsContainer) {
             if (viewName === 'loading') {
                 actionButtonsContainer.style.display = 'none';
@@ -690,7 +661,6 @@ INDEX_HTML = """
 
         if (viewName === 'initial') {
             if (initialTopGroup) initialTopGroup.style.display = 'flex';
-            // actionButtonsContainer display is handled above
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
             } else { 
@@ -705,13 +675,11 @@ INDEX_HTML = """
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
-            // actionButtonsContainer display is handled above
             if (initialTopGroup) initialTopGroup.style.display = 'none';
             if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         } else if (viewName === 'result') {
             if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex'; 
             if (downloadLink) downloadLink.style.display = 'block'; 
-            // actionButtonsContainer display is handled above
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
 
             if (!isDesktopView()) { 
@@ -779,7 +747,6 @@ INDEX_HTML = """
             
             if (event.dataTransfer.files && event.dataTransfer.files[0]) {
                 handleFileSelect(event.dataTransfer.files[0]);
-                 // If dropping on prompt area, also show desktop preview if applicable
                 if (isPromptArea && isDesktopView()) {
                     if (desktopImagePreviewImg && desktopUploadIconImg) {
                         const reader = new FileReader();
