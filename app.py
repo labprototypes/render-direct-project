@@ -56,7 +56,7 @@ INDEX_HTML = """
 
         body {
             font-family: 'ChangerFont', sans-serif;
-            color: var(--text-accent-color); /* Default text color, though most elements will override */
+            color: var(--text-accent-color);
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -65,14 +65,10 @@ INDEX_HTML = """
             flex-direction: column;
             min-height: 100vh;
             overflow-x: hidden;
-            transition: filter 0.4s ease-in-out; /* Smoother blur transition */
-        }
-        body.bg-blur {
-            /* Filter applied by JS to the body for background blur */
-            /* The actual background image is on .app-container to allow content to be unblurred */
+            transition: filter 0.4s ease-in-out;
         }
         
-        .app-container-wrapper { /* New wrapper for background image */
+        .app-container-wrapper {
             position: fixed;
             top: 0;
             left: 0;
@@ -81,13 +77,12 @@ INDEX_HTML = """
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
-            z-index: -1; /* Behind all content */
+            z-index: -1;
             transition: filter 0.4s ease-in-out;
         }
         .app-container-wrapper.bg-blur {
              filter: blur(var(--blur-intensity));
         }
-
 
         .app-container {
             width: 100%;
@@ -99,12 +94,12 @@ INDEX_HTML = """
             align-items: center;
             flex-grow: 1;
             position: relative;
-            z-index: 1; /* Above background wrapper */
+            z-index: 1;
         }
 
         .app-header {
             width: 100%;
-            padding-top: 10px; /* Reduced top padding */
+            padding-top: 10px;
             text-align: center;
             position: absolute;
             top: var(--mob-spacing-unit);
@@ -114,7 +109,7 @@ INDEX_HTML = """
         }
 
         .logo {
-            height: 30px; /* Mobile logo height from brief */
+            height: 30px; 
             cursor: pointer;
         }
 
@@ -123,41 +118,51 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Changed for mobile layout */
+            justify-content: flex-start; 
             flex-grow: 1;
-            padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); /* logo height + header top + header padding + safety */
-            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit)); /* Space for footer + extra */
-            gap: var(--mob-spacing-unit); /* Vertical spacing for mobile */
+            padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
+            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + 48px + var(--mob-spacing-unit)); /* Added space for action buttons */
+            gap: var(--mob-spacing-unit); 
             text-align: center;
         }
         
         .initial-content, .result-image-wrapper, .loader-container {
-            display: none; /* Controlled by JS */
+            display: none; 
             flex-direction: column;
             align-items: center;
-            gap: inherit; /* Inherit gap from app-main */
+            gap: inherit; 
             width: 100%;
         }
         .initial-content.active, .result-image-wrapper.active, .loader-container.active {
             display: flex;
         }
+        
+        /* This container will hold initial text and mobile drop area */
+        .initial-top-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: inherit;
+            width: 100%;
+        }
 
-        .main-text-display-img { /* MOB_MAIN.svg or DESK_MAIN.png */
+
+        .main-text-display-img {
             width: auto; 
-            max-width: 90%; /* Adjusted for better fit */
+            max-width: 90%; 
             height: auto;
-            object-fit: contain; /* Ensure the image scales down nicely if it's too wide for its height */
+            object-fit: contain; 
         }
         .desktop-main-text-img { display: none; }
         .mobile-main-text-img { display: block; max-height: 20vh; }
 
 
-        .image-drop-area-mobile { /* Label for mobile */
+        .image-drop-area-mobile {
             width: 80%;
-            max-width: 280px; /* Adjusted for MOB_DROP.png visual */
-            aspect-ratio: 300 / 350; /* Maintain if MOB_DROP.png is this ratio */
+            max-width: 280px; 
+            aspect-ratio: 300 / 350; 
             background-color: transparent; 
-            border-radius: 25px; /* From preview */
+            border-radius: 25px; 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -168,7 +173,7 @@ INDEX_HTML = """
         .image-drop-area-mobile .mob-drop-placeholder-img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Show full MOB_DROP.png */
+            object-fit: contain; 
             position: absolute; 
             top: 0; left: 0;
         }
@@ -192,15 +197,18 @@ INDEX_HTML = """
             position: relative; 
             z-index: 1;
         }
-
+        
+        /* Action Buttons are now positioned at the bottom of app-main, before app-footer */
         .action-buttons { 
             display: flex;
             justify-content: center; 
             align-items: center;
             gap: 8px; 
-            flex-wrap: wrap;
+            flex-wrap: wrap; /* Allow wrapping on very small screens if necessary */
             width: 100%;
             max-width: 320px; 
+            margin-top: auto; /* Pushes to the bottom of flex container if space allows */
+            padding-bottom: var(--mob-spacing-unit); /* Space above footer */
         }
         .action-btn img {
             height: 45px; 
@@ -213,6 +221,9 @@ INDEX_HTML = """
 
         .result-image-wrapper {
              justify-content: center; 
+             flex-grow: 1; /* Allow it to take space */
+             display: flex; /* Ensure it's flex for alignment */
+             align-items: center; /* Vertical centering of image */
         }
         #result-image {
             max-width: 90%; 
@@ -252,6 +263,8 @@ INDEX_HTML = """
             align-items: center;
             min-height: 200px; 
             z-index: 101;
+            flex-grow: 1; /* Allow it to take space */
+            display: flex; /* Ensure it's flex for alignment */
         }
         .pulsating-dot {
             width: 25px; 
@@ -402,37 +415,47 @@ INDEX_HTML = """
                  top: var(--desktop-spacing-unit);
             }
             .app-main {
-                padding-top: calc(35px + var(--desktop-spacing-unit) + 15px + var(--desktop-spacing-unit));
-                padding-bottom: calc(100px + var(--desktop-spacing-unit)); 
+                /* Adjusted padding to accommodate action buttons within the main flow */
+                padding-top: calc(35px + var(--desktop-spacing-unit) + 15px); 
+                padding-bottom: calc(80px + var(--desktop-spacing-unit) + 48px + var(--desktop-spacing-unit)); /* Footer height + input bar height + bubbles + gap */
                 gap: var(--desktop-spacing-unit);
-                justify-content: center; 
+                justify-content: space-between; /* To space out elements including bubbles */
+            }
+            
+            .initial-top-group { /* On desktop, this group will be at the top */
+                 margin-bottom: var(--desktop-spacing-unit); /* Space before action buttons */
             }
 
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img {
                 display: block;
                 max-width: 650px; 
-                height: auto; /* Let max-height control the height primarily */
-                max-height: 35vh; /* Added to control vertical size */
-                object-fit: contain; /* Ensures the image scales down nicely */
-                margin-bottom: var(--desktop-spacing-unit); 
+                height: auto; 
+                max-height: 60vh; /* Changed to 60vh */
+                object-fit: contain; 
+                /* margin-bottom is removed, gap from parent .initial-top-group or .app-main will handle spacing */
             }
 
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
-                max-width: 520px; 
+                max-width: 700px; /* Match input area width */
                 gap: 15px; 
+                justify-content: space-around; /* Distribute bubbles to fill width */
+                padding-bottom: 0; /* No extra padding at bottom, handled by app-main gap */
+                margin-top: 0; /* Reset margin-top, rely on app-main gap or parent */
+                /* Order: Should be after result image or initial text, before footer (conceptually) */
+                /* In the new structure, it's a direct child of app-main */
             }
             .action-btn img {
                 height: 48px; 
             }
 
             #result-image {
-                max-height: 60vh; 
+                max-height: 65vh; /* Allow slightly taller result image on desktop */
             }
              #result-image.result-aspect-landscape { 
-                max-width: min(600px, 90%); 
+                max-width: min(700px, 90%); /* Max width can be wider, up to action button line */
             }
 
             .app-footer {
@@ -491,9 +514,14 @@ INDEX_HTML = """
             .app-main {
                 justify-content: space-between; 
                 min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (70px + var(--mob-spacing-unit)) - (2 * var(--mob-spacing-unit)) );
+                padding-bottom: calc(70px + var(--mob-spacing-unit)); /* Original padding bottom for mobile */
             }
-             .initial-content.active {
-                gap: var(--mob-spacing-unit); 
+             .initial-top-group { /* On mobile, this group + action buttons are spaced by app-main */
+                  gap: var(--mob-spacing-unit); 
+            }
+            .action-buttons {
+                margin-top: 0; /* No extra top margin, space-between from app-main */
+                padding-bottom: 0; /* No extra bottom padding */
             }
             .result-image-wrapper.active {
                 flex-grow: 1; 
@@ -514,11 +542,11 @@ INDEX_HTML = """
     <div class="app-container-wrapper" id="app-bg-wrapper"></div>
     <div class="app-container">
         <header class="app-header">
-            <img src="{{ url_for('static', filename='images/change.svg') }}" alt="Changer Logo" class="logo">
+            <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
         </header>
 
         <main class="app-main">
-            <div class="initial-content">
+            <div class="initial-top-group">
                 <img src="{{ url_for('static', filename='images/DESK_MAIN.png') }}" alt="Change Everything" class="main-text-display-img desktop-main-text-img">
                 <img src="{{ url_for('static', filename='images/MOB_MAIN.svg') }}" alt="Change Everything" class="main-text-display-img mobile-main-text-img">
 
@@ -585,7 +613,8 @@ INDEX_HTML = """
     const magicButtonIconImg = document.getElementById('magic-button-icon-img');
     const submitButtonTextContent = document.getElementById('submit-button-text-content');
 
-    const initialContent = document.querySelector('.initial-content');
+    // Changed initialContent to initialTopGroup to reflect new HTML structure
+    const initialTopGroup = document.querySelector('.initial-top-group'); 
     const resultImageWrapper = document.querySelector('.result-image-wrapper');
     const resultImage = document.getElementById('result-image');
     const downloadLink = document.getElementById('download-action');
@@ -612,58 +641,61 @@ INDEX_HTML = """
         currentView = viewName;
         
         appBgWrapper.classList.remove('bg-blur');
-        initialContent.classList.remove('active');
-        resultImageWrapper.classList.remove('active');
-        loaderContainer.classList.remove('active');
+        // Hide all main sections by default
+        if (initialTopGroup) initialTopGroup.style.display = 'none';
+        if (resultImageWrapper) resultImageWrapper.style.display = 'none';
+        if (loaderContainer) loaderContainer.style.display = 'none';
         
-        if (mobileMainTextImg) mobileMainTextImg.style.display = 'none';
-        if (desktopMainTextImg) desktopMainTextImg.style.display = 'none';
+        // Action buttons are generally visible unless loading
+        if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
+
+
+        if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; // Hide by default
+        if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; // Hide by default
         if (mobileDropArea) mobileDropArea.style.display = 'none'; 
-        downloadLink.style.display = 'none';
-        actionButtonsContainer.style.display = 'flex'; 
+        if (downloadLink) downloadLink.style.display = 'none';
+
 
         if (viewName === 'initial') {
-            initialContent.classList.add('active');
+            if (initialTopGroup) initialTopGroup.style.display = 'flex';
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
-            } else {
+            } else { // Mobile
                 if (mobileMainTextImg) mobileMainTextImg.style.display = 'block';
                 if (mobileDropArea) mobileDropArea.style.display = 'flex';
             }
-            magicButtonIconImg.style.display = 'block';
-            submitButtonTextContent.style.display = 'none';
-            submitButton.dataset.action = "generate";
-            promptInput.value = ''; 
+            if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
+            if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
+            if (submitButton) submitButton.dataset.action = "generate";
+            if (promptInput) promptInput.value = ''; 
             resetImagePreviews();
         } else if (viewName === 'loading') {
-            loaderContainer.classList.add('active');
-            appBgWrapper.classList.add('bg-blur'); 
-             if (!isDesktopView()) {
-                if (mobileMainTextImg) mobileMainTextImg.style.display = 'none';
-                if (mobileDropArea) mobileDropArea.style.display = 'none';
-            } else {
-                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'none';
-            }
+            if (loaderContainer) loaderContainer.style.display = 'flex';
+            if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
+            if (actionButtonsContainer) actionButtonsContainer.style.display = 'none'; // Hide bubbles during loading
+            // Ensure other content is hidden
+            if (initialTopGroup) initialTopGroup.style.display = 'none';
+            if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         } else if (viewName === 'result') {
-            resultImageWrapper.classList.add('active');
-            appBgWrapper.classList.add('bg-blur'); 
-            downloadLink.style.display = 'block'; 
+            if (resultImageWrapper) resultImageWrapper.style.display = 'flex';
+            if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
+            if (downloadLink) downloadLink.style.display = 'block'; 
 
             if (!isDesktopView()) { 
-                magicButtonIconImg.style.display = 'none';
-                submitButtonTextContent.style.display = 'block';
-                submitButton.dataset.action = "startover";
+                if (magicButtonIconImg) magicButtonIconImg.style.display = 'none';
+                if (submitButtonTextContent) submitButtonTextContent.style.display = 'block';
+                if (submitButton) submitButton.dataset.action = "startover";
             } else { 
-                magicButtonIconImg.style.display = 'block';
-                submitButtonTextContent.style.display = 'none';
-                submitButton.dataset.action = "generate"; 
+                if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
+                if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
+                if (submitButton) submitButton.dataset.action = "generate"; 
             }
         }
         adjustLayoutForResultImage();
     }
     
     function adjustLayoutForResultImage() {
-        if (currentView === 'result' && resultImage.src && resultImage.src !== window.location.href + "#") {
+        if (currentView === 'result' && resultImage && resultImage.src && resultImage.src !== window.location.href + "#") {
             const img = new Image();
             img.onload = () => {
                 resultImage.classList.remove('result-aspect-portrait', 'result-aspect-landscape');
@@ -688,29 +720,32 @@ INDEX_HTML = """
         desktopUploadLabel.addEventListener('click', () => imageFileInput.click());
     }
 
-    imageFileInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                if (isDesktopView()) {
-                    if (desktopImagePreviewImg) {
-                        desktopImagePreviewImg.src = e.target.result;
-                        desktopImagePreviewImg.style.display = 'block';
-                    }
-                    if (desktopUploadIconImg) desktopUploadIconImg.style.display = 'none';
-                } else { 
-                    if (mobileImagePreviewImg) {
-                        mobileImagePreviewImg.src = e.target.result;
-                        mobileImagePreviewImg.style.display = 'block';
-                        if(mobileDropPlaceholderImg) mobileDropPlaceholderImg.style.display = 'none';
+    if (imageFileInput) {
+        imageFileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (isDesktopView()) {
+                        if (desktopImagePreviewImg) {
+                            desktopImagePreviewImg.src = e.target.result;
+                            desktopImagePreviewImg.style.display = 'block';
+                        }
+                        if (desktopUploadIconImg) desktopUploadIconImg.style.display = 'none';
+                    } else { 
+                        if (mobileImagePreviewImg) {
+                            mobileImagePreviewImg.src = e.target.result;
+                            mobileImagePreviewImg.style.display = 'block';
+                            if(mobileDropPlaceholderImg) mobileDropPlaceholderImg.style.display = 'none';
+                        }
                     }
                 }
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                resetImagePreviews();
             }
-            reader.readAsDataURL(this.files[0]);
-        } else {
-            resetImagePreviews();
-        }
-    });
+        });
+    }
+
 
     function resetImagePreviews() {
         if (mobileImagePreviewImg && mobileDropPlaceholderImg) {
@@ -723,65 +758,68 @@ INDEX_HTML = """
             desktopImagePreviewImg.style.display = 'none';
             desktopUploadIconImg.style.display = 'block';
         }
-        imageFileInput.value = ''; 
+        if (imageFileInput) imageFileInput.value = ''; 
     }
 
-    editForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        
-        if (submitButton.dataset.action === "startover") {
-            updateView('initial');
-            return;
-        }
-
-        if (!imageFileInput.files || imageFileInput.files.length === 0) {
-            showError("Пожалуйста, выберите файл для загрузки.");
-            return;
-        }
-        if (!promptInput.value.trim()) {
-            showError("Пожалуйста, введите текстовый промпт.");
-            return;
-        }
-
-        submitButton.disabled = true;
-        errorBox.style.display = 'none';
-        updateView('loading');
-
-        const formData = new FormData();
-        formData.append('image', imageFileInput.files[0]);
-        formData.append('prompt', promptInput.value);
-        
-        try {
-            const response = await fetch("{{ url_for('process_image') }}", {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
+    if (editForm) {
+        editForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
             
-            if (!response.ok) {
-                throw new Error(data.error || 'Неизвестная ошибка сервера');
+            if (submitButton.dataset.action === "startover") {
+                updateView('initial');
+                return;
             }
 
-            resultImage.src = data.output_url;
-            downloadLink.href = data.output_url;
-            const tempImg = new Image();
-            tempImg.onload = () => {
-                updateView('result');
-            };
-            tempImg.onerror = () => { 
-                showError("Не удалось загрузить сгенерированное изображение.");
-                updateView('initial');
-            };
-            tempImg.src = data.output_url;
+            if (!imageFileInput.files || imageFileInput.files.length === 0) {
+                showError("Пожалуйста, выберите файл для загрузки.");
+                return;
+            }
+            if (!promptInput.value.trim()) {
+                showError("Пожалуйста, введите текстовый промпт.");
+                return;
+            }
+
+            submitButton.disabled = true;
+            if (errorBox) errorBox.style.display = 'none';
+            updateView('loading');
+
+            const formData = new FormData();
+            formData.append('image', imageFileInput.files[0]);
+            formData.append('prompt', promptInput.value);
             
-        } catch (error) {
-            console.error('Ошибка:', error);
-            showError("Произошла ошибка: " + error.message);
-            updateView('initial'); 
-        } finally {
-            submitButton.disabled = false;
-        }
-    });
+            try {
+                const response = await fetch("{{ url_for('process_image') }}", {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Неизвестная ошибка сервера');
+                }
+
+                if(resultImage) resultImage.src = data.output_url;
+                if(downloadLink) downloadLink.href = data.output_url;
+                
+                const tempImg = new Image();
+                tempImg.onload = () => {
+                    updateView('result');
+                };
+                tempImg.onerror = () => { 
+                    showError("Не удалось загрузить сгенерированное изображение.");
+                    updateView('initial');
+                };
+                tempImg.src = data.output_url;
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showError("Произошла ошибка: " + error.message);
+                updateView('initial'); 
+            } finally {
+                if(submitButton) submitButton.disabled = false;
+            }
+        });
+    }
 
     document.querySelectorAll('.action-btn').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -792,17 +830,24 @@ INDEX_HTML = """
             else if (action === "remove") prefillText = "Remove ";
             else if (action === "change") prefillText = "Change to ";
             
-            promptInput.value = prefillText;
-            promptInput.focus();
+            if(promptInput) {
+                promptInput.value = prefillText;
+                promptInput.focus();
+            }
         });
     });
     
-    document.querySelector('.logo').addEventListener('click', () => {
-        if (currentView !== 'loading') { 
-             updateView('initial');
-        }
-    });
+    const logoElement = document.querySelector('.logo');
+    if (logoElement) {
+        logoElement.addEventListener('click', () => {
+            if (currentView !== 'loading') { 
+                 updateView('initial');
+            }
+        });
+    }
 
+
+    // Initial call to set up the view
     updateView('initial');
     </script>
 </body>
