@@ -146,6 +146,7 @@ INDEX_HTML = """
             width: auto; 
             max-width: 90%; /* Adjusted for better fit */
             height: auto;
+            object-fit: contain; /* Ensure the image scales down nicely if it's too wide for its height */
         }
         .desktop-main-text-img { display: none; }
         .mobile-main-text-img { display: block; max-height: 20vh; }
@@ -156,9 +157,6 @@ INDEX_HTML = """
             max-width: 280px; /* Adjusted for MOB_DROP.png visual */
             aspect-ratio: 300 / 350; /* Maintain if MOB_DROP.png is this ratio */
             background-color: transparent; 
-            /* Backdrop blur for the area BEHIND MOB_DROP.png */
-            /* This means the .app-container-wrapper needs to be the one blurred, not the body directly */
-            /* For simplicity, we'll assume MOB_DROP.png itself has some transparency and the main background gets blurred */
             border-radius: 25px; /* From preview */
             display: flex;
             justify-content: center;
@@ -166,23 +164,22 @@ INDEX_HTML = """
             cursor: pointer;
             position: relative;
             overflow: hidden; 
-            /* The MOB_DROP.png itself is the visual, including its semi-transparent parts */
         }
         .image-drop-area-mobile .mob-drop-placeholder-img {
             width: 100%;
             height: 100%;
             object-fit: contain; /* Show full MOB_DROP.png */
-            position: absolute; /* To allow backdrop-filter on parent if needed */
+            position: absolute; 
             top: 0; left: 0;
         }
-         .image-drop-area-mobile::before { /* For the slight blur behind MOB_DROP.png */
+         .image-drop-area-mobile::before { 
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(248, 248, 248, 0.1); /* Slight tint if needed */
-            backdrop-filter: blur(4px); /* Blur effect */
+            background-color: rgba(248, 248, 248, 0.1); 
+            backdrop-filter: blur(4px); 
             -webkit-backdrop-filter: blur(4px);
-            z-index: -1; /* Behind the placeholder image */
+            z-index: -1; 
             border-radius: inherit;
         }
 
@@ -192,21 +189,21 @@ INDEX_HTML = """
             height: 100%;
             object-fit: cover;
             border-radius: inherit; 
-            position: relative; /* To be above ::before */
+            position: relative; 
             z-index: 1;
         }
 
         .action-buttons { 
             display: flex;
-            justify-content: center; /* Center bubbles */
+            justify-content: center; 
             align-items: center;
-            gap: 8px; /* Smaller gap for mobile */
+            gap: 8px; 
             flex-wrap: wrap;
             width: 100%;
-            max-width: 320px; /* Fit 4 small bubbles */
+            max-width: 320px; 
         }
         .action-btn img {
-            height: 45px; /* Mobile bubble size from MOB_NEW1 */
+            height: 45px; 
             cursor: pointer;
             transition: transform 0.2s ease;
         }
@@ -215,26 +212,20 @@ INDEX_HTML = """
         }
 
         .result-image-wrapper {
-             /* Spacing handled by app-main gap and specific rules */
-             /* For mobile: "равное расстояние от лого до генерации и от генерации до линии баблов" */
-             /* This is tricky. We'll use flex properties on app-main. */
-             justify-content: center; /* Center the image vertically within its allocated space */
+             justify-content: center; 
         }
         #result-image {
-            max-width: 90%; /* Default max width */
-            max-height: 55vh; /* Default max height for mobile */
+            max-width: 90%; 
+            max-height: 55vh; 
             object-fit: contain;
-            border-radius: 12px; /* Rounded corners for generated image */
-            box-shadow: 0 6px 20px rgba(0,0,0,0.25); /* Softer shadow */
+            border-radius: 12px; 
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
             position: relative;
         }
-        /* JS will add classes .result-aspect-portrait or .result-aspect-landscape */
-        #result-image.result-aspect-portrait { /* 9:16 */
-             /* max-height will dominate */
+        #result-image.result-aspect-portrait { 
         }
-        #result-image.result-aspect-landscape { /* 16:9 */
-            max-width: 100%; /* For mobile, should not exceed bubble line width */
-            /* max-height will be constrained by aspect ratio and max-width */
+        #result-image.result-aspect-landscape { 
+            max-width: 100%; 
         }
 
 
@@ -259,18 +250,18 @@ INDEX_HTML = """
         .loader-container {
             justify-content: center;
             align-items: center;
-            min-height: 200px; /* Ensure it takes some space */
+            min-height: 200px; 
             z-index: 101;
         }
         .pulsating-dot {
-            width: 25px; /* Smaller base for a more refined pulse */
+            width: 25px; 
             height: 25px;
             background-color: var(--text-accent-color);
             border-radius: 50%;
             position: relative; 
             animation: elegantPulse 1.8s infinite ease-out;
         }
-        .pulsating-dot::before, .pulsating-dot::after { /* For a more beautiful pulse */
+        .pulsating-dot::before, .pulsating-dot::after { 
             content: '';
             position: absolute;
             left: 50%;
@@ -293,15 +284,15 @@ INDEX_HTML = """
             animation-delay: 0.4s;
         }
 
-        @keyframes elegantPulse { /* Main dot pulse */
+        @keyframes elegantPulse { 
             0%, 100% { transform: scale(0.8); opacity: 0.8; }
             50% { transform: scale(1); opacity: 1; }
         }
-        @keyframes elegantPulseOuter1 { /* Outer ripple 1 */
+        @keyframes elegantPulseOuter1 { 
             0%, 20% { transform: scale(1); opacity: 0.5; }
             100% { transform: scale(2.5); opacity: 0; }
         }
-        @keyframes elegantPulseOuter2 { /* Outer ripple 2 */
+        @keyframes elegantPulseOuter2 { 
             0%, 40% { transform: scale(1); opacity: 0.3; }
             100% { transform: scale(3.5); opacity: 0; }
         }
@@ -317,13 +308,13 @@ INDEX_HTML = """
             transform: translateX(-50%);
             z-index: 100;
         }
-        .input-area { /* Form */
+        .input-area { 
             display: flex;
             align-items: center;
-            background-color: rgba(248, 248, 248, 0.8); /* F8F8F8 80% */
+            background-color: rgba(248, 248, 248, 0.8); 
             backdrop-filter: blur(10px); 
             -webkit-backdrop-filter: blur(10px);
-            border-radius: 50px; /* Fully rounded ends for mobile */
+            border-radius: 50px; 
             padding: 6px 8px; 
             width: 100%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -350,7 +341,7 @@ INDEX_HTML = """
             opacity: 1;
         }
 
-        .submit-button-element { /* Button element */
+        .submit-button-element { 
             background-color: transparent;
             border: none;
             cursor: pointer;
@@ -359,15 +350,15 @@ INDEX_HTML = """
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0; 
         }
-        .submit-button-icon-img { /* MAGIC_GREEN.png */
-            height: 40px; /* Mobile icon size from MOB_NEW1 */
+        .submit-button-icon-img { 
+            height: 40px; 
             width: 40px;
         }
         .submit-button-text-content { 
             display: none; 
-            color: #000000; /* Black text for Start Over */
+            color: #000000; 
             font-size: 0.9rem;
             font-family: 'ChangerFont', sans-serif; 
             padding: 10px 15px;
@@ -390,14 +381,13 @@ INDEX_HTML = """
             transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
             max-width: 480px;
-            z-index: 105; /* Above footer */
+            z-index: 105; 
             text-align: center;
         }
 
         /* --- Desktop Styles --- */
         @media (min-width: 769px) {
             :root {
-                /* --desktop-spacing-unit is already defined, use it or override --mob-spacing-unit */
             }
              .app-container-wrapper {
                 background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
@@ -406,7 +396,7 @@ INDEX_HTML = """
                 padding: var(--desktop-spacing-unit);
             }
             .logo {
-                height: 35px; /* Desktop logo height */
+                height: 35px; 
             }
             .app-header {
                  top: var(--desktop-spacing-unit);
@@ -415,42 +405,35 @@ INDEX_HTML = """
                 padding-top: calc(35px + var(--desktop-spacing-unit) + 15px + var(--desktop-spacing-unit));
                 padding-bottom: calc(100px + var(--desktop-spacing-unit)); 
                 gap: var(--desktop-spacing-unit);
-                justify-content: center; /* Center content vertically */
+                justify-content: center; 
             }
 
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img {
                 display: block;
-                max-width: 650px; /* As per brief "большой как на превью" */
-                height: auto;
+                max-width: 650px; 
+                height: auto; /* Let max-height control the height primarily */
+                max-height: 35vh; /* Added to control vertical size */
+                object-fit: contain; /* Ensures the image scales down nicely */
                 margin-bottom: var(--desktop-spacing-unit); 
             }
 
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
-                max-width: 520px; /* (48px * 4) + (15px * 3) + some padding */
-                gap: 15px; /* Wider gap for desktop */
-                /* Width matching input bar: "Ширина всей линии баблов должна совпадать ширине всей линии ввода данных" */
-                /* Max-width of input-area is 700px. This will be handled by alignment. */
+                max-width: 520px; 
+                gap: 15px; 
             }
             .action-btn img {
-                height: 48px; /* Desktop bubble size */
+                height: 48px; 
             }
 
             #result-image {
-                max-height: 60vh; /* Taller images allowed on desktop */
+                max-height: 60vh; 
             }
-             #result-image.result-aspect-landscape { /* 16:9 on desktop */
-                max-width: min(600px, 90%); /* Can be wider */
+             #result-image.result-aspect-landscape { 
+                max-width: min(600px, 90%); 
             }
-            /* Desktop result image positioning:
-               - 9:16: Aligned top of logo. (Complex, rely on flex for now)
-               - 16:9: Aligned bottom of logo. (Complex, rely on flex for now)
-               - "расстояние между линией баблов и нижнем краем генерации должно быть равно расстоянию от линии баблов до поля ввода."
-                 This implies app-main children (result-image-wrapper, action-buttons) are spaced by app-main's gap.
-            */
-
 
             .app-footer {
                 max-width: 700px; 
@@ -458,9 +441,9 @@ INDEX_HTML = """
             }
             .input-area {
                 padding: 10px 12px; 
-                border-radius: 30px; /* From brief */
+                border-radius: 30px; 
             }
-            .file-upload-label-desktop { /* Desktop upload icon/preview area */
+            .file-upload-label-desktop { 
                 display: flex; 
                 cursor: pointer;
                 padding: 0;
@@ -468,19 +451,19 @@ INDEX_HTML = """
                 align-items: center;
                 justify-content: center;
                 position: relative;
-                width: 56px; /* Adjusted size from DESK_UPLOAD.png preview */
+                width: 56px; 
                 height: 56px;
-                background-color: transparent; /* No specific bg, uses DESK_UPLOAD.png */
+                background-color: transparent; 
                 border-radius: 18px; 
                 flex-shrink: 0;
                 overflow: hidden;
             }
-            .upload-icon-desktop-img { /* DESK_UPLOAD.png */
+            .upload-icon-desktop-img { 
                 height: 100%; 
                 width: 100%;
                 object-fit: contain;
             }
-            .image-preview-desktop-img { /* Preview inside the upload area */
+            .image-preview-desktop-img { 
                 display: none;
                 width: 100%;
                 height: 100%;
@@ -492,11 +475,11 @@ INDEX_HTML = """
                 padding: 15px 15px;
                 font-size: 1rem;
             }
-            .submit-button-icon-img { /* MAGIC_GREEN.png */
+            .submit-button-icon-img { 
                 height: 48px; 
                 width: 48px;
             }
-            .submit-button-text-content { /* Not used on desktop by default */
+            .submit-button-text-content { 
                  font-size: 1rem;
             }
         }
@@ -506,23 +489,22 @@ INDEX_HTML = """
                  background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}");
             }
             .app-main {
-                /* Ensure enough space for elements to distribute */
-                justify-content: space-between; /* Key for mobile vertical spacing */
+                justify-content: space-between; 
                 min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (70px + var(--mob-spacing-unit)) - (2 * var(--mob-spacing-unit)) );
             }
              .initial-content.active {
-                gap: var(--mob-spacing-unit); /* Ensure gap between text and dropzone */
+                gap: var(--mob-spacing-unit); 
             }
             .result-image-wrapper.active {
-                flex-grow: 1; /* Allow image to take available space if needed */
+                flex-grow: 1; 
                 display: flex;
-                align-items: center; /* Center image vertically */
-                justify-content: center; /* Center image horizontally */
+                align-items: center; 
+                justify-content: center; 
             }
              #result-image.result-aspect-landscape {
-                max-width: calc(100% - 20px); /* Ensure it fits within action buttons width */
-                width: auto; /* Let height dictate based on aspect ratio */
-                max-height: 35vh; /* Prevent it from being too tall in landscape on mobile */
+                max-width: calc(100% - 20px); 
+                width: auto; 
+                max-height: 35vh; 
             }
 
         }
@@ -634,12 +616,11 @@ INDEX_HTML = """
         resultImageWrapper.classList.remove('active');
         loaderContainer.classList.remove('active');
         
-        // Hide specific elements that might persist incorrectly
         if (mobileMainTextImg) mobileMainTextImg.style.display = 'none';
         if (desktopMainTextImg) desktopMainTextImg.style.display = 'none';
-        if (mobileDropArea) mobileDropArea.style.display = 'none'; // Hide by default, show only in mobile initial
+        if (mobileDropArea) mobileDropArea.style.display = 'none'; 
         downloadLink.style.display = 'none';
-        actionButtonsContainer.style.display = 'flex'; // Bubbles are generally visible
+        actionButtonsContainer.style.display = 'flex'; 
 
         if (viewName === 'initial') {
             initialContent.classList.add('active');
@@ -657,7 +638,6 @@ INDEX_HTML = """
         } else if (viewName === 'loading') {
             loaderContainer.classList.add('active');
             appBgWrapper.classList.add('bg-blur'); 
-            // Hide elements that should not be visible during loading specifically for mobile
              if (!isDesktopView()) {
                 if (mobileMainTextImg) mobileMainTextImg.style.display = 'none';
                 if (mobileDropArea) mobileDropArea.style.display = 'none';
@@ -687,9 +667,9 @@ INDEX_HTML = """
             const img = new Image();
             img.onload = () => {
                 resultImage.classList.remove('result-aspect-portrait', 'result-aspect-landscape');
-                if (img.naturalWidth < img.naturalHeight) { // Portrait
+                if (img.naturalWidth < img.naturalHeight) { 
                     resultImage.classList.add('result-aspect-portrait');
-                } else { // Landscape or square
+                } else { 
                     resultImage.classList.add('result-aspect-landscape');
                 }
             }
@@ -698,7 +678,7 @@ INDEX_HTML = """
     }
 
     window.addEventListener('resize', () => {
-        updateView(currentView); // Re-apply view logic on resize
+        updateView(currentView); 
     });
 
     if (mobileDropArea) {
@@ -718,11 +698,10 @@ INDEX_HTML = """
                         desktopImagePreviewImg.style.display = 'block';
                     }
                     if (desktopUploadIconImg) desktopUploadIconImg.style.display = 'none';
-                } else { // Mobile
+                } else { 
                     if (mobileImagePreviewImg) {
                         mobileImagePreviewImg.src = e.target.result;
                         mobileImagePreviewImg.style.display = 'block';
-                         // MOB_DROP.png (placeholder) should hide
                         if(mobileDropPlaceholderImg) mobileDropPlaceholderImg.style.display = 'none';
                     }
                 }
@@ -737,7 +716,7 @@ INDEX_HTML = """
         if (mobileImagePreviewImg && mobileDropPlaceholderImg) {
             mobileImagePreviewImg.src = '#';
             mobileImagePreviewImg.style.display = 'none';
-            mobileDropPlaceholderImg.style.display = 'block'; // Show MOB_DROP.png again
+            mobileDropPlaceholderImg.style.display = 'block'; 
         }
         if (desktopImagePreviewImg && desktopUploadIconImg) {
             desktopImagePreviewImg.src = '#';
@@ -785,12 +764,11 @@ INDEX_HTML = """
 
             resultImage.src = data.output_url;
             downloadLink.href = data.output_url;
-            // Ensure image is loaded before switching view to avoid layout jump
             const tempImg = new Image();
             tempImg.onload = () => {
                 updateView('result');
             };
-            tempImg.onerror = () => { // Handle image load error
+            tempImg.onerror = () => { 
                 showError("Не удалось загрузить сгенерированное изображение.");
                 updateView('initial');
             };
@@ -820,7 +798,7 @@ INDEX_HTML = """
     });
     
     document.querySelector('.logo').addEventListener('click', () => {
-        if (currentView !== 'loading') { // Prevent reset if loading
+        if (currentView !== 'loading') { 
              updateView('initial');
         }
     });
@@ -867,28 +845,23 @@ def process_image():
     original_prompt_text = request.form['prompt']
     final_prompt_text = improve_prompt_with_openai(original_prompt_text)
     
-    # model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-    # Using a different model as per previous successful generation, adjust if needed
     model_version_id = "lucataco/sdxl-lcm-lora:a27457f2b866969151b3e6c1434add815009910d89c6006f0932a9abd572789b"
 
 
     try:
-        # --- S3 Upload (Ensure credentials and bucket are correctly set in environment) ---
         if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
             print("!!! ОШИБКА: Не все переменные AWS S3 настроены.")
             return jsonify({'error': 'Ошибка конфигурации сервера для загрузки изображений.'}), 500
         
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         _, f_ext = os.path.splitext(image_file.filename)
-        object_name = f"uploads/{uuid.uuid4()}{f_ext}" # Added an 'uploads/' prefix for organization
+        object_name = f"uploads/{uuid.uuid4()}{f_ext}" 
         
         s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': image_file.content_type})
         
-        # Ensure the URL is correctly formatted for public access if bucket policy allows
         hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
         print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
 
-        # --- Replicate API Call ---
         if not REPLICATE_API_TOKEN:
             print("!!! ОШИБКА: REPLICATE_API_TOKEN не найден.")
             return jsonify({'error': 'Ошибка конфигурации сервера для генерации изображений.'}), 500
@@ -896,7 +869,7 @@ def process_image():
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {
             "version": model_version_id,
-            "input": {"image": hosted_image_url, "prompt": final_prompt_text} # Changed 'input_image' to 'image' based on common Replicate model inputs
+            "input": {"image": hosted_image_url, "prompt": final_prompt_text} 
         }
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
@@ -906,7 +879,7 @@ def process_image():
         get_url = prediction_data["urls"]["get"]
         
         output_url = None
-        max_retries = 60 # Approx 2 minutes (60 * 2s)
+        max_retries = 60 
         retries = 0
         while retries < max_retries:
             time.sleep(2) 
@@ -920,7 +893,7 @@ def process_image():
                 if isinstance(status_data["output"], list): 
                     output_url = status_data["output"][0] 
                 else: 
-                    output_url = str(status_data["output"]) # Some models might return a string directly
+                    output_url = str(status_data["output"]) 
                 break
             elif status_data["status"] in ["failed", "canceled"]:
                 error_detail = status_data.get('error', 'неизвестная ошибка Replicate')
@@ -937,13 +910,12 @@ def process_image():
         return jsonify({'error': f'Ошибка связи с сервисом генерации: {http_err.response.status_code}'}), 500
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
-        # Check if e has response attribute for more details from Replicate
         error_message_detail = str(e)
         if hasattr(e, 'response') and e.response is not None:
              try:
                 error_details_from_replicate = e.response.json()
                 error_message_detail = error_details_from_replicate.get("detail", str(e))
-             except ValueError: # Not a JSON response
+             except ValueError: 
                 error_message_detail = e.response.text if e.response.text else str(e)
 
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {error_message_detail}'}), 500
