@@ -121,7 +121,7 @@ INDEX_HTML = """
             justify-content: flex-start; 
             flex-grow: 1;
             padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
-            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + 48px + var(--mob-spacing-unit)); /* Added space for action buttons */
+            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + 48px + var(--mob-spacing-unit)); 
             gap: var(--mob-spacing-unit); 
             text-align: center;
         }
@@ -143,7 +143,7 @@ INDEX_HTML = """
             align-items: center;
             gap: inherit;
             width: 100%;
-            flex-shrink: 0; /* Prevent this group from shrinking if app-main is space-between */
+            flex-shrink: 0; 
         }
 
 
@@ -208,15 +208,16 @@ INDEX_HTML = """
             max-width: 320px; 
             margin-top: auto; 
             padding-bottom: var(--mob-spacing-unit); 
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0; 
         }
         .action-btn img {
             height: 45px; 
-            width: auto; /* Added for aspect ratio */
-            object-fit: contain; /* Added for better SVG scaling */
+            width: auto; 
+            max-width: 100px; /* Added max-width for individual SVGs on mobile */
+            object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
-            display: block; /* Good for images */
+            display: block; 
         }
         .action-btn img:hover {
             transform: scale(1.05);
@@ -227,7 +228,7 @@ INDEX_HTML = """
              flex-grow: 1; 
              display: flex; 
              align-items: center; 
-             width: 100%; /* Ensure it can take width */
+             width: 100%; 
         }
         #result-image {
             max-width: 90%; 
@@ -420,23 +421,23 @@ INDEX_HTML = """
             }
             .app-main {
                 padding-top: calc(35px + var(--desktop-spacing-unit) + 15px); 
-                padding-bottom: calc(80px + var(--desktop-spacing-unit)); /* Adjusted for footer height */
+                padding-bottom: calc(80px + var(--desktop-spacing-unit)); 
                 gap: var(--desktop-spacing-unit);
                 justify-content: space-between; 
             }
             
             .initial-top-group { 
-                 margin-bottom: 0; /* Let app-main gap handle spacing */
-                 flex-grow: 1; /* Allow this to take available space if result is not shown */
-                 justify-content: center; /* Center its content if it grows */
+                 margin-bottom: 0; 
+                 flex-grow: 1; 
+                 justify-content: center; 
             }
 
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img {
                 display: block;
-                max-width: 700px; /* Allow it to be wider if aspect ratio dictates */
+                max-width: 800px; /* Increased max-width */
                 width: auto; 
-                max-height: 60vh; /* User request */
+                max-height: 75vh; /* Increased max-height */
                 object-fit: contain; 
             }
 
@@ -444,22 +445,22 @@ INDEX_HTML = """
             
             .action-buttons {
                 max-width: 700px; 
-                gap: 20px; /* Increased gap for better spacing with space-around */
-                justify-content: space-around; 
-                flex-wrap: nowrap; /* Ensure they stay on one line */
+                gap: 15px; /* Adjusted gap */
+                justify-content: center; /* Changed from space-around for more consistent spacing */
+                flex-wrap: nowrap; 
                 padding-bottom: 0; 
-                margin-top: var(--desktop-spacing-unit); /* Add some space above bubbles if initial content is short */
-                width: 100%; /* Ensure it tries to take up the 700px width */
+                margin-top: var(--desktop-spacing-unit); 
+                width: 100%; 
             }
-            .action-btn { /* Added to help with flex distribution */
-                flex-basis: 0; /* Allow items to grow based on content but start from 0 */
-                flex-grow: 1; /* Allow items to grow to fill space */
+            .action-btn { 
+                /* Removed flex-basis and flex-grow to let content define width up to a max */
                 display: flex;
                 justify-content: center;
             }
             .action-btn img {
                 height: 48px; 
-                width: auto;
+                width: auto; /* Let height control size, up to max-width */
+                max-width: 150px; /* Prevent individual SVGs from becoming too wide */
                 object-fit: contain;
             }
 
@@ -529,14 +530,14 @@ INDEX_HTML = """
             }
              .initial-top-group { 
                   gap: var(--mob-spacing-unit); 
-                  margin-bottom: 0; /* Reset for mobile */
-                  flex-grow: 0; /* Reset for mobile */
+                  margin-bottom: 0; 
+                  flex-grow: 0; 
             }
             .action-buttons {
                 margin-top: 0; 
                 padding-bottom: 0; 
-                gap: 8px; /* Mobile gap */
-                max-width: 320px; /* Mobile max width */
+                gap: 8px; 
+                max-width: 320px; 
             }
             .result-image-wrapper.active {
                 flex-grow: 1; 
@@ -664,7 +665,7 @@ INDEX_HTML = """
         if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         if (loaderContainer) loaderContainer.style.display = 'none';
         
-        if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
+        if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex'; // Default to flex
 
 
         if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
