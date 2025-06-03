@@ -82,6 +82,8 @@ INDEX_HTML = """
             background-repeat: no-repeat;
             z-index: -1;
             transition: filter 0.4s ease-in-out;
+            /* Default background, will be overridden by media queries */
+            background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}"); 
         }
         .app-container-wrapper.bg-blur {
              filter: blur(var(--blur-intensity));
@@ -163,8 +165,7 @@ INDEX_HTML = """
         .image-drop-area-mobile {
             width: 80%;
             max-width: 280px; 
-            /* aspect-ratio: 300 / 350; Removed aspect ratio */
-            height: 165px; /* Height reduced by half (approx from 326px) */
+            height: 165px; 
             background-color: transparent; 
             border-radius: 25px; 
             display: flex;
@@ -179,14 +180,12 @@ INDEX_HTML = """
             border-color: var(--text-accent-color);
             background-color: rgba(217, 244, 122, 0.1);
         }
-        .image-drop-area-mobile .mob-drop-placeholder-img { /* This will now hold JDTI.png */
-            width: auto; /* Adjust to let JDTI.png define its size */
-            max-width: 90%; /* Prevent it from being too wide */
-            max-height: 80%; /* Prevent it from being too tall within the drop area */
+        .image-drop-area-mobile .mob-drop-placeholder-img { 
+            width: auto; 
+            max-width: 80%; /* Adjusted max-width for JDTI.png */
+            max-height: 40%; /* Reduced max-height for JDTI.png by half */
             height: auto; 
             object-fit: contain; 
-            /* position: absolute; Removed, let flex center it */
-            /* top: 0; left: 0; */
         }
          .image-drop-area-mobile::before { 
             content: "";
@@ -213,10 +212,10 @@ INDEX_HTML = """
             display: flex;
             justify-content: center; 
             align-items: center;
-            gap: 10px; /* Reduced gap for mobile */
-            flex-wrap: nowrap; /* Ensure single line */
+            gap: 10px; 
+            flex-wrap: nowrap; 
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
-            max-width: 320px; /* Might need slight adjustment based on final bubble size */
+            max-width: 320px; 
             padding: 10px 0; 
             
             position: fixed; 
@@ -227,9 +226,9 @@ INDEX_HTML = """
             border-radius: 20px; 
         }
         .action-btn img { 
-            height: 22px; /* Reduced size for mobile */
+            height: 22px; 
             width: auto; 
-            max-width: 70px; /* Adjusted max-width */
+            max-width: 70px; 
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
@@ -448,7 +447,7 @@ INDEX_HTML = """
                 justify-content: center; 
                 flex-wrap: nowrap; 
                 padding-bottom: 0; 
-                margin-top: 0; /* Removed margin-top as it's fixed */
+                margin-top: 0; 
                 bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) + 15px); 
                 max-width: 700px; 
             }
@@ -469,7 +468,6 @@ INDEX_HTML = """
             }
 
             .download-action-link {
-                /* Styles already defined, no need to override significantly for desktop unless size changes */
             }
 
              #result-image.result-aspect-landscape { 
@@ -524,12 +522,9 @@ INDEX_HTML = """
                  font-size: 1rem;
             }
         }
-        @media (max-width: 768px) {
-            /* Mobile specific styles for action buttons and drop area are now primary */
-            .app-main {
-                 padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2 + 10px); /* ensure enough space for fixed elements */
-            }
-        }
+        /* This media query was for mobile, but the primary styles are mobile-first now. */
+        /* Specific overrides for mobile can go here if needed, but most are covered above. */
+        /* @media (max-width: 768px) { ... } */
     </style>
 </head>
 <body>
