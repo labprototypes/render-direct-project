@@ -121,7 +121,7 @@ INDEX_HTML = """
             justify-content: flex-start; 
             flex-grow: 1;
             padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
-            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + 24px + var(--mob-spacing-unit)); /* Adjusted for smaller bubbles */
+            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + calc(45px / 2) + var(--mob-spacing-unit)); /* Adjusted for smaller bubbles */
             gap: var(--mob-spacing-unit); 
             text-align: center;
         }
@@ -207,16 +207,18 @@ INDEX_HTML = """
             display: flex;
             justify-content: center; 
             align-items: center;
-            gap: 8px; 
+            gap: 15px; /* Increased gap for mobile */
             flex-wrap: wrap; 
             width: 100%;
-            max-width: 320px; 
+            max-width: 320px; /* Can be adjusted if bubbles are still too cramped */
             margin-top: auto; 
             padding-bottom: var(--mob-spacing-unit); 
             flex-shrink: 0; 
         }
         .action-btn img { 
-            height: calc(45px / 2); /* Reduced size */
+            height: calc(45px / 2); 
+            width: auto; /* Allow width to adjust based on height and aspect ratio */
+            max-width: 80px; /* Prevent individual bubbles from becoming too wide */
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
@@ -423,13 +425,13 @@ INDEX_HTML = """
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
-                /* max-width: 700px; Removed as per request */
-                gap: 10px; /* Adjusted gap for smaller bubbles */
+                width: auto; /* Allow container to fit content */
+                max-width: none; /* Remove max-width constraint */
+                gap: 25px; /* Increased gap for desktop */
                 justify-content: center; 
                 flex-wrap: nowrap; 
                 padding-bottom: 0; 
                 margin-top: var(--desktop-spacing-unit); 
-                width: auto; /* Allow container to shrink to content */
             }
             .action-btn { 
                 display: flex;
@@ -437,6 +439,8 @@ INDEX_HTML = """
             }
             .action-btn img { 
                 height: calc(48px / 2); /* Reduced size */
+                width: auto; /* Allow width to adjust based on height and aspect ratio */
+                max-width: 120px; /* Prevent individual bubbles from becoming too wide */
                 object-fit: contain;
                 display: block; 
                 visibility: visible; 
@@ -514,11 +518,12 @@ INDEX_HTML = """
             .action-buttons {
                 margin-top: 0; 
                 padding-bottom: 0; 
-                gap: 8px; 
+                gap: 15px; /* Increased gap for mobile */
                 max-width: 320px; 
             }
             .action-btn img {
-                 height: calc(45px / 2); /* Reduced size for mobile */
+                 height: calc(45px / 2); 
+                 max-width: 80px; /* Consistent with desktop logic */
             }
             .result-image-wrapper.active {
                 flex-grow: 1; 
