@@ -4,7 +4,15 @@ import uuid
 import requests
 import time
 import openai
-from flask import Flask, request, jsonify, render_template_string, url_for
+from flask import Flask, request, jsonify, render_template_string, url_for, redirect, flash
+from flask_sqlalchemy import SQLAlchemy
+from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user, roles_accepted, roles_required
+from flask_security.utils import hash_password
+from flask_mail import Mail # Flask-Security-Too использует Flask-Mail
+from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy.orm import relationship, backref
+from flask_security import AsaList
+
 
 # --- Настройки для подключения к Amazon S3 ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -14,7 +22,71 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.static_folder = 'static' # Убедитесь, что папка static существует
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'super-secret-key-for-dev') # ВАЖНО: Установите надежный ключ в переменной окружения
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'super-secret-salt-for-dev') # ВАЖНО: Установите надежный salt
+
+# Конфигурация базы данных (SQLite для простоты, замените на PostgreSQL для Render)
+# Для Render может выглядеть так: app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Настройки Flask-Security-Too
+app.config['SECURITY_REGISTERABLE'] = True # Разрешить регистрацию новых пользователей
+app.config['SECURITY_SEND_REGISTER_EMAIL'] = False # Отключить отправку email для подтверждения (для упрощения)
+app.config['SECURITY_RECOVERABLE'] = True # Разрешить восстановление пароля
+app.config['SECURITY_CHANGEABLE'] = True # Разрешить смену пароля
+app.config['SECURITY_CONFIRMABLE'] = False # Отключить обязательное подтверждение email
+app.config['SECURITY_USERNAME_ENABLE'] = True # Если хотите использовать username помимо email
+app.config['SECURITY_USERNAME_REQUIRED'] = False # Если username не обязателен при регистрации (email будет основным)
+app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} # Отключить проверку доставляемости email
+
+# Настройки Flask-Mail (заполните своими данными, если будете использовать отправку почты)
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@example.com')
+app.config['SECURITY_EMAIL_SENDER'] = app.config['MAIL_DEFAULT_SENDER']
+
+
+db = SQLAlchemy(app)
+mail = Mail(app)
+
+
+# Модели для Flask-Security-Too
+roles_users = db.Table(
+    "roles_users",
+    db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
+    db.Column("role_id", db.Integer(), db.ForeignKey("role.id")),
+)
+
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
+    permissions = db.Column(MutableList.as_mutable(AsaList()), nullable=True)
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    username = db.Column(db.String(255), unique=True, nullable=True) # Можно сделать nullable=False если username обязателен
+    password = db.Column(db.String(255), nullable=False)
+    active = db.Column(db.Boolean(), default=True)
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False) # Убедитесь, что это поле есть
+    confirmed_at = db.Column(db.DateTime())
+    roles = db.relationship(
+        "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
+    )
+    token_balance = db.Column(db.Integer, default=10, nullable=False) # Начальный баланс токенов для новых пользователей
+
+# Настройка Flask-Security
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
+
+
+app.static_folder = 'static'
 
 # API ключи из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
@@ -33,6 +105,35 @@ INDEX_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Changer AI</title>
     <style>
+        /* ... (все ваши CSS стили остаются здесь, я их не меняю в этом шаге) ... */
+        /* Добавим немного стилей для информации о пользователе и ссылок */
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: var(--text-accent-color);
+            font-size: 0.9rem;
+            z-index: 101;
+        }
+        .user-info a {
+            color: var(--text-accent-color);
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        .user-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Стили для скрытия/показа контента в зависимости от авторизации */
+        .auth-required-content {
+            /* Изначально может быть скрыто, если хотите строгий контроль */
+            /* display: none; */ 
+        }
+        body.user-not-authenticated .auth-required-content {
+            /* Стили, если контент нужно скрыть или показать сообщение "Войдите" */
+            /* Например, можно добавить overlay с сообщением */
+        }
+        
         @font-face {
             font-family: 'ChangerFont';
             src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
@@ -82,7 +183,6 @@ INDEX_HTML = """
             background-repeat: no-repeat;
             z-index: -1;
             transition: filter 0.4s ease-in-out;
-            /* Default background, will be overridden by media queries */
             background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}"); 
         }
         .app-container-wrapper.bg-blur {
@@ -182,8 +282,8 @@ INDEX_HTML = """
         }
         .image-drop-area-mobile .mob-drop-placeholder-img { 
             width: auto; 
-            max-width: 80%; /* Adjusted max-width for JDTI.png */
-            max-height: 40%; /* Reduced max-height for JDTI.png by half */
+            max-width: 80%; 
+            max-height: 40%; 
             height: auto; 
             object-fit: contain; 
         }
@@ -212,10 +312,10 @@ INDEX_HTML = """
             display: flex;
             justify-content: center; 
             align-items: center;
-            gap: 10px; 
-            flex-wrap: nowrap; 
+            gap: 30px; 
+            flex-wrap: wrap; 
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
-            max-width: 320px; 
+            max-width: 500px; 
             padding: 10px 0; 
             
             position: fixed; 
@@ -226,9 +326,9 @@ INDEX_HTML = """
             border-radius: 20px; 
         }
         .action-btn img { 
-            height: 22px; 
+            height: calc(45px / 2); 
             width: auto; 
-            max-width: 70px; 
+            max-width: 80px; 
             object-fit: contain; 
             cursor: pointer;
             transition: transform 0.2s ease;
@@ -522,19 +622,36 @@ INDEX_HTML = """
                  font-size: 1rem;
             }
         }
-        /* This media query was for mobile, but the primary styles are mobile-first now. */
-        /* Specific overrides for mobile can go here if needed, but most are covered above. */
-        /* @media (max-width: 768px) { ... } */
+        @media (max-width: 768px) {
+            .app-main {
+                 padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2 + 10px); 
+            }
+            .action-buttons {
+                gap: 30px;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="user-info">
+        {% if current_user.is_authenticated %}
+            Привет, {{ current_user.email or current_user.username }}! 
+            Токены: <span id="token-balance">{{ current_user.token_balance }}</span>
+            <a href="{{ url_for_security('logout') }}">Выйти</a>
+            <a href="{{ url_for('buy_tokens_page') }}">Купить токены</a> 
+        {% else %}
+            <a href="{{ url_for_security('login') }}">Войти</a>
+            <a href="{{ url_for_security('register') }}">Зарегистрироваться</a>
+        {% endif %}
+    </div>
+
     <div class="app-container-wrapper" id="app-bg-wrapper"></div>
     <div class="app-container">
         <header class="app-header">
             <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
         </header>
 
-        <main class="app-main">
+        <main class="app-main auth-required-content">
             <div class="initial-top-group">
                 <img src="{{ url_for('static', filename='images/DESK_MAIN.png') }}" alt="Change Everything" class="main-text-display-img desktop-main-text-img">
                 <img src="{{ url_for('static', filename='images/MOB_MAIN.svg') }}" alt="Change Everything" class="main-text-display-img mobile-main-text-img">
@@ -564,7 +681,7 @@ INDEX_HTML = """
             </div>
         </main>
 
-        <footer class="app-footer">
+        <footer class="app-footer auth-required-content">
             <form id="edit-form" class="input-area">
                 <label for="image-file-common" class="file-upload-label-desktop">
                     <img src="{{ url_for('static', filename='images/DESK_UPLOAD.png') }}" alt="Upload Icon" class="upload-icon-desktop-img">
@@ -584,6 +701,16 @@ INDEX_HTML = """
     </div>
 
     <script>
+    // --- DOM Elements ---
+    // ... (остальной JavaScript код остается здесь, я его не меняю в этом шаге, кроме добавления обновления баланса токенов) ...
+    const tokenBalanceSpan = document.getElementById('token-balance');
+
+    function updateTokenBalanceDisplay(newBalance) {
+        if (tokenBalanceSpan) {
+            tokenBalanceSpan.textContent = newBalance;
+        }
+    }
+    
     // --- DOM Elements ---
     const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInput = document.getElementById('image-file-common');
@@ -807,6 +934,16 @@ INDEX_HTML = """
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             
+            // Flask-Security: Check if user is authenticated
+            // This check should ideally happen before showing the form or on the server-side more strictly
+            // For now, we assume the route is protected by @login_required
+            // if (!{{ current_user.is_authenticated | tojson }}) {
+            //     showError("Пожалуйста, войдите в систему для генерации изображений.");
+            //     // Redirect to login, e.g., window.location.href = "{{ url_for_security('login') }}";
+            //     return;
+            // }
+
+
             if (submitButton.dataset.action === "startover") {
                 updateView('initial');
                 return;
@@ -837,11 +974,9 @@ INDEX_HTML = """
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    let errorDetail = 'Неизвестная ошибка сервера';
-                    if (data && data.error) { 
-                        errorDetail = data.error;
-                    } else if (data && data.detail) { 
-                         errorDetail = data.detail;
+                    let errorDetail = data.error || data.detail || 'Неизвестная ошибка сервера';
+                    if (response.status === 403 && data.error === 'Недостаточно токенов') {
+                         errorDetail = 'У вас недостаточно токенов для генерации. Пожалуйста, пополните баланс.';
                     }
                     throw new Error(errorDetail);
                 }
@@ -849,6 +984,9 @@ INDEX_HTML = """
 
                 if(resultImage) resultImage.src = data.output_url;
                 if(downloadLink) downloadLink.href = data.output_url;
+                if (data.new_token_balance !== undefined && tokenBalanceSpan) {
+                    tokenBalanceSpan.textContent = data.new_token_balance;
+                }
                 
                 const tempImg = new Image();
                 tempImg.onload = () => {
@@ -863,7 +1001,7 @@ INDEX_HTML = """
             } catch (error) {
                 console.error('Ошибка при отправке/обработке:', error);
                 showError("Произошла ошибка: " + error.message);
-                updateView('initial'); 
+                updateView('initial'); // Возвращаем в начальное состояние при ошибке
             } finally {
                 if(submitButton) submitButton.disabled = false;
             }
@@ -900,6 +1038,11 @@ INDEX_HTML = """
         });
     }
 
+    // Add class to body if user is not authenticated for potential CSS rules
+    // if (!{{ current_user.is_authenticated | tojson }}) {
+    //     document.body.classList.add('user-not-authenticated');
+    // }
+
     updateView('initial');
     </script>
 </body>
@@ -909,7 +1052,25 @@ INDEX_HTML = """
 # Маршрут для главной страницы
 @app.route('/')
 def index():
+    # Если пользователь не аутентифицирован, можно сразу перенаправлять на страницу логина
+    # if not current_user.is_authenticated:
+    #     return redirect(url_for_security('login', next=request.url))
     return render_template_string(INDEX_HTML)
+
+# Пример страницы для покупки токенов (очень базовый)
+@app.route('/buy-tokens')
+@login_required
+def buy_tokens_page():
+    # Здесь будет ваша логика для отображения опций покупки токенов
+    # и интеграции с Tilda или другой платежной системой.
+    # Пока это просто заглушка.
+    return """
+        <h1>Купить токены</h1>
+        <p>Здесь будет информация о пакетах токенов и кнопка для перехода к оплате.</p>
+        <p><a href="/">Назад</a></p>
+        <p>Для теста, администратор может вручную пополнить ваш баланс.</p>
+    """
+
 
 # Python-часть для обработки запросов
 def improve_prompt_with_openai(user_prompt):
@@ -934,7 +1095,11 @@ def improve_prompt_with_openai(user_prompt):
         return user_prompt
 
 @app.route('/process-image', methods=['POST'])
+@login_required # Защищаем этот маршрут
 def process_image():
+    if current_user.token_balance < 1:
+        return jsonify({'error': 'Недостаточно токенов'}), 403
+
     if 'image' not in request.files or 'prompt' not in request.form:
         return jsonify({'error': 'Отсутствует изображение или промпт'}), 400
 
@@ -945,6 +1110,7 @@ def process_image():
     model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
 
     try:
+        # ... (код загрузки на S3 остается прежним)
         if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
             print("!!! ОШИБКА: Не все переменные AWS S3 настроены.")
             return jsonify({'error': 'Ошибка конфигурации сервера для загрузки изображений.'}), 500
@@ -967,7 +1133,7 @@ def process_image():
             "version": model_version_id,
             "input": {"input_image": hosted_image_url, "prompt": final_prompt_text} 
         }
-        
+        # ... (код вызова Replicate API остается прежним) ...
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         
         if start_response.status_code >= 400:
@@ -1005,6 +1171,10 @@ def process_image():
                     output_url = status_data["output"][0] 
                 else: 
                     output_url = str(status_data["output"]) 
+                
+                # Списываем токен только после успешной генерации
+                current_user.token_balance -= 1
+                db.session.commit()
                 break
             elif status_data["status"] in ["failed", "canceled"]:
                 error_detail = status_data.get('error', 'неизвестная ошибка Replicate')
@@ -1014,14 +1184,34 @@ def process_image():
         if not output_url:
             return jsonify({'error': 'Генерация Replicate заняла слишком много времени или не вернула результат.'}), 500
             
-        return jsonify({'output_url': output_url})
+        return jsonify({'output_url': output_url, 'new_token_balance': current_user.token_balance})
         
-    except requests.exceptions.HTTPError as http_err: 
-        print(f"!!! HTTP ОШИБКА (не должна возникать здесь, если обработка выше корректна): {http_err}")
-        return jsonify({'error': f'Ошибка связи с сервисом генерации: {str(http_err)}'}), 500
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
+# Команда для создания базы данных (если еще не создана)
+# Выполните это один раз в Python консоли вашего проекта:
+# from app import app, db, user_datastore # если ваш файл называется app.py
+# with app.app_context():
+#     db.create_all()
+#     # Можно создать тестового пользователя и роль, если нужно
+#     # user_datastore.find_or_create_role(name="admin", description="Administrator")
+#     # if not user_datastore.find_user(email="admin@example.com"):
+#     #     user_datastore.create_user(email="admin@example.com", password=hash_password("password"), roles=["admin"], token_balance=100)
+#     # db.session.commit()
+#     print("Database tables created.")
+
+
 if __name__ == '__main__':  
+    # Для первого запуска и создания БД раскомментируйте и выполните код ниже ОДИН РАЗ локально,
+    # затем закомментируйте обратно. На Render база данных обычно создается и настраивается отдельно.
+    # with app.app_context():
+    #     db.create_all()
+    #     # Можно создать тестового пользователя и роль для удобства
+    #     # user_datastore.find_or_create_role(name="user", description="User")
+    #     # if not user_datastore.find_user(email="test@example.com"):
+    #     #     user_datastore.create_user(email="test@example.com", password=hash_password("password"), roles=["user"], token_balance=50)
+    #     # db.session.commit()
+    #     # print("Database tables created and test user added (if didn't exist).")
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
