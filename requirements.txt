@@ -1,3 +1,7 @@
+Flask-SQLAlchemy
+Flask-Security-Too
+Flask-Mail
+psycopg2-binary  # Драйвер для PostgreSQL
 flask
 gunicorn
 boto3
