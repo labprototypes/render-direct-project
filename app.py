@@ -40,10 +40,11 @@ INDEX_HTML = """
         }
 
         :root {
-            --text-accent-color: #D9F47A; 
-            --controls-bg-color: #F8F8F8; 
-            --primary-blue-text: #192E8C; 
-            --mob-spacing-unit: 20px; 
+            --text-accent-color: #D9F47A;
+            --controls-bg-color: #F8F8F8;
+            --primary-blue-text: #192E8C; /* Не используется в новом дизайне, но оставим */
+            --mob-spacing-unit: 20px;
+            --desktop-spacing-unit: 30px; /* Для десктопных отступов */
         }
 
         * {
@@ -54,46 +55,46 @@ INDEX_HTML = """
 
         body {
             font-family: 'ChangerFont', sans-serif;
-            color: var(--text-accent-color); 
+            color: var(--text-accent-color);
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
-            background-attachment: fixed; 
+            background-attachment: fixed;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow-x: hidden; 
+            overflow-x: hidden;
             transition: filter 0.3s ease-in-out;
         }
         body.bg-blur {
-            filter: blur(5px); 
+            filter: blur(8px); /* Увеличил блюр */
         }
 
         .app-container {
             width: 100%;
-            max-width: 1200px; 
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            flex-grow: 1; 
-            position: relative; 
+            flex-grow: 1;
+            position: relative;
         }
 
         .app-header {
             width: 100%;
-            padding: 15px 0; 
+            padding: 15px 0;
             text-align: center;
-            position: absolute; 
-            top: 20px;
+            position: absolute;
+            top: 20px; /* Отступ лого от верха */
             left: 50%;
             transform: translateX(-50%);
-            z-index: 100; /* Увеличил z-index */
+            z-index: 100; 
         }
 
         .logo {
-            height: 30px; /* Уменьшил немного для баланса с фоном */
+            height: 35px; /* Размер лого */
         }
 
         .app-main {
@@ -101,10 +102,10 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; 
+            justify-content: center;
             flex-grow: 1;
-            padding-top: 70px; /* Отступ от логотипа */
-            gap: var(--mob-spacing-unit); 
+            padding-top: 90px; /* Отступ от логотипа (35px logo + 20px top + 15px padding + 20px margin) */
+            gap: var(--desktop-spacing-unit);
         }
         
         .initial-view-elements {
@@ -112,7 +113,7 @@ INDEX_HTML = """
             flex-direction: column;
             align-items: center;
             width: 100%;
-            gap: var(--mob-spacing-unit);
+            gap: var(--desktop-spacing-unit); /* Отступ между текстом и кнопками */
         }
 
         .main-text-display img {
@@ -123,99 +124,89 @@ INDEX_HTML = """
         .mobile-main-text { display: block; } 
 
 
-        .image-drop-area { 
+        .image-drop-area {
             width: 100%;
-            max-width: 300px; 
-            aspect-ratio: 300 / 350; 
-            background-color: rgba(248, 248, 248, 0.8); 
+            max-width: 300px;
+            aspect-ratio: 300 / 350;
+            background-color: rgba(248, 248, 248, 0.8);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            border-radius: 20px; 
+            border-radius: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            background-size: contain; 
+            background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
         }
-        .mob-drop-placeholder { 
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        #image-preview-mobile { 
-            display: none;
-            width: 100%;
-            height: 100%;
-            object-fit: cover; 
-        }
+        .mob-drop-placeholder { width: 100%; height: 100%; object-fit: contain; }
+        #image-preview-mobile { display: none; width: 100%; height: 100%; object-fit: cover; }
 
-        .action-buttons {
+        .action-buttons { /* Контейнер для SVG кнопок */
             display: flex;
             justify-content: center;
-            gap: 10px; 
-            flex-wrap: wrap; 
+            gap: 10px;
+            flex-wrap: wrap;
             width: 100%;
-            max-width: 340px; 
-            margin-top: var(--mob-spacing-unit); /* Отступ от image-drop-area */
+            max-width: 500px; /* Ширина на десктопе для 4х кнопок */
+             margin-top: var(--desktop-spacing-unit); /* Отступ от основного текста */
         }
         .action-btn img {
-            height: 40px; 
+            height: 48px; /* Размер кнопок на десктопе */
             cursor: pointer;
             transition: transform 0.2s ease;
         }
-        .action-btn img:hover {
-            transform: scale(1.05);
-        }
+        .action-btn img:hover { transform: scale(1.05); }
 
         .result-view {
             width: 100%;
-            display: none; /* Изначально скрыт */
+            display: none; 
             flex-direction: column;
             align-items: center;
-            justify-content: center; 
-            flex-grow: 1; 
-            padding-bottom: 100px; 
-            position: relative; /* Для позиционирования кнопки скачать */
+            justify-content: center;
+            flex-grow: 1;
+            padding-bottom: 120px; /* Место для футера */
+            position: relative; 
         }
         #result-image {
-            max-width: 100%;
-            max-height: 60vh; 
+            max-width: 90%; /* Чтобы не прилипало к краям контейнера */
+            max-height: 60vh;
             object-fit: contain;
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .download-action-link { 
-             display: none; /* Показывается через JS */
+             display: none;
              position: absolute;
-             top: 15px;
-             right: 15px;
+             top: 10px;  /* Отступ от верха картинки/result-view */
+             right: 10px; /* Отступ от правого края картинки/result-view */
              z-index: 10;
              cursor: pointer;
+             background-color: rgba(0,0,0,0.3); /* полупрозрачный фон для видимости */
+             border-radius: 50%;
+             padding: 5px;
         }
         .download-button-icon {
-            height: 32px; /* Размер иконки скачать */
-            width: 32px;
-            opacity: 0.8;
-            transition: opacity 0.2s ease;
+            height: 24px; 
+            width: 24px;
+            display: block; /* чтобы padding работал корректно */
+            filter: invert(1); /* делаем иконку белой, если она темная */
         }
-        .download-action-link:hover .download-button-icon {
-            opacity: 1;
-        }
+        .download-action-link:hover .download-button-icon { opacity: 0.8; }
         
         .loader-container {
-            display: none; /* Изначально скрыт */
+            display: none;
             justify-content: center;
             align-items: center;
             position: absolute; 
             top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 20;
+            z-index: 101; /* Выше чем header */
         }
-        .pulsating-dot {
-            width: 80px; /* УВЕЛИЧЕН РАЗМЕР В 4 РАЗА */
+        .pulsating-dot { /* УВЕЛИЧЕНА ТОЧКА */
+            width: 80px; 
             height: 80px; 
             background-color: var(--text-accent-color);
             border-radius: 50%;
@@ -228,13 +219,13 @@ INDEX_HTML = """
 
         .app-footer {
             width: 100%;
-            max-width: 500px; 
+            max-width: 700px; /* Ширина инпут-бара на десктопе */
             padding: 15px;
             position: fixed; 
-            bottom: 20px; 
+            bottom: 30px; /* Отступ снизу на десктопе */
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10;
+            z-index: 100; /* Выше чем фон */
         }
         .input-area {
             display: flex;
@@ -242,42 +233,41 @@ INDEX_HTML = """
             background-color: rgba(248, 248, 248, 0.8); 
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border-radius: 25px; 
-            padding: 8px 10px;
+            border-radius: 30px; /* Более овальная */
+            padding: 10px 15px;
             width: 100%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        #image-file-common, #image-file-desktop-actual { display: none; }
+        #image-file-common { display: none; }
 
         .file-upload-label-desktop { 
             cursor: pointer;
-            padding: 0; /* Убрали внутренний паддинг, т.к. размеры заданы */
-            margin-right: 8px;
-            display: none; 
+            padding: 0; 
+            margin-right: 12px; /* Отступ от поля промпта */
+            display: flex; 
             align-items: center;
             justify-content: center;
             position: relative;
-            width: 88px; height: 88px; /* УВЕЛИЧЕНО В 2 РАЗА */
+            width: 80px; height: 80px; /* УВЕЛИЧЕН РАЗМЕР ПРЕВЬЮ */
             background-color: var(--input-icon-bg);
-            border-radius: 12px; /* Скруглил побольше */
+            border-radius: 18px; /* Более скругленный */
             flex-shrink: 0;
             overflow: hidden;
         }
         .upload-icon-desktop { 
-            height: 48px; /* УВЕЛИЧЕНО ПРОПОРЦИОНАЛЬНО */
-            width: 48px;
+            height: 40px; /* Увеличена иконка */
+            width: 40px;
             display: block;
         }
         #image-preview-desktop {
             display: none; width: 100%; height: 100%; object-fit: cover; 
         }
 
-
         #prompt {
             flex-grow: 1;
             border: none;
-            padding: 10px;
-            font-size: 0.9rem;
+            padding: 15px 10px; /* Увеличил вертикальный паддинг */
+            font-size: 1rem;
             background-color: transparent;
             outline: none;
             color: #333; 
@@ -289,15 +279,16 @@ INDEX_HTML = """
             border: none;
             cursor: pointer;
             padding: 0; 
-            margin-left: 8px;
+            margin-left: 12px; /* Отступ от поля промпта */
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .magic-button img { height: 44px;  }
+        .magic-button img { height: 48px;  }
 
 
         .error-message {
+            display: none; /* Скрыто по умолчанию */
             margin-top: 10px;
             font-size: 0.9rem;
             color: #d93025;
@@ -306,12 +297,12 @@ INDEX_HTML = """
             padding: 10px;
             border-radius: 8px;
             position: fixed; 
-            bottom: 100px; 
+            bottom: 120px; /* над полем ввода, с запасом */
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - 30px);
             max-width: 480px;
-            z-index: 5;
+            z-index: 90; /* Ниже чем футер и лоадер */
         }
         
         /* --- Десктопная версия --- */
@@ -319,74 +310,48 @@ INDEX_HTML = """
             body {
                 background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
             }
-            .app-header { top: 30px; }
-            .logo { height: 35px; } 
-            .app-main { 
-                padding-top: 100px; /* Увеличил отступ от лого */
-                gap: 30px; 
-                justify-content: space-between; /* Чтобы прижать футер */
-            }
-
             .desktop-main-text { display: block; }
             .mobile-main-text { display: none; }
-            /* ИЗМЕНЕН РАЗМЕР ОСНОВНОГО ТЕКСТА */
-            .main-text-display.desktop-main-text img { max-width: 650px; } 
+            .main-text-display.desktop-main-text img { max-width: 650px; } /* УМЕНЬШЕН ТЕКСТ */
             
             .image-drop-area { display: none; } 
-
-            /* КНОПКИ ДЕЙСТВИЙ НА ДЕСКТОПЕ - должны быть видимы */
-            .action-buttons { 
-                display: flex;
-                max-width: 600px; /* Ширина для 4х кнопок в ряд */
-                margin-top: 20px; /* Отступ от текста */
-                margin-bottom: 30px; /* Отступ до поля ввода */
-            }
-            .action-btn img { height: 48px; }
-
-            .app-footer { max-width: 700px; bottom: 40px; /* Поднял немного футер */ }
-            .input-area { padding: 10px 15px; border-radius: 30px;}
             .file-upload-label-desktop { display: flex; } 
-            #prompt { font-size: 1rem; }
-            .magic-button img { height: 48px; }
 
-            .result-view { 
-                max-width: 800px; 
-                max-height: 60vh; /* Уменьшил немного, чтобы не перекрывало */
-                /* Для позиционирования по центру между верхом (лого) и низом (кнопки/инпут) */
-                /* Это сложно без JS, если высота лого и инпута динамическая. */
-                /* Пробуем так: */
-                margin-top: 0; 
-                margin-bottom: 0; /* Управляется через gap в .app-main */
-            }
-             #result-image { max-height: calc(60vh - 20px); }
+            .action-buttons { display: flex; } /* Показываем кнопки на десктопе */
+
         }
-        /* Мобильная версия */
+        /* Мобильная версия (основные стили уже mobile-first) */
         @media (max-width: 768px) {
             body {
                 background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}");
             }
+            .app-header { top: 15px;}
+            .logo { height: 30px; }
              .app-main {
-                justify-content: space-between; 
-                padding-top: 80px; /* Отступ от лого для мобилки */
-                padding-bottom: 120px; /* Место для фиксированного футера */
+                justify-content: space-around; /* Распределение пространства на мобильном */
+                padding-top: 60px; 
+                padding-bottom: 100px; 
+                gap: var(--mob-spacing-unit);
             }
             .initial-view-elements {
-                justify-content: flex-start; /* Элементы сверху */
+                justify-content: flex-start; 
                 flex-grow: 0; 
-                gap: var(--mob-spacing-unit); /* Используем переменную для отступов */
+                gap: var(--mob-spacing-unit);
             }
-            .app-header .logo { margin-bottom: 0; } /* Убираем если есть, управляем gap */
-             .mobile-main-text { margin-bottom: 0; } /* Управляется через gap */
+            .main-text-display.mobile-main-text { margin-bottom: 0; } /* Отступ управляется gap родителя */
+             .action-buttons { margin-top: 0; } /* Отступ управляется gap родителя */
+             .action-btn img { height: 38px; }
+
 
             .file-upload-label-desktop { display: none; } 
-            .image-drop-area {
-                margin-top: var(--mob-spacing-unit); /* Отступ от текста до MOB_DROP */
-            }
-            .action-buttons {
-                margin-top: var(--mob-spacing-unit); /* Отступ от MOB_DROP до кнопок */
-            }
+            .image-drop-area { display: flex; } /* Показываем мобильную зону загрузки */
 
-            .app-footer { max-width: calc(100% - 30px); bottom: 20px; }
+
+            .app-footer { max-width: calc(100% - 30px); bottom: 15px; }
+            .input-area { padding: 6px 8px; border-radius: 20px;}
+            #prompt { font-size: 0.85rem; padding: 10px 8px;}
+            .magic-button img { height: 38px; }
+            .file-upload-label-desktop { /* Стили для десктопной иконки не нужны тут, они скрыты*/ }
         }
     </style>
 </head>
@@ -414,7 +379,8 @@ INDEX_HTML = """
                 </div>
             </div>
 
-            <div class="result-view"> <img id="result-image" src="" alt="Generated Image">
+            <div class="result-view">
+                <img id="result-image" src="" alt="Generated Image">
                 <a href="#" id="download-action" class="download-action-link" download="generated_image.png">
                     <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
                 </a>
@@ -464,8 +430,31 @@ INDEX_HTML = """
         const loader = document.getElementById('loader');
         const errorBox = document.getElementById('error-box');
         const submitButton = document.getElementById('submit-button'); 
-        const magicButtonIcon = document.getElementById('magic-button-icon');
+        const magicButtonIcon = document.getElementById('magic-button-icon'); // Если нужно будет менять иконку
         const promptInput = document.getElementById('prompt');
+
+        function isDesktopView() {
+            return window.innerWidth > 768;
+        }
+
+        // Показываем/скрываем нужные элементы при загрузке и ресайзе
+        function handleViewElementsDisplay() {
+            if (isDesktopView()) {
+                document.querySelector('.desktop-main-text').style.display = 'block';
+                document.querySelector('.mobile-main-text').style.display = 'none';
+                if (mobileDropArea) mobileDropArea.style.display = 'none'; // Скрываем мобильную зону на десктопе
+                if (desktopUploadLabel) desktopUploadLabel.style.display = 'flex'; // Показываем десктопную
+            } else {
+                document.querySelector('.desktop-main-text').style.display = 'none';
+                document.querySelector('.mobile-main-text').style.display = 'block';
+                if (mobileDropArea) mobileDropArea.style.display = 'flex'; // Показываем мобильную зону
+                if (desktopUploadLabel) desktopUploadLabel.style.display = 'none'; // Скрываем десктопную
+            }
+        }
+        
+        handleViewElementsDisplay(); // При первой загрузке
+        window.addEventListener('resize', handleViewElementsDisplay);
+
 
         if (mobileDropArea) {
             mobileDropArea.addEventListener('click', () => imageFileInput.click());
@@ -478,15 +467,18 @@ INDEX_HTML = """
             if (this.files && this.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (mobileImagePreview && mobileDropPlaceholder) {
-                        mobileImagePreview.src = e.target.result;
-                        mobileImagePreview.style.display = 'block';
-                        mobileDropPlaceholder.style.display = 'none';
-                    }
-                    if (desktopImagePreview && desktopUploadIcon) {
-                        desktopImagePreview.src = e.target.result;
-                        desktopImagePreview.style.display = 'block';
-                        desktopUploadIcon.style.display = 'none';
+                    if (isDesktopView()) {
+                        if (desktopImagePreview) {
+                            desktopImagePreview.src = e.target.result;
+                            desktopImagePreview.style.display = 'block';
+                        }
+                        if (desktopUploadIcon) desktopUploadIcon.style.display = 'none';
+                    } else {
+                        if (mobileImagePreview) {
+                            mobileImagePreview.src = e.target.result;
+                            mobileImagePreview.style.display = 'block';
+                        }
+                        if (mobileDropPlaceholder) mobileDropPlaceholder.style.display = 'none';
                     }
                 }
                 reader.readAsDataURL(this.files[0]);
@@ -518,7 +510,7 @@ INDEX_HTML = """
                 if(downloadLink) downloadLink.style.display = 'none';
             } else {
                 loader.style.display = 'none';
-                // Блюр убирается только при возврате к начальному виду
+                // Блюр убирается только при возврате к начальному виду или при ошибке (если не показываем результат)
             }
         }
         
@@ -526,17 +518,17 @@ INDEX_HTML = """
             if (initialViewElements) initialViewElements.style.display = 'flex';
             if (resultView) resultView.style.display = 'none';
             if(downloadLink) downloadLink.style.display = 'none';
-            // magicButtonIcon.src = "{{ url_for('static', filename='images/MAGIC_GREEN.png') }}"; // Если бы меняли иконку
             submitButton.dataset.action = "generate";
             promptInput.value = '';
             resetPreview();
             document.body.classList.remove('bg-blur'); 
+            handleViewElementsDisplay(); // Восстанавливаем отображение текста/загрузчика
         }
 
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             
-            if (submitButton.dataset.action === "startover") {
+            if (submitButton.dataset.action === "startover") { // Логика для "Start Over"
                 showInitialView();
                 return;
             }
@@ -551,8 +543,8 @@ INDEX_HTML = """
                 errorBox.textContent = "Пожалуйста, выберите файл для загрузки.";
                 errorBox.style.display = 'block';
                 showLoader(false);
-                document.body.classList.remove('bg-blur'); // Убираем блюр если нет файла
-                if (initialViewElements) initialViewElements.style.display = 'flex'; // Возвращаем начальный вид
+                document.body.classList.remove('bg-blur'); 
+                if (initialViewElements) initialViewElements.style.display = 'flex'; 
                 if (resultView) resultView.style.display = 'none';
                 submitButton.disabled = false;
                 return;
@@ -565,12 +557,12 @@ INDEX_HTML = """
                     body: formData
                 });
                 const data = await response.json();
-                // Блюр убирается здесь только если НЕ ошибка
+                
                 if (!response.ok) {
                     throw new Error(data.error || 'Неизвестная ошибка сервера');
                 }
-                document.body.classList.remove('bg-blur'); // Убираем блюр после успешной загрузки
-                showLoader(false); // Убираем лоадер ДО показа результата
+                // Блюр НЕ убираем здесь, если хотим его оставить при показе результата
+                showLoader(false); 
                 
                 if (resultView) resultView.style.display = 'flex';
                 resultImage.src = data.output_url;
@@ -580,18 +572,19 @@ INDEX_HTML = """
                     downloadLink.style.display = 'block'; 
                 }
                 
-                if (window.innerWidth <= 768) { // Только для мобильных меняем кнопку
+                if (window.innerWidth <= 768) { 
                      submitButton.dataset.action = "startover";
-                     // Можно добавить изменение текста/иконки для "Start Over" если есть такая иконка
+                     // Тут можно было бы поменять иконку MAGIC_GREEN.png на иконку "Start Over"
+                     // magicButtonIcon.src = "новый_путь_к_иконке_start_over.png";
                 }
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                showLoader(false); // Убираем лоадер
+                showLoader(false); 
                 document.body.classList.remove('bg-blur'); // Убираем блюр при ошибке
                 errorBox.textContent = "Произошла ошибка: " + error.message;
                 errorBox.style.display = 'block';
-                if (resultView) resultView.style.display = 'flex'; // Показываем блок для ошибки
+                if (resultView) resultView.style.display = 'flex'; 
             } finally {
                 submitButton.disabled = false;
             }
@@ -601,7 +594,7 @@ INDEX_HTML = """
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 const currentTarget = e.currentTarget; 
-                const action = currentTarget.dataset.action;
+                const action = currentTarget.dataset.action; // Если у div.action-btn есть data-action
                 console.log("Action button clicked:", action);
             });
         });
