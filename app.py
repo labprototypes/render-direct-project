@@ -47,6 +47,8 @@ INDEX_HTML = """
             --mob-spacing-unit: 20px;
             --desktop-spacing-unit: 30px;
             --download-icon-size: 28px; /* Размер иконки скачивания */
+            --footer-height: 70px; /* Approximate height of the footer */
+            --action-buttons-height: 60px; /* Approximate height of the action buttons row */
         }
 
         * {
@@ -122,7 +124,8 @@ INDEX_HTML = """
             justify-content: flex-start; 
             flex-grow: 1;
             padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
-            padding-bottom: calc(70px + var(--mob-spacing-unit) + var(--mob-spacing-unit) + calc(45px / 2) + var(--mob-spacing-unit)); 
+            /* Adjust padding-bottom to account for fixed footer AND fixed action buttons */
+            padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2); 
             gap: var(--mob-spacing-unit); 
             text-align: center;
         }
@@ -210,11 +213,19 @@ INDEX_HTML = """
             align-items: center;
             gap: 30px; 
             flex-wrap: wrap; 
-            width: 100%;
-            max-width: 320px; 
-            margin-top: auto; 
-            padding-bottom: var(--mob-spacing-unit); 
-            flex-shrink: 0; 
+            width: calc(100% - calc(2 * var(--mob-spacing-unit))); /* Match footer width */
+            max-width: 500px; /* Match footer max-width */
+            padding: 10px 0; /* Add some padding */
+            
+            position: fixed; /* Fixed position */
+            bottom: calc(var(--footer-height) + var(--mob-spacing-unit) - 10px); /* Position above footer */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99; /* Below footer (100) but above other content */
+            background-color: rgba(30, 30, 30, 0.5); /* Optional: semi-transparent background */
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 20px; /* Optional: rounded corners */
         }
         .action-btn img { 
             height: calc(45px / 2); 
@@ -233,20 +244,20 @@ INDEX_HTML = """
         .result-image-wrapper {
              justify-content: center; 
              flex-grow: 1; 
-             display: flex; /* Changed to inline-flex for shrink-wrapping */
+             display: inline-flex; 
              align-items: center; 
-             width: auto; /* Let it be defined by content */
-             max-width: 100%; /* Ensure it doesn't overflow */
-             position: relative; /* For absolute positioning of the download button */
-             margin-bottom: calc(var(--download-icon-size) + 20px + 10px); /* Space for download icon + offset + some breathing room */
+             width: auto; 
+             max-width: 100%; 
+             position: relative; 
+             margin-bottom: calc(var(--download-icon-size) + 20px + 10px); 
         }
         #result-image {
-            max-width: 90vw; /* Adjusted to viewport width for better control */
-            max-height: 60vh; /* Adjusted max height */
+            max-width: 90vw; 
+            max-height: 60vh; 
             object-fit: contain;
             border-radius: 12px; 
             box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
-            display: block; /* Ensure no extra space below */
+            display: block; 
         }
         #result-image.result-aspect-portrait { 
         }
@@ -254,21 +265,19 @@ INDEX_HTML = """
         }
 
         .download-action-link {
-            display: none; /* Controlled by JS */
+            display: none; 
             position: absolute;
-            bottom: calc(-1 * (var(--download-icon-size) + 20px)); /* Position below the wrapper */
-            right: 0; /* Align to the right of the wrapper */
-            /* transform: translateX(-50%); To center it under the wrapper, if needed */
+            bottom: calc(-1 * (var(--download-icon-size) + 20px)); 
+            right: 0; 
             z-index: 10;
             cursor: pointer;
-            padding: 5px; /* Padding around the icon */
-            line-height: 0; /* To prevent extra space if link itself has height */
+            padding: 5px; 
+            line-height: 0; 
         }
         .download-button-icon { 
             height: var(--download-icon-size);
             width: var(--download-icon-size);
             display: block;
-            /* filter: invert(1); Removed, assuming Download.png is light */
         }
 
 
@@ -315,6 +324,10 @@ INDEX_HTML = """
             padding: 6px 8px; 
             width: 100%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px dashed transparent; /* For dragover feedback */
+        }
+        .input-area.dragover {
+            border-color: var(--text-accent-color);
         }
         #image-file-common { display: none; } 
 
@@ -378,7 +391,7 @@ INDEX_HTML = """
             padding: 10px 15px;
             border-radius: 8px;
             position: fixed;
-            bottom: calc(70px + var(--mob-spacing-unit) + 10px); 
+            bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2); 
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
@@ -390,6 +403,8 @@ INDEX_HTML = """
         /* --- Desktop Styles --- */
         @media (min-width: 769px) {
             :root {
+                 --footer-height: 80px; /* Approximate height of the footer on desktop */
+                 --action-buttons-height: 70px; /* Approximate height of the action buttons row on desktop */
             }
              .app-container-wrapper {
                 background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
@@ -405,7 +420,7 @@ INDEX_HTML = """
             }
             .app-main {
                 padding-top: calc(35px + var(--desktop-spacing-unit) + 15px); 
-                padding-bottom: calc(80px + var(--desktop-spacing-unit)); 
+                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--desktop-spacing-unit) * 2); 
                 gap: var(--desktop-spacing-unit);
                 justify-content: space-between; 
             }
@@ -428,13 +443,10 @@ INDEX_HTML = """
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
-                width: auto; 
-                max-width: none; 
                 gap: 50px; 
-                justify-content: center; 
-                flex-wrap: nowrap; 
-                padding-bottom: 0; 
-                margin-top: var(--desktop-spacing-unit); 
+                margin-top: 0; /* Removed margin-top as it's now fixed */
+                bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) - 10px); /* Position above footer on desktop */
+                max-width: 700px; /* Match footer max-width */
             }
             .action-btn { 
                 display: flex;
@@ -449,7 +461,7 @@ INDEX_HTML = """
                 visibility: visible; 
             }
             #result-image {
-                max-height: 60vh; /* Reverted from 65vh to match screenshot better */
+                max-height: 60vh; 
             }
 
             .download-action-link {
@@ -514,8 +526,8 @@ INDEX_HTML = """
             }
             .app-main {
                 justify-content: space-between; 
-                min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (70px + var(--mob-spacing-unit)) - (2 * var(--mob-spacing-unit)) );
-                padding-bottom: calc(70px + var(--mob-spacing-unit)); 
+                min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2) );
+                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2); 
             }
              .initial-top-group { 
                   gap: var(--mob-spacing-unit); 
@@ -526,7 +538,9 @@ INDEX_HTML = """
                 margin-top: 0; 
                 padding-bottom: 0; 
                 gap: 30px; 
-                max-width: 320px; 
+                max-width: calc(100% - 40px); /* Ensure it fits with padding */
+                bottom: calc(var(--footer-height) + var(--mob-spacing-unit) - 5px);
+                padding: 5px 0;
             }
             .action-btn img {
                  height: calc(45px / 2); 
@@ -618,6 +632,7 @@ INDEX_HTML = """
 
     const editForm = document.getElementById('edit-form');
     const promptInput = document.getElementById('prompt');
+    const inputArea = document.querySelector('.input-area'); // Get the input area for drag-drop
     const submitButton = document.getElementById('submit-button');
     const magicButtonIconImg = document.getElementById('magic-button-icon-img');
     const submitButtonTextContent = document.getElementById('submit-button-text-content');
@@ -659,7 +674,8 @@ INDEX_HTML = """
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
-        if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
+        // Action buttons are now fixed, so their display is managed separately or always visible
+        // if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
 
 
         if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
@@ -669,6 +685,7 @@ INDEX_HTML = """
 
         if (viewName === 'initial') {
             if (initialTopGroup) initialTopGroup.style.display = 'flex';
+            if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex'; // Show bubbles in initial view
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
             } else { 
@@ -683,12 +700,13 @@ INDEX_HTML = """
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
-            if (actionButtonsContainer) actionButtonsContainer.style.display = 'none'; 
+            if (actionButtonsContainer) actionButtonsContainer.style.display = 'none'; // Hide bubbles during loading
             if (initialTopGroup) initialTopGroup.style.display = 'none';
             if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         } else if (viewName === 'result') {
-            if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex'; // Changed to inline-flex for positioning context
-            if (downloadLink) downloadLink.style.display = 'block'; // Show download link
+            if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex'; 
+            if (downloadLink) downloadLink.style.display = 'block'; 
+            if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex'; // Show bubbles in result view
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
 
             if (!isDesktopView()) { 
@@ -734,7 +752,7 @@ INDEX_HTML = """
         }
     }
 
-    function setupDragAndDrop(dropZoneElement) {
+    function setupDragAndDrop(dropZoneElement, isPromptArea = false) {
         if (!dropZoneElement) return;
 
         dropZoneElement.addEventListener('dragover', (event) => {
@@ -756,12 +774,25 @@ INDEX_HTML = """
             
             if (event.dataTransfer.files && event.dataTransfer.files[0]) {
                 handleFileSelect(event.dataTransfer.files[0]);
+                 // If dropping on prompt area, also show desktop preview if applicable
+                if (isPromptArea && isDesktopView()) {
+                    if (desktopImagePreviewImg && desktopUploadIconImg) {
+                        const reader = new FileReader();
+                        reader.onload = function(e_preview) {
+                            desktopImagePreviewImg.src = e_preview.target.result;
+                            desktopImagePreviewImg.style.display = 'block';
+                            desktopUploadIconImg.style.display = 'none';
+                        }
+                        reader.readAsDataURL(event.dataTransfer.files[0]);
+                    }
+                }
             }
         });
     }
 
     if (mobileDropArea) setupDragAndDrop(mobileDropArea);
     if (desktopUploadLabel) setupDragAndDrop(desktopUploadLabel);
+    if (inputArea) setupDragAndDrop(inputArea, true); // Enable drag-drop for the whole input area
 
 
     if (imageFileInput) {
