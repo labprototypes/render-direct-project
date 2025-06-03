@@ -207,7 +207,7 @@ INDEX_HTML = """
             display: flex;
             justify-content: center; 
             align-items: center;
-            gap: 30px; /* Reduced from 60px (was doubled) */
+            gap: 30px; 
             flex-wrap: wrap; 
             width: 100%;
             max-width: 320px; 
@@ -235,6 +235,7 @@ INDEX_HTML = """
              display: flex; 
              align-items: center; 
              width: 100%; 
+             /* No position relative needed here anymore if button is outside */
         }
         #result-image {
             max-width: 90%; 
@@ -242,7 +243,7 @@ INDEX_HTML = """
             object-fit: contain;
             border-radius: 12px; 
             box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
-            position: relative;
+            /* position: relative; Not needed if button is outside */
         }
         #result-image.result-aspect-portrait { 
         }
@@ -250,24 +251,31 @@ INDEX_HTML = """
             max-width: 100%; 
         }
 
-
         .download-action-link {
-            display: none; 
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            z-index: 10;
-            cursor: pointer;
-            background-color: rgba(0,0,0,0.4);
-            border-radius: 50%;
-            padding: 6px;
+            display: none; /* Controlled by JS */
+            margin-top: 15px; /* Space above the download button */
+            padding: 8px 15px;
+            background-color: var(--text-accent-color);
+            color: #333;
+            font-family: 'ChangerFont', sans-serif;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transition: background-color 0.2s ease;
         }
-        .download-button-icon {
-            height: 20px;
-            width: 20px;
-            display: block;
-            filter: invert(1);
+        .download-action-link:hover {
+            background-color: #c8e070; /* Slightly darker accent */
         }
+        .download-button-icon { /* This class might not be used if we go text-only for the link */
+            height: 1em; /* Align with text size */
+            width: 1em;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+            filter: invert(1); /* If using a dark icon on light button */
+        }
+
 
         .loader-container {
             justify-content: center;
@@ -427,7 +435,7 @@ INDEX_HTML = """
             .action-buttons {
                 width: auto; 
                 max-width: none; 
-                gap: 50px; /* Reduced from 100px (was doubled) */
+                gap: 50px; 
                 justify-content: center; 
                 flex-wrap: nowrap; 
                 padding-bottom: 0; 
@@ -444,6 +452,11 @@ INDEX_HTML = """
                 object-fit: contain;
                 display: block; 
                 visibility: visible; 
+            }
+
+            .download-action-link {
+                font-size: 1rem;
+                margin-top: var(--desktop-spacing-unit); /* More space on desktop */
             }
 
             #result-image {
@@ -518,7 +531,7 @@ INDEX_HTML = """
             .action-buttons {
                 margin-top: 0; 
                 padding-bottom: 0; 
-                gap: 30px; /* Reduced from 60px (was doubled) */
+                gap: 30px; 
                 max-width: 320px; 
             }
             .action-btn img {
@@ -560,10 +573,10 @@ INDEX_HTML = """
 
             <div class="result-image-wrapper">
                 <img id="result-image" src="" alt="Generated Image">
-                <a href="#" id="download-action" class="download-action-link" download="generated_image.png">
-                    <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
-                </a>
             </div>
+            <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
+                Скачать изображение
+            </a>
             
             <div id="loader" class="loader-container">
                 <div class="pulsating-dot"></div>
@@ -618,7 +631,7 @@ INDEX_HTML = """
     const initialTopGroup = document.querySelector('.initial-top-group'); 
     const resultImageWrapper = document.querySelector('.result-image-wrapper');
     const resultImage = document.getElementById('result-image');
-    const downloadLink = document.getElementById('download-action');
+    const downloadLink = document.getElementById('download-action'); // This is now a direct child of app-main
     const loaderContainer = document.getElementById('loader');
     const actionButtonsContainer = document.querySelector('.action-buttons');
 
@@ -650,6 +663,7 @@ INDEX_HTML = """
         if (initialTopGroup) initialTopGroup.style.display = 'none';
         if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         if (loaderContainer) loaderContainer.style.display = 'none';
+        if (downloadLink) downloadLink.style.display = 'none'; // Hide download link by default
         
         if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
 
@@ -657,7 +671,6 @@ INDEX_HTML = """
         if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
         if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; 
         if (mobileDropArea) mobileDropArea.style.display = 'none'; 
-        if (downloadLink) downloadLink.style.display = 'none';
 
 
         if (viewName === 'initial') {
@@ -681,8 +694,8 @@ INDEX_HTML = """
             if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         } else if (viewName === 'result') {
             if (resultImageWrapper) resultImageWrapper.style.display = 'flex';
+            if (downloadLink) downloadLink.style.display = 'inline-block'; // Show download link as inline-block for centering via text-align on parent or auto margins
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
-            if (downloadLink) downloadLink.style.display = 'block'; 
 
             if (!isDesktopView()) { 
                 if (magicButtonIconImg) magicButtonIconImg.style.display = 'none';
