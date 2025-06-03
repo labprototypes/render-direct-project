@@ -124,8 +124,7 @@ INDEX_HTML = """
             justify-content: flex-start; 
             flex-grow: 1;
             padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
-            /* Adjust padding-bottom to account for fixed footer AND fixed action buttons */
-            padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2); 
+            padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); /* Increased bottom padding */
             gap: var(--mob-spacing-unit); 
             text-align: center;
         }
@@ -213,19 +212,17 @@ INDEX_HTML = """
             align-items: center;
             gap: 30px; 
             flex-wrap: wrap; 
-            width: calc(100% - calc(2 * var(--mob-spacing-unit))); /* Match footer width */
-            max-width: 500px; /* Match footer max-width */
-            padding: 10px 0; /* Add some padding */
+            width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
+            max-width: 500px; 
+            padding: 10px 0; 
             
-            position: fixed; /* Fixed position */
-            bottom: calc(var(--footer-height) + var(--mob-spacing-unit) - 10px); /* Position above footer */
+            position: fixed; 
+            bottom: calc(var(--footer-height) + var(--mob-spacing-unit) + 15px); /* Increased bottom offset */
             left: 50%;
             transform: translateX(-50%);
-            z-index: 99; /* Below footer (100) but above other content */
-            background-color: rgba(30, 30, 30, 0.5); /* Optional: semi-transparent background */
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border-radius: 20px; /* Optional: rounded corners */
+            z-index: 99; 
+            /* Removed background and backdrop-filter */
+            border-radius: 20px; 
         }
         .action-btn img { 
             height: calc(45px / 2); 
@@ -324,7 +321,7 @@ INDEX_HTML = """
             padding: 6px 8px; 
             width: 100%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 2px dashed transparent; /* For dragover feedback */
+            border: 2px dashed transparent; 
         }
         .input-area.dragover {
             border-color: var(--text-accent-color);
@@ -391,7 +388,7 @@ INDEX_HTML = """
             padding: 10px 15px;
             border-radius: 8px;
             position: fixed;
-            bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2); 
+            bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); /* Adjusted for increased padding-bottom of app-main */
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
@@ -403,8 +400,8 @@ INDEX_HTML = """
         /* --- Desktop Styles --- */
         @media (min-width: 769px) {
             :root {
-                 --footer-height: 80px; /* Approximate height of the footer on desktop */
-                 --action-buttons-height: 70px; /* Approximate height of the action buttons row on desktop */
+                 --footer-height: 80px; 
+                 --action-buttons-height: 70px; 
             }
              .app-container-wrapper {
                 background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
@@ -420,7 +417,7 @@ INDEX_HTML = """
             }
             .app-main {
                 padding-top: calc(35px + var(--desktop-spacing-unit) + 15px); 
-                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--desktop-spacing-unit) * 2); 
+                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--desktop-spacing-unit) * 3); /* Increased bottom padding */
                 gap: var(--desktop-spacing-unit);
                 justify-content: space-between; 
             }
@@ -444,9 +441,10 @@ INDEX_HTML = """
             
             .action-buttons {
                 gap: 50px; 
-                margin-top: 0; /* Removed margin-top as it's now fixed */
-                bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) - 10px); /* Position above footer on desktop */
-                max-width: 700px; /* Match footer max-width */
+                margin-top: 0; 
+                bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) + 15px); /* Increased bottom offset */
+                max-width: 700px; 
+                /* Removed background and backdrop-filter */
             }
             .action-btn { 
                 display: flex;
@@ -526,8 +524,8 @@ INDEX_HTML = """
             }
             .app-main {
                 justify-content: space-between; 
-                min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2) );
-                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2); 
+                min-height: calc(100vh - (30px + var(--mob-spacing-unit) + 15px) - (var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3) );
+                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); /* Increased bottom padding */
             }
              .initial-top-group { 
                   gap: var(--mob-spacing-unit); 
@@ -538,9 +536,10 @@ INDEX_HTML = """
                 margin-top: 0; 
                 padding-bottom: 0; 
                 gap: 30px; 
-                max-width: calc(100% - 40px); /* Ensure it fits with padding */
-                bottom: calc(var(--footer-height) + var(--mob-spacing-unit) - 5px);
+                max-width: calc(100% - 40px); 
+                bottom: calc(var(--footer-height) + var(--mob-spacing-unit) + 10px); /* Adjusted for more space */
                 padding: 5px 0;
+                /* Removed background and backdrop-filter */
             }
             .action-btn img {
                  height: calc(45px / 2); 
@@ -674,8 +673,14 @@ INDEX_HTML = """
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
-        // Action buttons are now fixed, so their display is managed separately or always visible
-        // if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex';
+        // Action buttons are now fixed, their display is managed based on view
+        if (actionButtonsContainer) {
+            if (viewName === 'loading') {
+                actionButtonsContainer.style.display = 'none';
+            } else {
+                actionButtonsContainer.style.display = 'flex';
+            }
+        }
 
 
         if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
@@ -685,7 +690,7 @@ INDEX_HTML = """
 
         if (viewName === 'initial') {
             if (initialTopGroup) initialTopGroup.style.display = 'flex';
-            if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex'; // Show bubbles in initial view
+            // actionButtonsContainer display is handled above
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
             } else { 
@@ -700,13 +705,13 @@ INDEX_HTML = """
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
-            if (actionButtonsContainer) actionButtonsContainer.style.display = 'none'; // Hide bubbles during loading
+            // actionButtonsContainer display is handled above
             if (initialTopGroup) initialTopGroup.style.display = 'none';
             if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         } else if (viewName === 'result') {
             if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex'; 
             if (downloadLink) downloadLink.style.display = 'block'; 
-            if (actionButtonsContainer) actionButtonsContainer.style.display = 'flex'; // Show bubbles in result view
+            // actionButtonsContainer display is handled above
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
 
             if (!isDesktopView()) { 
@@ -792,7 +797,7 @@ INDEX_HTML = """
 
     if (mobileDropArea) setupDragAndDrop(mobileDropArea);
     if (desktopUploadLabel) setupDragAndDrop(desktopUploadLabel);
-    if (inputArea) setupDragAndDrop(inputArea, true); // Enable drag-drop for the whole input area
+    if (inputArea) setupDragAndDrop(inputArea, true); 
 
 
     if (imageFileInput) {
