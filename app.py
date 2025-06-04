@@ -160,7 +160,8 @@ INDEX_HTML = """
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
             padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
-            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); 
+            /* padding-bottom might need adjustment due to fixed elements potentially overlapping footer area */
+            padding-bottom: calc(10vh + var(--footer-height-mob) + var(--action-buttons-height-mob)); /* Increased to prevent overlap */
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
         }
@@ -179,7 +180,7 @@ INDEX_HTML = """
         .page-header-inner { 
             width: 100%;
             max-width: 1200px; 
-            padding: var(--header-vertical-padding) 30px; /* ИЗМЕНЕНИЕ: Боковые отступы для мобильной версии */
+            padding: var(--header-vertical-padding) 25px; /* ИЗМЕНЕНИЕ: Боковые отступы 25px для мобильных */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -287,16 +288,15 @@ INDEX_HTML = """
             align-items: center;
             justify-content: flex-start; 
             flex-grow: 1;
-            padding-top: var(--mob-spacing-unit); /* This padding might need adjustment if fixed elements overlap */
+            /* padding-top: var(--mob-spacing-unit); Removed as initial elements are fixed */
             gap: var(--mob-spacing-unit); 
         }
         
         .initial-top-group { 
-            display: flex; flex-direction: column; align-items: center;
-            gap: var(--mob-spacing-unit); 
+            /* This group might not be strictly needed if its mobile children are always fixed */
+            /* display: flex; flex-direction: column; align-items: center; */
+            /* gap: var(--mob-spacing-unit); */
             width: 100%;
-            /* margin-top: 30px; This might no longer be needed if children are fixed */
-            /* The initial top group itself might not need to be displayed if all its mobile children are fixed */
         }
         .desktop-main-text-img { 
             display: none; 
@@ -310,7 +310,7 @@ INDEX_HTML = """
             display: block; 
             max-height: 20vh; 
             max-width: 90%; object-fit: contain; 
-            position: fixed; /* ИЗМЕНЕНИЕ: Фиксация текста */
+            position: fixed; 
             top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px); 
             left: 50%; 
             transform: translateX(-50%); 
@@ -320,12 +320,11 @@ INDEX_HTML = """
         .image-drop-area-mobile {
             width: 80%; max-width: 280px; height: 165px; background-color: transparent; 
             border-radius: 25px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; /* position: relative; overflow: hidden; -- ИЗМЕНЕНО НА FIXED */
-            position: fixed; /* ИЗМЕНЕНИЕ: Фиксация поля ввода изображения */
+            cursor: pointer; 
+            position: fixed; 
             overflow: hidden; 
             border: 2px dashed rgba(248, 248, 248, 0.3); 
-            /* margin-top: 40px; -- Убрано, так как позиция теперь фиксированная */
-            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px + 20vh + 15px); /* Позиция под текстом */
+            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px + 20vh + 15px); 
             left: 50%; 
             transform: translateX(-50%); 
             z-index: 10;
@@ -368,19 +367,42 @@ INDEX_HTML = """
              justify-content: center; flex-grow: 1; display: inline-flex; 
              align-items: center; width: auto; max-width: 100%; 
              position: relative; 
-             margin-bottom: calc(var(--download-icon-size) + 10px + 5px); /* ИЗМЕНЕНИЕ: Отступ для кнопки "скачать" */
+             margin-bottom: calc(var(--download-icon-size) + 5px + 5px); 
+        }
+        .result-image-wrapper.fixed-mobile {
+            position: fixed;
+            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px); /* Ниже хедера */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90vw; 
+            max-width: 400px; 
+            z-index: 20; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 0; 
         }
         #result-image {
-            max-width: 90vw; max-height: 60vh; object-fit: contain;
+            max-width: 100%; /* Заполнит .fixed-mobile по ширине */
+            max-height: 60vh; /* Ограничение по высоте остается */
+            object-fit: contain;
             border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
             display: block; 
         }
 
         .download-action-link {
-            display: none; position: absolute;
-            bottom: calc(-1 * (var(--download-icon-size) + 10px)); /* ИЗМЕНЕНИЕ: Отступ кнопки "скачать" */
-            right: 0; z-index: 10; cursor: pointer;
+            display: none; 
+            position: absolute; /* Остается absolute для позиционирования относительно result-image, если НЕ fixed-mobile */
+            bottom: calc(-1 * (var(--download-icon-size) + 5px)); /* ИЗМЕНЕНИЕ: отступ 5px */
+            right: 0; 
+            z-index: 10; cursor: pointer;
             padding: 5px; line-height: 0; 
+        }
+        .result-image-wrapper.fixed-mobile .download-action-link {
+            position: static; /* Становится static внутри fixed-mobile */
+            margin-top: 5px; /* Отступ 5px от изображения */
+            bottom: auto; /* Сброс absolute позиционирования */
+            right: auto;  /* Сброс absolute позиционирования */
         }
         .download-button-icon { 
             height: var(--download-icon-size); width: var(--download-icon-size); display: block;
@@ -429,6 +451,14 @@ INDEX_HTML = """
             margin-left: 8px; display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; 
         }
+        .submit-button-element.start-over-btn-mobile { /* Стили для кнопки "Начать заново" */
+            width: 60px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .submit-button-element.start-over-btn-mobile .submit-button-text-content {
+            color: var(--text-accent-color);
+        }
         .submit-button-icon-img { height: 40px; width: 40px; }
         .submit-button-text-content { display: none; }
 
@@ -452,7 +482,7 @@ INDEX_HTML = """
                 padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
             }
             .page-header-inner {
-                padding: var(--header-vertical-padding) 0; /* Desktop remains with 0 side padding */
+                padding: var(--header-vertical-padding) 0; /* Desktop has 0 side padding */
             }
             .logo { height: var(--header-logo-height-desk); }
             .app-main { 
@@ -463,10 +493,11 @@ INDEX_HTML = """
             .initial-top-group { 
                 gap: var(--desktop-spacing-unit); 
                 margin-top: 40px; 
+                 display: flex !important; /* Ensure it's shown for desktop */
             }
-            .mobile-main-text-img { display: none; } /* Ensured mobile fixed elements are hidden on desktop */
-            .desktop-main-text-img { display: block; }
-            .image-drop-area-mobile { display: none; } /* Ensured mobile fixed elements are hidden on desktop */
+            .mobile-main-text-img { display: none !important; } 
+            .desktop-main-text-img { display: block !important; }
+            .image-drop-area-mobile { display: none !important; } 
             
             .action-buttons { 
                 gap: 25px; 
@@ -475,8 +506,25 @@ INDEX_HTML = """
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
-            .download-action-link { }
+             .result-image-wrapper.fixed-mobile { /* Reset fixed positioning for desktop */
+                position: relative; 
+                width: auto;
+                max-width: 100%;
+                top: auto;
+                left: auto;
+                transform: none;
+                z-index: auto;
+                flex-direction: row; /* or original value */
+                margin-bottom: calc(var(--download-icon-size) + 5px + 5px); 
+            }
+            .result-image-wrapper.fixed-mobile .download-action-link {
+                position: absolute;
+                margin-top: 0;
+                bottom: calc(-1 * (var(--download-icon-size) + 5px)); 
+                right: 0;
+            }
             #result-image { max-height: 60vh; }
+
             .app-footer { 
                 max-width: 700px;
                 bottom: 5vh; 
@@ -707,45 +755,46 @@ INDEX_HTML = """
 
         if(appBgWrapper) appBgWrapper.classList.remove('bg-blur');
         
-        if (initialTopGroup) initialTopGroup.style.display = 'none'; // Will be hidden if children are fixed
-        if (resultImageWrapper) resultImageWrapper.style.display = 'none';
+        // Hide all major view-specific containers by default
+        if (initialTopGroup) initialTopGroup.style.display = 'none'; 
+        if (resultImageWrapper) {
+            resultImageWrapper.style.display = 'none';
+            resultImageWrapper.classList.remove('fixed-mobile'); // Remove fixed class
+        }
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
         if (actionButtonsContainer) { 
-            if (viewName === 'loading') {
-                actionButtonsContainer.style.display = 'none';
-            } else {
-                actionButtonsContainer.style.display = 'flex';
-            }
+            actionButtonsContainer.style.display = (viewName === 'loading') ? 'none' : 'flex';
         }
         
-        // Reset common elements for input area before specific view logic
+        // Hide elements that might be fixed from other views
+        if(mobileMainTextImg) mobileMainTextImg.style.display = 'none';
+        if(mobileDropArea) mobileDropArea.style.display = 'none';
+        if(desktopMainTextImg) desktopMainTextImg.style.display = 'none';
+        
+        // Reset common input area elements
         if (promptInput) promptInput.style.display = 'block'; 
         if (submitButton) {
             submitButton.style.flexGrow = '0'; 
-            submitButton.style.justifyContent = 'center'; 
+            submitButton.classList.remove('start-over-btn-mobile');
         }
-        if(magicButtonIconImg) magicButtonIconImg.style.display = 'block'; // Default to show
-        if(submitButtonTextContent) submitButtonTextContent.style.display = 'none'; // Default to hide
-
-        if(desktopUploadIcon) desktopUploadIcon.style.display = isDesktopView() ? 'flex' : 'none';
+        if(magicButtonIconImg) magicButtonIconImg.style.display = 'block';
+        if(submitButtonTextContent) submitButtonTextContent.style.display = 'none';
+        if(desktopUploadIcon) desktopUploadIcon.style.display = 'none'; // Default hide, enable per view
 
 
         if (viewName === 'initial') {
-            if (initialTopGroup) initialTopGroup.style.display = 'flex'; // Show group for structure
+            if (initialTopGroup) initialTopGroup.style.display = 'flex'; 
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
                 if(desktopUploadIcon) desktopUploadIcon.style.display = 'flex';
-                 if(mobileMainTextImg) mobileMainTextImg.style.display = 'none';
-                 if(mobileDropArea) mobileDropArea.style.display = 'none';
             } else { 
-                if (mobileMainTextImg) mobileMainTextImg.style.display = 'block'; // Will be fixed
-                if (mobileDropArea) mobileDropArea.style.display = 'flex'; // Will be fixed
-                if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
+                if (mobileMainTextImg) mobileMainTextImg.style.display = 'block'; 
+                if (mobileDropArea) mobileDropArea.style.display = 'flex'; 
             }
             if (submitButtonTextContent) {
-                submitButtonTextContent.textContent = 'Start over'; // Reset text
+                submitButtonTextContent.textContent = 'Start over'; 
             }
             if (submitButton) submitButton.dataset.action = "generate";
             if (promptInput) {
@@ -756,13 +805,17 @@ INDEX_HTML = """
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
-            // initialTopGroup remains hidden or its children are fixed
         } else if (viewName === 'result') {
-            if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex'; 
+            if (resultImageWrapper) {
+                resultImageWrapper.style.display = 'inline-flex'; 
+                if (!isDesktopView()) {
+                    resultImageWrapper.classList.add('fixed-mobile');
+                }
+            }
             if (downloadLink) downloadLink.style.display = 'block'; 
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
 
-            if (!isDesktopView()) { // Mobile specific changes for result view
+            if (!isDesktopView()) { 
                 if (magicButtonIconImg) magicButtonIconImg.style.display = 'none';
                 if (submitButtonTextContent) {
                     submitButtonTextContent.style.display = 'block'; 
@@ -770,23 +823,22 @@ INDEX_HTML = """
                 }
                 if (submitButton) {
                     submitButton.dataset.action = "startover";
-                    submitButton.style.flexGrow = '0'; // ИЗМЕНЕНИЕ: Кнопка не растягивается
+                    submitButton.classList.add('start-over-btn-mobile');
                 }
                 if (promptInput) {
                     promptInput.value = ''; 
                     promptInput.style.display = 'none'; 
                 }
-                if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
-            } else { // Desktop specific changes for result view
+            } else { 
                 if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
                 if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
-                if (submitButton) {
+                 if (submitButton) {
                     submitButton.dataset.action = "generate"; 
                 }
                 if (promptInput) {
                     promptInput.style.display = 'block';
                 }
-                if(desktopUploadIcon) desktopUploadIcon.style.display = 'flex';
+                 if(desktopUploadIcon) desktopUploadIcon.style.display = 'flex';
             }
         }
         adjustLayoutForResultImage();
@@ -812,11 +864,12 @@ INDEX_HTML = """
         if (promptInput) promptInput.style.display = 'block'; 
         if (submitButton) {
             submitButton.style.flexGrow = '0'; 
-            submitButton.style.justifyContent = 'center'; 
+            submitButton.classList.remove('start-over-btn-mobile');
         }
         if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
         if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
         if(desktopUploadIcon) desktopUploadIcon.style.display = isDesktopView() ? 'flex' : 'none';
+        if (resultImageWrapper) resultImageWrapper.classList.remove('fixed-mobile'); // Ensure fixed is removed on resize before updateView
         
         updateView(currentView); 
     });
