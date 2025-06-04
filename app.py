@@ -22,8 +22,8 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD') 
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD') 
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD_app1_py') 
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD_app1_py') 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -115,21 +115,21 @@ INDEX_HTML = """
             --controls-bg-color: #F8F8F8;
             --controls-bg-color-transparent: rgba(248, 248, 248, 0.8);
             --blur-intensity: 8px;
-            --mob-spacing-unit: 20px;
-            --desktop-spacing-unit: 30px;
+            --mob-spacing-unit: 10px; /* Уменьшено для более плотного хедера */
+            --desktop-spacing-unit: 15px; /* Уменьшено для более плотного хедера */
             --download-icon-size: 28px; 
             
-            --header-text-color-on-light-bg: #333333; /* Темный текст для светлой подложки хедера */
+            --header-text-color-on-light-bg: #333333; 
             --header-border-radius: 22px; 
             --coin-color: #D9F47A; 
-            --header-vertical-padding: 15px; 
-            --header-logo-height-mob: 30px;
-            --header-logo-height-desk: 35px;
+            --header-vertical-padding: 10px; /* Уменьшено */
+            --header-logo-height-mob: 34px; /* Высота как у user-controls-loggedin */
+            --header-logo-height-desk: 42px; /* Высота как у user-controls-loggedin */
             
-            --footer-height-mob: 70px; 
-            --action-buttons-height-mob: 50px; 
-            --footer-height-desk: 80px;
-            --action-buttons-height-desk: 60px; 
+            --footer-height-mob: 60px; /* Скорректировано */
+            --action-buttons-height-mob: 40px; /* Скорректировано */
+            --footer-height-desk: 70px; /* Скорректировано */
+            --action-buttons-height-desk: 50px; /* Скорректировано */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -159,6 +159,7 @@ INDEX_HTML = """
             width: 100%; max-width: 1200px; margin: 0 auto; 
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
+            /* Отступ сверху для .app-container теперь учитывает высоту .page-header-container */
             padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
             padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); 
             display: flex; flex-direction: column; align-items: center;
@@ -179,25 +180,26 @@ INDEX_HTML = """
         .page-header-inner { 
             width: 100%;
             max-width: 1200px; 
-            padding: var(--header-vertical-padding) var(--mob-spacing-unit); /* Отступы по бокам для лого и бургера */
+            padding: var(--header-vertical-padding) var(--mob-spacing-unit);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .app-logo-link { display: inline-block; line-height: 0; } 
-        .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
+        .app-logo-link { display: flex; align-items: center; height: var(--header-logo-height-mob); } 
+        .logo { height: 100%; width: auto; cursor: pointer; display: block;}
 
         .top-right-nav { position: relative; display: flex; align-items: center; }
 
         .user-controls-loggedin {
             display: flex; align-items: center;
-            background-color: var(--controls-bg-color-transparent); /* F8F8F8 80% */
+            background-color: var(--controls-bg-color-transparent);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             padding: 6px 6px 6px 12px; 
             border-radius: var(--header-border-radius);
             gap: 8px;
+            height: var(--header-logo-height-mob); /* Такая же высота как у лого */
         }
         .token-display {
             display: flex; align-items: center; color: var(--header-text-color-on-light-bg); 
@@ -222,7 +224,7 @@ INDEX_HTML = """
             transform: translate(-50%, -50%);
             transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; 
         }
-        .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
+        .burger-menu-btn svg .line { stroke: #333; stroke-width:8; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         
         .burger-menu-btn .burger-icon { width: 16px; height: 12px; } 
         .burger-menu-btn .close-icon { width: 14px; height: 14px; opacity: 0; transform: translate(-50%, -50%) rotate(-45deg); }
@@ -272,6 +274,7 @@ INDEX_HTML = """
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             padding: 8px 15px; border-radius: var(--header-border-radius); display: flex; align-items: center;
+            height: var(--header-logo-height-mob); /* Такая же высота как у лого и user-controls-loggedin */
         }
         .user-controls-loggedout .auth-button {
             color: var(--header-text-color-on-light-bg); 
@@ -283,13 +286,10 @@ INDEX_HTML = """
         /* --- Стили из вашего файла app (1).py (основной дизайн) --- */
         /* Эти стили будут применены как есть, с минимальными изменениями для совместимости */
         .app-main {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            width: 100%; display: flex; flex-direction: column; align-items: center;
             justify-content: flex-start; 
             flex-grow: 1;
-            padding-top: var(--mob-spacing-unit); /* Отступ для DESK_MAIN.png */
+            padding-top: var(--mob-spacing-unit); 
             gap: var(--mob-spacing-unit); 
         }
         
@@ -297,7 +297,7 @@ INDEX_HTML = """
             display: flex; flex-direction: column; align-items: center;
             gap: var(--mob-spacing-unit); 
             width: 100%;
-            margin-top: 30px; /* Отступ для DESK_MAIN.png, чтобы он был ниже хедера */
+            margin-top: 30px; 
         }
         .desktop-main-text-img { 
             display: none; 
@@ -338,7 +338,7 @@ INDEX_HTML = """
             max-width: 320px; 
             padding: 5px 0; 
             position: fixed; 
-            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) + 25px); /* Увеличен отступ от футера */
+            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) + 10px); 
             left: 50%; transform: translateX(-50%);
             z-index: 99; 
         }
@@ -428,7 +428,6 @@ INDEX_HTML = """
 
         /* --- Desktop Styles --- */
         @media (min-width: 769px) {
-            .app-container-wrapper { background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}"); }
             .app-container { 
                 padding-left: var(--desktop-spacing-unit);
                 padding-right: var(--desktop-spacing-unit);
@@ -439,6 +438,10 @@ INDEX_HTML = """
                 padding: var(--header-vertical-padding) var(--desktop-spacing-unit);
             }
             .logo { height: var(--header-logo-height-desk); }
+            .user-controls-loggedin { height: var(--header-logo-height-desk); }
+            .user-controls-loggedout { height: var(--header-logo-height-desk); }
+
+
             .app-main { 
                 gap: var(--desktop-spacing-unit);
                  padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
@@ -446,7 +449,7 @@ INDEX_HTML = """
             
             .initial-top-group { 
                 gap: var(--desktop-spacing-unit); 
-                margin-top: 40px; /* Отступ для DESK_MAIN.png на десктопе, чтобы он был ниже хедера */
+                margin-top: 40px; /* Отступ для DESK_MAIN.png на десктопе */
             }
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img { display: block; }
@@ -455,7 +458,7 @@ INDEX_HTML = """
             .action-buttons { /* Фиксированные баблы для десктопа */
                 gap: 25px; 
                 max-width: 700px; 
-                bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) + 25px); /* Увеличен отступ от футера */
+                bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) + 10px); /* Отступ над футером */
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
