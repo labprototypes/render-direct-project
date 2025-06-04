@@ -22,22 +22,22 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD') 
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD') 
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD')
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['SECURITY_REGISTERABLE'] = True 
-app.config['SECURITY_SEND_REGISTER_EMAIL'] = False 
-app.config['SECURITY_RECOVERABLE'] = True 
-app.config['SECURITY_CHANGEABLE'] = True 
-app.config['SECURITY_CONFIRMABLE'] = False 
-app.config['SECURITY_USERNAME_ENABLE'] = True 
-app.config['SECURITY_USERNAME_REQUIRED'] = False 
-app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} 
-app.config['SECURITY_POST_LOGIN_VIEW'] = '/' 
-app.config['SECURITY_POST_LOGOUT_VIEW'] = '/' 
+app.config['SECURITY_REGISTERABLE'] = True
+app.config['SECURITY_SEND_REGISTER_EMAIL'] = False
+app.config['SECURITY_RECOVERABLE'] = True
+app.config['SECURITY_CHANGEABLE'] = True
+app.config['SECURITY_CONFIRMABLE'] = False
+app.config['SECURITY_USERNAME_ENABLE'] = True
+app.config['SECURITY_USERNAME_REQUIRED'] = False
+app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
+app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
+app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
 app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
 app.config['SECURITY_LOGIN_URL'] = '/login'
 app.config['SECURITY_LOGOUT_URL'] = '/logout'
@@ -72,10 +72,10 @@ class Role(db.Model, RoleMixin):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    username = db.Column(db.String(255), unique=True, nullable=True) 
+    username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False) 
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship(
         "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
@@ -179,7 +179,7 @@ INDEX_HTML = """
         .page-header-inner { 
             width: 100%;
             max-width: 1200px; 
-            padding: var(--header-vertical-padding) 0; /* ИЗМЕНЕНИЕ: Убраны боковые отступы */
+            padding: var(--header-vertical-padding) 0; 
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -192,7 +192,7 @@ INDEX_HTML = """
 
         .user-controls-loggedin {
             display: flex; align-items: center;
-            background-color: var(--controls-bg-color-transparent); /* F8F8F8 80% */
+            background-color: var(--controls-bg-color-transparent);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             padding: 6px 6px 6px 12px; 
@@ -211,7 +211,7 @@ INDEX_HTML = """
             background-color: var(--text-accent-color); border: none; border-radius: 50%;
             padding: 0; cursor: pointer; width: 34px; height: 34px; 
             display: flex; align-items: center; justify-content: center;
-            transition: background-color 0.3s ease, transform 0.3s ease;
+            transition: background-color: 0.3s ease, transform 0.3s ease;
             position: relative; 
         }
         .burger-menu-btn:hover { background-color: #c8e070; }
@@ -280,7 +280,6 @@ INDEX_HTML = """
         .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
         .user-controls-loggedout .auth-separator { color: var(--header-text-color-on-light-bg); margin: 0 6px; opacity: 0.6; }
 
-        /* --- Стили из вашего файла app (1).py (основной дизайн) --- */
         .app-main {
             width: 100%;
             display: flex;
@@ -304,7 +303,7 @@ INDEX_HTML = """
             width: auto;
             max-height: 85vh;
             object-fit: contain;
-            margin-top: 12vh; /* ИЗМЕНЕНИЕ: Текст опущен ниже */
+            margin-top: 12vh; 
         }
         .mobile-main-text-img { 
             display: block; 
@@ -317,7 +316,7 @@ INDEX_HTML = """
             border-radius: 25px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; position: relative; overflow: hidden; 
             border: 2px dashed rgba(248, 248, 248, 0.3); 
-            margin-top: 40px; /* ИЗМЕНЕНИЕ: Опущено поле для загрузки на мобильных */
+            margin-top: 40px; 
         }
         .image-drop-area-mobile.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
         .image-drop-area-mobile .mob-drop-placeholder-img { 
@@ -334,7 +333,7 @@ INDEX_HTML = """
             border-radius: inherit; position: relative; z-index: 1;
         }
         
-        .action-buttons { /* Фиксированные баблы */
+        .action-buttons { 
             display: flex; justify-content: center; align-items: center;
             gap: 10px; 
             flex-wrap: nowrap; 
@@ -342,7 +341,7 @@ INDEX_HTML = """
             max-width: 320px; 
             padding: 5px 0; 
             position: fixed; 
-            bottom: calc(5vh + var(--footer-height-mob) - 10px); /* ИЗМЕНЕНИЕ: Позиция поднята и привязана к футеру */
+            bottom: calc(5vh + var(--footer-height-mob) - 10px); 
             left: 50%; transform: translateX(-50%);
             z-index: 99; 
         }
@@ -357,7 +356,7 @@ INDEX_HTML = """
              justify-content: center; flex-grow: 1; display: inline-flex; 
              align-items: center; width: auto; max-width: 100%; 
              position: relative; 
-             margin-bottom: calc(var(--download-icon-size) + 20px + 10px); 
+             margin-bottom: calc(var(--download-icon-size) + 5px + 5px); /* ИЗМЕНЕНИЕ: Уменьшен отступ для кнопки скачать */
         }
         #result-image {
             max-width: 90vw; max-height: 60vh; object-fit: contain;
@@ -367,7 +366,7 @@ INDEX_HTML = """
 
         .download-action-link {
             display: none; position: absolute;
-            bottom: calc(-1 * (var(--download-icon-size) + 20px)); 
+            bottom: calc(-1 * (var(--download-icon-size) + 5px)); /* ИЗМЕНЕНИЕ: Уменьшен отступ кнопки скачать */
             right: 0; z-index: 10; cursor: pointer;
             padding: 5px; line-height: 0; 
         }
@@ -392,7 +391,7 @@ INDEX_HTML = """
         .app-footer { 
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
             max-width: 500px; padding: 0; position: fixed;
-            bottom: 5vh; /* ИЗМЕНЕНИЕ: Поле ввода поднято выше */
+            bottom: 5vh; 
             left: 50%;
             transform: translateX(-50%); z-index: 100;
         }
@@ -441,7 +440,7 @@ INDEX_HTML = """
                 padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
             }
             .page-header-inner {
-                padding: var(--header-vertical-padding) 0; /* ИЗМЕНЕНИЕ: Убраны боковые отступы */
+                padding: var(--header-vertical-padding) 0; 
             }
             .logo { height: var(--header-logo-height-desk); }
             .app-main { 
@@ -460,7 +459,7 @@ INDEX_HTML = """
             .action-buttons { 
                 gap: 25px; 
                 max-width: 700px; 
-                bottom: calc(5vh + var(--footer-height-desk) - 15px); /* ИЗМЕНЕНИЕ: Позиция поднята и привязана к футеру */
+                bottom: calc(5vh + var(--footer-height-desk) - 15px); 
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
@@ -468,7 +467,7 @@ INDEX_HTML = """
             #result-image { max-height: 60vh; }
             .app-footer { 
                 max-width: 700px;
-                bottom: 5vh; /* ИЗМЕНЕНИЕ: Поле ввода поднято выше */
+                bottom: 5vh; 
             }
             .input-area { padding: 10px 12px; border-radius: 30px; }
             .file-upload-label-desktop { 
@@ -643,7 +642,7 @@ INDEX_HTML = """
         }
     });
 
-    // --- Остальной JavaScript код (восстановлен из вашей версии) ---
+    // --- Остальной JavaScript код ---
     const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInput = document.getElementById('image-file-common');
     
@@ -692,6 +691,8 @@ INDEX_HTML = """
     function updateView(viewName) {
         currentView = viewName;
         
+        const desktopUploadIcon = inputArea.querySelector('.file-upload-label-desktop');
+
         if(appBgWrapper) appBgWrapper.classList.remove('bg-blur');
         
         if (initialTopGroup) initialTopGroup.style.display = 'none';
@@ -711,18 +712,35 @@ INDEX_HTML = """
         if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; 
         if (mobileDropArea) mobileDropArea.style.display = 'none'; 
 
+        // Reset common elements for input area before specific view logic
+        if (promptInput) promptInput.style.display = 'block'; // Default to visible
+        if (submitButton) {
+            submitButton.style.flexGrow = '0'; // Default to no grow
+            submitButton.style.justifyContent = 'center'; // Default justification
+        }
+        if(desktopUploadIcon) desktopUploadIcon.style.display = isDesktopView() ? 'flex' : 'none';
+
+
         if (viewName === 'initial') {
             if (initialTopGroup) initialTopGroup.style.display = 'flex';
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
+                if(desktopUploadIcon) desktopUploadIcon.style.display = 'flex';
             } else { 
                 if (mobileMainTextImg) mobileMainTextImg.style.display = 'block';
                 if (mobileDropArea) mobileDropArea.style.display = 'flex';
+                if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
             }
             if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
-            if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
+            if (submitButtonTextContent) {
+                submitButtonTextContent.style.display = 'none';
+                submitButtonTextContent.textContent = 'Start over'; // Reset text
+            }
             if (submitButton) submitButton.dataset.action = "generate";
-            if (promptInput) promptInput.value = ''; 
+            if (promptInput) {
+                 promptInput.value = ''; 
+                 promptInput.placeholder = "TYPE WHAT YOU WANT TO CHANGE";
+            }
             resetImagePreviews();
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
@@ -734,14 +752,34 @@ INDEX_HTML = """
             if (downloadLink) downloadLink.style.display = 'block'; 
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
 
-            if (!isDesktopView()) { 
+            if (!isDesktopView()) { // Mobile specific changes for result view
                 if (magicButtonIconImg) magicButtonIconImg.style.display = 'none';
-                if (submitButtonTextContent) submitButtonTextContent.style.display = 'block';
-                if (submitButton) submitButton.dataset.action = "startover";
-            } else { 
+                if (submitButtonTextContent) {
+                    submitButtonTextContent.style.display = 'block'; 
+                    submitButtonTextContent.textContent = 'Начать заново'; 
+                }
+                if (submitButton) {
+                    submitButton.dataset.action = "startover";
+                    submitButton.style.flexGrow = '1'; 
+                    submitButton.style.justifyContent = 'center'; 
+                }
+                if (promptInput) {
+                    promptInput.value = ''; 
+                    promptInput.style.display = 'none'; 
+                }
+                if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
+            } else { // Desktop specific changes for result view
                 if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
                 if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
-                if (submitButton) submitButton.dataset.action = "generate"; 
+                if (submitButton) {
+                    submitButton.dataset.action = "generate"; 
+                    // flexGrow and justifyContent reset to default by common reset code above
+                }
+                if (promptInput) {
+                    // promptInput.value = ''; // Optionally clear prompt on desktop
+                    promptInput.style.display = 'block';
+                }
+                if(desktopUploadIcon) desktopUploadIcon.style.display = 'flex';
             }
         }
         adjustLayoutForResultImage();
@@ -763,6 +801,17 @@ INDEX_HTML = """
     }
 
     window.addEventListener('resize', () => {
+        // Reset elements in inputArea before calling updateView to handle responsive changes correctly
+        const desktopUploadIcon = inputArea.querySelector('.file-upload-label-desktop');
+        if (promptInput) promptInput.style.display = 'block'; 
+        if (submitButton) {
+            submitButton.style.flexGrow = '0'; 
+            submitButton.style.justifyContent = 'center'; 
+        }
+        if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
+        if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
+        if(desktopUploadIcon) desktopUploadIcon.style.display = isDesktopView() ? 'flex' : 'none';
+        
         updateView(currentView); 
     });
     
