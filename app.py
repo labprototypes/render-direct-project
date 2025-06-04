@@ -179,7 +179,7 @@ INDEX_HTML = """
         .page-header-inner { 
             width: 100%;
             max-width: 1200px; 
-            padding: var(--header-vertical-padding) 0; 
+            padding: var(--header-vertical-padding) 30px; /* ИЗМЕНЕНИЕ: Боковые отступы для мобильной версии */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -287,7 +287,7 @@ INDEX_HTML = """
             align-items: center;
             justify-content: flex-start; 
             flex-grow: 1;
-            padding-top: var(--mob-spacing-unit);
+            padding-top: var(--mob-spacing-unit); /* This padding might need adjustment if fixed elements overlap */
             gap: var(--mob-spacing-unit); 
         }
         
@@ -295,7 +295,8 @@ INDEX_HTML = """
             display: flex; flex-direction: column; align-items: center;
             gap: var(--mob-spacing-unit); 
             width: 100%;
-            margin-top: 30px; 
+            /* margin-top: 30px; This might no longer be needed if children are fixed */
+            /* The initial top group itself might not need to be displayed if all its mobile children are fixed */
         }
         .desktop-main-text-img { 
             display: none; 
@@ -309,14 +310,25 @@ INDEX_HTML = """
             display: block; 
             max-height: 20vh; 
             max-width: 90%; object-fit: contain; 
+            position: fixed; /* ИЗМЕНЕНИЕ: Фиксация текста */
+            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px); 
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 10; 
         }
 
         .image-drop-area-mobile {
             width: 80%; max-width: 280px; height: 165px; background-color: transparent; 
             border-radius: 25px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; position: relative; overflow: hidden; 
+            cursor: pointer; /* position: relative; overflow: hidden; -- ИЗМЕНЕНО НА FIXED */
+            position: fixed; /* ИЗМЕНЕНИЕ: Фиксация поля ввода изображения */
+            overflow: hidden; 
             border: 2px dashed rgba(248, 248, 248, 0.3); 
-            margin-top: 40px; 
+            /* margin-top: 40px; -- Убрано, так как позиция теперь фиксированная */
+            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px + 20vh + 15px); /* Позиция под текстом */
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 10;
         }
         .image-drop-area-mobile.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
         .image-drop-area-mobile .mob-drop-placeholder-img { 
@@ -356,7 +368,7 @@ INDEX_HTML = """
              justify-content: center; flex-grow: 1; display: inline-flex; 
              align-items: center; width: auto; max-width: 100%; 
              position: relative; 
-             margin-bottom: calc(var(--download-icon-size) + 5px + 5px); /* ИЗМЕНЕНИЕ: Уменьшен отступ для кнопки скачать */
+             margin-bottom: calc(var(--download-icon-size) + 10px + 5px); /* ИЗМЕНЕНИЕ: Отступ для кнопки "скачать" */
         }
         #result-image {
             max-width: 90vw; max-height: 60vh; object-fit: contain;
@@ -366,7 +378,7 @@ INDEX_HTML = """
 
         .download-action-link {
             display: none; position: absolute;
-            bottom: calc(-1 * (var(--download-icon-size) + 5px)); /* ИЗМЕНЕНИЕ: Уменьшен отступ кнопки скачать */
+            bottom: calc(-1 * (var(--download-icon-size) + 10px)); /* ИЗМЕНЕНИЕ: Отступ кнопки "скачать" */
             right: 0; z-index: 10; cursor: pointer;
             padding: 5px; line-height: 0; 
         }
@@ -440,7 +452,7 @@ INDEX_HTML = """
                 padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
             }
             .page-header-inner {
-                padding: var(--header-vertical-padding) 0; 
+                padding: var(--header-vertical-padding) 0; /* Desktop remains with 0 side padding */
             }
             .logo { height: var(--header-logo-height-desk); }
             .app-main { 
@@ -452,9 +464,9 @@ INDEX_HTML = """
                 gap: var(--desktop-spacing-unit); 
                 margin-top: 40px; 
             }
-            .mobile-main-text-img { display: none; }
+            .mobile-main-text-img { display: none; } /* Ensured mobile fixed elements are hidden on desktop */
             .desktop-main-text-img { display: block; }
-            .image-drop-area-mobile { display: none; } 
+            .image-drop-area-mobile { display: none; } /* Ensured mobile fixed elements are hidden on desktop */
             
             .action-buttons { 
                 gap: 25px; 
@@ -549,7 +561,7 @@ INDEX_HTML = """
     <div class="app-container">
         <main class="app-main auth-required-content">
             <div class="initial-top-group">
-                <img src="{{ url_for('static', filename='images/DESK_MAIN.png') }}" alt="Change Everything" class="main-text-display-img desktop-main-text-img">
+                <img src="{{ url_for('static', filename='images/DESK_MAIN.png') }}" alt="Change Everything" class="main-text-display-img desktop-main-text-img"> 
                 <img src="{{ url_for('static', filename='images/MOB_MAIN.svg') }}" alt="Change Everything" class="main-text-display-img mobile-main-text-img">
 
                 <label for="image-file-common" class="image-drop-area-mobile">
@@ -695,7 +707,7 @@ INDEX_HTML = """
 
         if(appBgWrapper) appBgWrapper.classList.remove('bg-blur');
         
-        if (initialTopGroup) initialTopGroup.style.display = 'none';
+        if (initialTopGroup) initialTopGroup.style.display = 'none'; // Will be hidden if children are fixed
         if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
@@ -707,33 +719,32 @@ INDEX_HTML = """
                 actionButtonsContainer.style.display = 'flex';
             }
         }
-
-        if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
-        if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; 
-        if (mobileDropArea) mobileDropArea.style.display = 'none'; 
-
+        
         // Reset common elements for input area before specific view logic
-        if (promptInput) promptInput.style.display = 'block'; // Default to visible
+        if (promptInput) promptInput.style.display = 'block'; 
         if (submitButton) {
-            submitButton.style.flexGrow = '0'; // Default to no grow
-            submitButton.style.justifyContent = 'center'; // Default justification
+            submitButton.style.flexGrow = '0'; 
+            submitButton.style.justifyContent = 'center'; 
         }
+        if(magicButtonIconImg) magicButtonIconImg.style.display = 'block'; // Default to show
+        if(submitButtonTextContent) submitButtonTextContent.style.display = 'none'; // Default to hide
+
         if(desktopUploadIcon) desktopUploadIcon.style.display = isDesktopView() ? 'flex' : 'none';
 
 
         if (viewName === 'initial') {
-            if (initialTopGroup) initialTopGroup.style.display = 'flex';
+            if (initialTopGroup) initialTopGroup.style.display = 'flex'; // Show group for structure
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
                 if(desktopUploadIcon) desktopUploadIcon.style.display = 'flex';
+                 if(mobileMainTextImg) mobileMainTextImg.style.display = 'none';
+                 if(mobileDropArea) mobileDropArea.style.display = 'none';
             } else { 
-                if (mobileMainTextImg) mobileMainTextImg.style.display = 'block';
-                if (mobileDropArea) mobileDropArea.style.display = 'flex';
+                if (mobileMainTextImg) mobileMainTextImg.style.display = 'block'; // Will be fixed
+                if (mobileDropArea) mobileDropArea.style.display = 'flex'; // Will be fixed
                 if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
             }
-            if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
             if (submitButtonTextContent) {
-                submitButtonTextContent.style.display = 'none';
                 submitButtonTextContent.textContent = 'Start over'; // Reset text
             }
             if (submitButton) submitButton.dataset.action = "generate";
@@ -745,8 +756,7 @@ INDEX_HTML = """
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
-            if (initialTopGroup) initialTopGroup.style.display = 'none';
-            if (resultImageWrapper) resultImageWrapper.style.display = 'none';
+            // initialTopGroup remains hidden or its children are fixed
         } else if (viewName === 'result') {
             if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex'; 
             if (downloadLink) downloadLink.style.display = 'block'; 
@@ -760,8 +770,7 @@ INDEX_HTML = """
                 }
                 if (submitButton) {
                     submitButton.dataset.action = "startover";
-                    submitButton.style.flexGrow = '1'; 
-                    submitButton.style.justifyContent = 'center'; 
+                    submitButton.style.flexGrow = '0'; // ИЗМЕНЕНИЕ: Кнопка не растягивается
                 }
                 if (promptInput) {
                     promptInput.value = ''; 
@@ -773,10 +782,8 @@ INDEX_HTML = """
                 if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
                 if (submitButton) {
                     submitButton.dataset.action = "generate"; 
-                    // flexGrow and justifyContent reset to default by common reset code above
                 }
                 if (promptInput) {
-                    // promptInput.value = ''; // Optionally clear prompt on desktop
                     promptInput.style.display = 'block';
                 }
                 if(desktopUploadIcon) desktopUploadIcon.style.display = 'flex';
@@ -801,7 +808,6 @@ INDEX_HTML = """
     }
 
     window.addEventListener('resize', () => {
-        // Reset elements in inputArea before calling updateView to handle responsive changes correctly
         const desktopUploadIcon = inputArea.querySelector('.file-upload-label-desktop');
         if (promptInput) promptInput.style.display = 'block'; 
         if (submitButton) {
