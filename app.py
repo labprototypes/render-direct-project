@@ -22,22 +22,22 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD')
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD') 
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD') 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['SECURITY_REGISTERABLE'] = True
-app.config['SECURITY_SEND_REGISTER_EMAIL'] = False
-app.config['SECURITY_RECOVERABLE'] = True
-app.config['SECURITY_CHANGEABLE'] = True
-app.config['SECURITY_CONFIRMABLE'] = False
-app.config['SECURITY_USERNAME_ENABLE'] = True
-app.config['SECURITY_USERNAME_REQUIRED'] = False
-app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
-app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
-app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
+app.config['SECURITY_REGISTERABLE'] = True 
+app.config['SECURITY_SEND_REGISTER_EMAIL'] = False 
+app.config['SECURITY_RECOVERABLE'] = True 
+app.config['SECURITY_CHANGEABLE'] = True 
+app.config['SECURITY_CONFIRMABLE'] = False 
+app.config['SECURITY_USERNAME_ENABLE'] = True 
+app.config['SECURITY_USERNAME_REQUIRED'] = False 
+app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} 
+app.config['SECURITY_POST_LOGIN_VIEW'] = '/' 
+app.config['SECURITY_POST_LOGOUT_VIEW'] = '/' 
 app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
 app.config['SECURITY_LOGIN_URL'] = '/login'
 app.config['SECURITY_LOGOUT_URL'] = '/logout'
@@ -72,10 +72,10 @@ class Role(db.Model, RoleMixin):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    username = db.Column(db.String(255), unique=True, nullable=True)
+    username = db.Column(db.String(255), unique=True, nullable=True) 
     password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False) 
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship(
         "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
@@ -117,19 +117,19 @@ INDEX_HTML = """
             --blur-intensity: 8px;
             --mob-spacing-unit: 5px;
             --desktop-spacing-unit: 8px;
-            --download-icon-size: 28px;
-
+            --download-icon-size: 28px; 
+            
             --header-text-color-on-light-bg: #333333;
-            --header-border-radius: 22px;
-            --coin-color: #D9F47A;
-            --header-vertical-padding: 15px;
+            --header-border-radius: 22px; 
+            --coin-color: #D9F47A; 
+            --header-vertical-padding: 15px; 
             --header-logo-height-mob: 30px;
             --header-logo-height-desk: 35px;
-
-            --footer-height-mob: 70px;
-            --action-buttons-height-mob: 50px;
+            
+            --footer-height-mob: 70px; 
+            --action-buttons-height-mob: 50px; 
             --footer-height-desk: 80px;
-            --action-buttons-height-desk: 60px;
+            --action-buttons-height-desk: 60px; 
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -146,105 +146,98 @@ INDEX_HTML = """
             min-height: 100vh;
             overflow-x: hidden;
         }
-
+        
         .app-container-wrapper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover; background-position: center center; background-repeat: no-repeat;
             z-index: -1; transition: filter 0.4s ease-in-out;
-            background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}");
+            background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}"); 
         }
         .app-container-wrapper.bg-blur { filter: blur(var(--blur-intensity)); }
 
         .app-container {
-            width: 100%; max-width: 1200px; margin: 0 auto;
+            width: 100%; max-width: 1200px; margin: 0 auto; 
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
-            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit));
-            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2);
+            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
+            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); 
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
         }
 
         /* --- Новый Хедер --- */
-        .page-header-container {
-            position: fixed;
+        .page-header-container { 
+            position: fixed; 
             top: 0;
             left: 0;
             right: 0;
             width: 100%;
-            z-index: 105;
+            z-index: 105; 
             display: flex;
-            justify-content: center;
+            justify-content: center; 
         }
-        .page-header-inner {
+        .page-header-inner { 
             width: 100%;
-            max-width: 1200px;
-            padding: var(--header-vertical-padding) var(--mob-spacing-unit);
+            max-width: 1200px; 
+            padding: var(--header-vertical-padding) 0; /* ИЗМЕНЕНИЕ: Убраны боковые отступы */
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .app-logo-link {
-            display: inline-block;
-            line-height: 0;
-        }
+        .app-logo-link { display: inline-block; line-height: 0; } 
         .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
 
-        .top-right-nav {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
+        .top-right-nav { position: relative; display: flex; align-items: center; }
 
         .user-controls-loggedin {
             display: flex; align-items: center;
-            background-color: var(--controls-bg-color-transparent);
+            background-color: var(--controls-bg-color-transparent); /* F8F8F8 80% */
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
-            padding: 6px 6px 6px 12px;
+            padding: 6px 6px 6px 12px; 
             border-radius: var(--header-border-radius);
             gap: 8px;
         }
         .token-display {
-            display: flex; align-items: center; color: var(--header-text-color-on-light-bg);
-            font-size: 0.85rem; font-weight: normal;
+            display: flex; align-items: center; color: var(--header-text-color-on-light-bg); 
+            font-size: 0.85rem; font-weight: normal; 
         }
         .token-coin {
             width: 16px; height: 16px; background-color: var(--coin-color);
-            border-radius: 50%; margin-left: 5px;
+            border-radius: 50%; margin-left: 5px; 
         }
         .burger-menu-btn {
             background-color: var(--text-accent-color); border: none; border-radius: 50%;
-            padding: 0; cursor: pointer; width: 34px; height: 34px;
+            padding: 0; cursor: pointer; width: 34px; height: 34px; 
             display: flex; align-items: center; justify-content: center;
             transition: background-color 0.3s ease, transform 0.3s ease;
-            position: relative;
+            position: relative; 
         }
         .burger-menu-btn:hover { background-color: #c8e070; }
-        .burger-menu-btn svg {
-            display: block;
-            position: absolute;
+        .burger-menu-btn svg { 
+            display: block; 
+            position: absolute; 
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; 
         }
         .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
-
-        .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
+        
+        .burger-menu-btn .burger-icon { width: 16px; height: 12px; } 
         .burger-menu-btn .close-icon { width: 14px; height: 14px; opacity: 0; transform: translate(-50%, -50%) rotate(-45deg); }
-
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(10px) rotate(45deg) scaleX(1.2); }
+        
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(10px) rotate(45deg) scaleX(1.2); } 
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
         .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-10px) rotate(-45deg) scaleX(1.2); }
-
+        
         .burger-menu-btn.open .burger-icon { opacity: 0; transform: translate(-50%, -50%) rotate(45deg); }
         .burger-menu-btn.open .close-icon { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
 
 
         .dropdown-menu {
             position: absolute; top: calc(100% + 8px); right: 0;
-            background-color: rgba(248, 248, 248, 0.9);
+            background-color: rgba(248, 248, 248, 0.9); 
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             padding: 12px; width: 220px; z-index: 1000;
@@ -260,10 +253,10 @@ INDEX_HTML = """
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.08);
         }
-        .dropdown-user-email {
+        .dropdown-user-email { 
             color: #333; font-size: 0.9rem; font-weight: bold;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            flex-grow: 1;
+            flex-grow: 1; 
         }
         .close-menu-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width:20px; height:20px;}
         .close-menu-btn svg { stroke: #555; stroke-width:10; stroke-linecap:round; }
@@ -281,7 +274,7 @@ INDEX_HTML = """
             padding: 8px 15px; border-radius: var(--header-border-radius); display: flex; align-items: center;
         }
         .user-controls-loggedout .auth-button {
-            color: var(--header-text-color-on-light-bg);
+            color: var(--header-text-color-on-light-bg); 
             text-decoration: none; font-size: 0.85rem; font-weight: normal;
         }
         .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
@@ -293,45 +286,46 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: flex-start; 
             flex-grow: 1;
             padding-top: var(--mob-spacing-unit);
-            gap: var(--mob-spacing-unit);
+            gap: var(--mob-spacing-unit); 
         }
-
-        .initial-top-group {
+        
+        .initial-top-group { 
             display: flex; flex-direction: column; align-items: center;
-            gap: var(--mob-spacing-unit);
+            gap: var(--mob-spacing-unit); 
             width: 100%;
-            margin-top: 30px;
+            margin-top: 30px; 
         }
-        .desktop-main-text-img {
-            display: none;
+        .desktop-main-text-img { 
+            display: none; 
             max-width: 1200px;
             width: auto;
             max-height: 85vh;
             object-fit: contain;
-            margin-top: 8vh;
+            margin-top: 12vh; /* ИЗМЕНЕНИЕ: Текст опущен ниже */
         }
-        .mobile-main-text-img {
-            display: block;
-            max-height: 20vh;
-            max-width: 90%; object-fit: contain;
+        .mobile-main-text-img { 
+            display: block; 
+            max-height: 20vh; 
+            max-width: 90%; object-fit: contain; 
         }
 
         .image-drop-area-mobile {
-            width: 80%; max-width: 280px; height: 165px; background-color: transparent;
+            width: 80%; max-width: 280px; height: 165px; background-color: transparent; 
             border-radius: 25px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; position: relative; overflow: hidden;
-            border: 2px dashed rgba(248, 248, 248, 0.3);
+            cursor: pointer; position: relative; overflow: hidden; 
+            border: 2px dashed rgba(248, 248, 248, 0.3); 
+            margin-top: 40px; /* ИЗМЕНЕНИЕ: Опущено поле для загрузки на мобильных */
         }
         .image-drop-area-mobile.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
-        .image-drop-area-mobile .mob-drop-placeholder-img {
-            width: auto; max-width: 80%; max-height: 40%; height: auto; object-fit: contain;
+        .image-drop-area-mobile .mob-drop-placeholder-img { 
+            width: auto; max-width: 80%; max-height: 40%; height: auto; object-fit: contain; 
         }
-        .image-drop-area-mobile::before {
+        .image-drop-area-mobile::before { 
             content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(248, 248, 248, 0.1);
+            background-color: rgba(248, 248, 248, 0.1); 
             backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
             z-index: -1; border-radius: inherit;
         }
@@ -339,99 +333,99 @@ INDEX_HTML = """
             display: none; width: 100%; height: 100%; object-fit: cover;
             border-radius: inherit; position: relative; z-index: 1;
         }
-
-        .action-buttons {
+        
+        .action-buttons { /* Фиксированные баблы */
             display: flex; justify-content: center; align-items: center;
-            gap: 10px;
-            flex-wrap: nowrap;
-            width: calc(100% - calc(2 * var(--mob-spacing-unit)));
-            max-width: 320px;
-            padding: 5px 0;
-            position: fixed;
-            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) + 25px);
+            gap: 10px; 
+            flex-wrap: nowrap; 
+            width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
+            max-width: 320px; 
+            padding: 5px 0; 
+            position: fixed; 
+            bottom: calc(5vh + var(--footer-height-mob) - 10px); /* ИЗМЕНЕНИЕ: Позиция поднята и привязана к футеру */
             left: 50%; transform: translateX(-50%);
-            z-index: 99;
+            z-index: 99; 
         }
-        .action-btn img {
-            height: 22px; width: auto; max-width: 70px;
+        .action-btn img { 
+            height: 22px; width: auto; max-width: 70px; 
             object-fit: contain; cursor: pointer; transition: transform 0.2s ease;
-            display: block; visibility: visible;
+            display: block; visibility: visible; 
         }
         .action-btn img:hover { transform: scale(1.05); }
 
         .result-image-wrapper {
-             justify-content: center; flex-grow: 1; display: inline-flex;
-             align-items: center; width: auto; max-width: 100%;
-             position: relative;
-             margin-bottom: calc(var(--download-icon-size) + 20px + 10px);
+             justify-content: center; flex-grow: 1; display: inline-flex; 
+             align-items: center; width: auto; max-width: 100%; 
+             position: relative; 
+             margin-bottom: calc(var(--download-icon-size) + 20px + 10px); 
         }
         #result-image {
             max-width: 90vw; max-height: 60vh; object-fit: contain;
-            border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-            display: block;
+            border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
+            display: block; 
         }
 
         .download-action-link {
             display: none; position: absolute;
-            bottom: calc(-1 * (var(--download-icon-size) + 20px));
+            bottom: calc(-1 * (var(--download-icon-size) + 20px)); 
             right: 0; z-index: 10; cursor: pointer;
-            padding: 5px; line-height: 0;
+            padding: 5px; line-height: 0; 
         }
-        .download-button-icon {
+        .download-button-icon { 
             height: var(--download-icon-size); width: var(--download-icon-size); display: block;
         }
 
         .loader-container {
-            justify-content: center; align-items: center; min-height: 200px;
-            z-index: 101; flex-grow: 1; display: flex;
+            justify-content: center; align-items: center; min-height: 200px; 
+            z-index: 101; flex-grow: 1; display: flex; 
         }
         .pulsating-dot {
             width: 100px; height: 100px; background-color: var(--text-accent-color);
-            border-radius: 50%; position: relative;
-            animation: pulse 1.5s infinite ease-in-out;
+            border-radius: 50%; position: relative; 
+            animation: pulse 1.5s infinite ease-in-out; 
         }
-        @keyframes pulse {
+        @keyframes pulse { 
             0%, 100% { transform: scale(0.8); opacity: 0.7; }
             50% { transform: scale(1.2); opacity: 1; }
         }
 
-        .app-footer {
-            width: calc(100% - calc(2 * var(--mob-spacing-unit)));
+        .app-footer { 
+            width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
             max-width: 500px; padding: 0; position: fixed;
-            bottom: calc(var(--mob-spacing-unit) * 3); /* ИЗМЕНЕНИЕ: Отступ увеличен в 3 раза */
+            bottom: 5vh; /* ИЗМЕНЕНИЕ: Поле ввода поднято выше */
             left: 50%;
             transform: translateX(-50%); z-index: 100;
         }
-        .input-area {
+        .input-area { 
             display: flex; align-items: center;
-            background-color: var(--controls-bg-color-transparent);
+            background-color: var(--controls-bg-color-transparent); 
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 50px; padding: 6px 8px; width: 100%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 2px dashed transparent;
+            border: 2px dashed transparent; 
         }
         .input-area.dragover { border-color: var(--text-accent-color); }
-        #image-file-common { display: none; }
+        #image-file-common { display: none; } 
         .file-upload-label-desktop { display: none; }
         #prompt {
-            flex-grow: 1; border: none; padding: 12px 10px; font-size: 0.9rem;
-            background-color: transparent; outline: none; color: #333333;
+            flex-grow: 1; border: none; padding: 12px 10px; font-size: 0.9rem; 
+            background-color: transparent; outline: none; color: #333333; 
             font-family: 'ChangerFont', sans-serif; line-height: 1.3;
         }
         #prompt::placeholder { color: #888888; opacity: 1; }
-        .submit-button-element {
+        .submit-button-element { 
             background-color: transparent; border: none; cursor: pointer; padding: 0;
             margin-left: 8px; display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
+            flex-shrink: 0; 
         }
         .submit-button-icon-img { height: 40px; width: 40px; }
         .submit-button-text-content { display: none; }
 
         .error-message {
-            display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color);
+            display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
             background-color: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
             padding: 10px 15px; border-radius: 8px; position: fixed;
-            bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2);
+            bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); 
             left: 50%; transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
             max-width: 480px; z-index: 105; text-align: center;
@@ -440,48 +434,48 @@ INDEX_HTML = """
         /* --- Desktop Styles --- */
         @media (min-width: 769px) {
             .app-container-wrapper { background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}"); }
-            .app-container {
+            .app-container { 
                 padding-left: var(--desktop-spacing-unit);
                 padding-right: var(--desktop-spacing-unit);
-                padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit));
-                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2);
+                padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit)); 
+                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
             }
             .page-header-inner {
-                padding: var(--header-vertical-padding) var(--desktop-spacing-unit);
+                padding: var(--header-vertical-padding) 0; /* ИЗМЕНЕНИЕ: Убраны боковые отступы */
             }
             .logo { height: var(--header-logo-height-desk); }
-            .app-main {
+            .app-main { 
                 gap: var(--desktop-spacing-unit);
-                 padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit));
+                 padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
             }
-
-            .initial-top-group {
-                gap: var(--desktop-spacing-unit);
-                margin-top: 40px;
+            
+            .initial-top-group { 
+                gap: var(--desktop-spacing-unit); 
+                margin-top: 40px; 
             }
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img { display: block; }
-            .image-drop-area-mobile { display: none; }
-
-            .action-buttons {
-                gap: 25px;
-                max-width: 700px;
-                bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) + 25px);
+            .image-drop-area-mobile { display: none; } 
+            
+            .action-buttons { 
+                gap: 25px; 
+                max-width: 700px; 
+                bottom: calc(5vh + var(--footer-height-desk) - 15px); /* ИЗМЕНЕНИЕ: Позиция поднята и привязана к футеру */
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
-
+            
             .download-action-link { }
             #result-image { max-height: 60vh; }
-            .app-footer {
+            .app-footer { 
                 max-width: 700px;
-                bottom: calc(var(--desktop-spacing-unit) * 3); /* ИЗМЕНЕНИЕ: Отступ увеличен в 3 раза */
+                bottom: 5vh; /* ИЗМЕНЕНИЕ: Поле ввода поднято выше */
             }
             .input-area { padding: 10px 12px; border-radius: 30px; }
-            .file-upload-label-desktop {
+            .file-upload-label-desktop { 
                 display: flex; cursor: pointer; padding: 0; margin-right: 12px;
                 align-items: center; justify-content: center; position: relative;
-                width: calc(56px / 1.5); height: calc(56px / 1.5);
-                background-color: transparent; border-radius: 12px;
+                width: calc(56px / 1.5); height: calc(56px / 1.5); 
+                background-color: transparent; border-radius: 12px; 
                 flex-shrink: 0; overflow: hidden;
             }
             .upload-icon-desktop-img { height: 100%; width: 100%; object-fit: contain;}
@@ -490,7 +484,7 @@ INDEX_HTML = """
             .submit-button-icon-img { height: 48px; width: 48px;}
 
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
-            .token-display { font-size: 1rem; }
+            .token-display { font-size: 1rem; } 
             .token-coin { width: 20px; height: 20px; }
             .burger-menu-btn { width: 42px; height: 42px; }
             .user-controls-loggedout { padding: 12px 25px; }
@@ -501,7 +495,7 @@ INDEX_HTML = """
 </head>
 <body>
     <div class="app-container-wrapper" id="app-bg-wrapper"></div>
-
+    
     <div class="page-header-container">
         <div class="page-header-inner">
             <a href="{{ url_for('index') }}" class="app-logo-link">
@@ -515,12 +509,12 @@ INDEX_HTML = """
                             <span class="token-coin"></span>
                         </span>
                         <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
-                            <svg class="burger-icon" viewBox="0 0 100 80">
+                            <svg class="burger-icon" viewBox="0 0 100 80"> 
                                 <rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect>
                                 <rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect>
                                 <rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect>
                             </svg>
-                             <svg class="close-icon" viewBox="0 0 80 80">
+                             <svg class="close-icon" viewBox="0 0 80 80"> 
                                 <line class="line" x1="20" y1="20" x2="60" y2="60"/>
                                 <line class="line" x1="60" y1="20" x2="20" y2="60"/>
                             </svg>
@@ -571,7 +565,7 @@ INDEX_HTML = """
                     <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Скачать" class="download-button-icon">
                 </a>
             </div>
-
+            
             <div id="loader" class="loader-container">
                 <div class="pulsating-dot"></div>
             </div>
@@ -591,9 +585,9 @@ INDEX_HTML = """
                     <img id="image-preview-desktop" src="#" alt="Preview" class="image-preview-desktop-img">
                 </label>
                 <input type="file" id="image-file-common" name="image" accept="image/*">
-
+                
                 <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE">
-
+                
                 <button type="submit" id="submit-button" class="submit-button-element">
                     <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" id="magic-button-icon-img" class="submit-button-icon-img">
                     <span id="submit-button-text-content" class="submit-button-text-content">Start over</span>
@@ -605,7 +599,7 @@ INDEX_HTML = """
 
     <script>
     // --- DOM Elements ---
-    const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
+    const tokenBalanceDisplaySpan = document.getElementById('token-balance-display'); 
     const burgerMenuToggle = document.getElementById('burger-menu-toggle');
     const dropdownMenu = document.getElementById('dropdown-menu');
     const closeMenuBtnInner = document.getElementById('close-menu-btn-inner');
@@ -621,11 +615,11 @@ INDEX_HTML = """
 
     if (burgerMenuToggle && dropdownMenu) {
         burgerMenuToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); 
             const isOpen = burgerMenuToggle.classList.contains('open');
             burgerMenuToggle.setAttribute('aria-expanded', String(!isOpen));
             dropdownMenu.classList.toggle('open');
-            burgerMenuToggle.classList.toggle('open');
+            burgerMenuToggle.classList.toggle('open'); 
         });
     }
     if (closeMenuBtnInner && dropdownMenu && burgerMenuToggle) {
@@ -636,7 +630,7 @@ INDEX_HTML = """
             burgerMenuToggle.classList.remove('open');
         });
     }
-
+    
     document.addEventListener('click', function(event) {
         if (dropdownMenu && burgerMenuToggle && dropdownMenu.classList.contains('open')) {
             const isClickInsideMenu = dropdownMenu.contains(event.target);
@@ -652,26 +646,26 @@ INDEX_HTML = """
     // --- Остальной JavaScript код (восстановлен из вашей версии) ---
     const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInput = document.getElementById('image-file-common');
-
+    
     const mobileDropArea = document.querySelector('.image-drop-area-mobile');
     const mobileDropPlaceholderImg = document.querySelector('.mob-drop-placeholder-img');
     const mobileImagePreviewImg = document.getElementById('image-preview-mobile');
-
+    
     const desktopUploadLabel = document.querySelector('.file-upload-label-desktop');
     const desktopUploadIconImg = document.querySelector('.upload-icon-desktop-img');
     const desktopImagePreviewImg = document.getElementById('image-preview-desktop');
 
     const editForm = document.getElementById('edit-form');
     const promptInput = document.getElementById('prompt');
-    const inputArea = document.querySelector('.input-area');
+    const inputArea = document.querySelector('.input-area'); 
     const submitButton = document.getElementById('submit-button');
     const magicButtonIconImg = document.getElementById('magic-button-icon-img');
     const submitButtonTextContent = document.getElementById('submit-button-text-content');
 
-    const initialTopGroup = document.querySelector('.initial-top-group');
+    const initialTopGroup = document.querySelector('.initial-top-group'); 
     const resultImageWrapper = document.querySelector('.result-image-wrapper');
     const resultImage = document.getElementById('result-image');
-    const downloadLink = document.getElementById('download-action');
+    const downloadLink = document.getElementById('download-action'); 
     const loaderContainer = document.getElementById('loader');
     const actionButtonsContainer = document.querySelector('.action-buttons');
 
@@ -679,7 +673,7 @@ INDEX_HTML = """
     const desktopMainTextImg = document.querySelector('.desktop-main-text-img');
     const errorBox = document.getElementById('error-box');
 
-    let currentView = 'initial';
+    let currentView = 'initial'; 
 
     function isDesktopView() {
         return window.innerWidth > 768;
@@ -697,15 +691,15 @@ INDEX_HTML = """
 
     function updateView(viewName) {
         currentView = viewName;
-
+        
         if(appBgWrapper) appBgWrapper.classList.remove('bg-blur');
-
+        
         if (initialTopGroup) initialTopGroup.style.display = 'none';
         if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         if (loaderContainer) loaderContainer.style.display = 'none';
-        if (downloadLink) downloadLink.style.display = 'none';
-
-        if (actionButtonsContainer) {
+        if (downloadLink) downloadLink.style.display = 'none'; 
+        
+        if (actionButtonsContainer) { 
             if (viewName === 'loading') {
                 actionButtonsContainer.style.display = 'none';
             } else {
@@ -713,54 +707,54 @@ INDEX_HTML = """
             }
         }
 
-        if (mobileMainTextImg) mobileMainTextImg.style.display = 'none';
-        if (desktopMainTextImg) desktopMainTextImg.style.display = 'none';
-        if (mobileDropArea) mobileDropArea.style.display = 'none';
+        if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
+        if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; 
+        if (mobileDropArea) mobileDropArea.style.display = 'none'; 
 
         if (viewName === 'initial') {
             if (initialTopGroup) initialTopGroup.style.display = 'flex';
             if (isDesktopView()) {
                 if (desktopMainTextImg) desktopMainTextImg.style.display = 'block';
-            } else {
+            } else { 
                 if (mobileMainTextImg) mobileMainTextImg.style.display = 'block';
                 if (mobileDropArea) mobileDropArea.style.display = 'flex';
             }
             if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
             if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
             if (submitButton) submitButton.dataset.action = "generate";
-            if (promptInput) promptInput.value = '';
+            if (promptInput) promptInput.value = ''; 
             resetImagePreviews();
         } else if (viewName === 'loading') {
             if (loaderContainer) loaderContainer.style.display = 'flex';
-            if (appBgWrapper) appBgWrapper.classList.add('bg-blur');
+            if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
             if (initialTopGroup) initialTopGroup.style.display = 'none';
             if (resultImageWrapper) resultImageWrapper.style.display = 'none';
         } else if (viewName === 'result') {
-            if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex';
-            if (downloadLink) downloadLink.style.display = 'block';
-            if (appBgWrapper) appBgWrapper.classList.add('bg-blur');
+            if (resultImageWrapper) resultImageWrapper.style.display = 'inline-flex'; 
+            if (downloadLink) downloadLink.style.display = 'block'; 
+            if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
 
-            if (!isDesktopView()) {
+            if (!isDesktopView()) { 
                 if (magicButtonIconImg) magicButtonIconImg.style.display = 'none';
                 if (submitButtonTextContent) submitButtonTextContent.style.display = 'block';
                 if (submitButton) submitButton.dataset.action = "startover";
-            } else {
+            } else { 
                 if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
                 if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
-                if (submitButton) submitButton.dataset.action = "generate";
+                if (submitButton) submitButton.dataset.action = "generate"; 
             }
         }
         adjustLayoutForResultImage();
     }
-
+    
     function adjustLayoutForResultImage() {
         if (currentView === 'result' && resultImage && resultImage.src && resultImage.src !== window.location.href + "#") {
             const img = new Image();
             img.onload = () => {
                 resultImage.classList.remove('result-aspect-portrait', 'result-aspect-landscape');
-                if (img.naturalWidth < img.naturalHeight) {
+                if (img.naturalWidth < img.naturalHeight) { 
                     resultImage.classList.add('result-aspect-portrait');
-                } else {
+                } else { 
                     resultImage.classList.add('result-aspect-landscape');
                 }
             }
@@ -769,15 +763,15 @@ INDEX_HTML = """
     }
 
     window.addEventListener('resize', () => {
-        updateView(currentView);
+        updateView(currentView); 
     });
-
+    
     function handleFileSelect(file) {
-        if (file && imageFileInput) {
+        if (file && imageFileInput) { 
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             imageFileInput.files = dataTransfer.files;
-
+            
             const event = new Event('change', { bubbles: true });
             imageFileInput.dispatchEvent(event);
         }
@@ -802,7 +796,7 @@ INDEX_HTML = """
             event.preventDefault();
             event.stopPropagation();
             dropZoneElement.classList.remove('dragover');
-
+            
             if (event.dataTransfer.files && event.dataTransfer.files[0]) {
                 handleFileSelect(event.dataTransfer.files[0]);
                 if (isPromptArea && isDesktopView()) {
@@ -822,7 +816,7 @@ INDEX_HTML = """
 
     if (mobileDropArea) setupDragAndDrop(mobileDropArea);
     if (desktopUploadLabel) setupDragAndDrop(desktopUploadLabel);
-    if (inputArea) setupDragAndDrop(inputArea, true);
+    if (inputArea) setupDragAndDrop(inputArea, true); 
 
 
     if (imageFileInput) {
@@ -836,7 +830,7 @@ INDEX_HTML = """
                             desktopImagePreviewImg.style.display = 'block';
                         }
                         if (desktopUploadIconImg) desktopUploadIconImg.style.display = 'none';
-                    } else {
+                    } else { 
                         if (mobileImagePreviewImg) {
                             mobileImagePreviewImg.src = e.target.result;
                             mobileImagePreviewImg.style.display = 'block';
@@ -856,20 +850,20 @@ INDEX_HTML = """
         if (mobileImagePreviewImg && mobileDropPlaceholderImg) {
             mobileImagePreviewImg.src = '#';
             mobileImagePreviewImg.style.display = 'none';
-            mobileDropPlaceholderImg.style.display = 'block';
+            mobileDropPlaceholderImg.style.display = 'block'; 
         }
         if (desktopImagePreviewImg && desktopUploadIconImg) {
             desktopImagePreviewImg.src = '#';
             desktopImagePreviewImg.style.display = 'none';
             desktopUploadIconImg.style.display = 'block';
         }
-        if (imageFileInput) imageFileInput.value = '';
+        if (imageFileInput) imageFileInput.value = ''; 
     }
 
     if (editForm) {
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-
+            
             if (submitButton.dataset.action === "startover") {
                 updateView('initial');
                 return;
@@ -891,17 +885,17 @@ INDEX_HTML = """
             const formData = new FormData();
             formData.append('image', imageFileInput.files[0]);
             formData.append('prompt', promptInput.value);
-
+            
             try {
                 const response = await fetch("{{ url_for('process_image') }}", {
                     method: 'POST',
                     body: formData
                 });
                 const data = await response.json();
-
+                
                 if (!response.ok) {
                     let errorDetail = data.error || data.detail || 'Неизвестная ошибка сервера';
-                    if (response.status === 403 && (data.error === 'Недостаточно токенов' || data.detail === 'Недостаточно токенов')) {
+                    if (response.status === 403 && (data.error === 'Недостаточно токенов' || data.detail === 'Недостаточно токенов')) { 
                          errorDetail = 'У вас недостаточно токенов для генерации. Пожалуйста, пополните баланс.';
                     }
                     throw new Error(errorDetail);
@@ -910,24 +904,24 @@ INDEX_HTML = """
 
                 if(resultImage) resultImage.src = data.output_url;
                 if(downloadLink) downloadLink.href = data.output_url;
-                if (data.new_token_balance !== undefined) {
+                if (data.new_token_balance !== undefined) { 
                     updateTokenBalanceDisplay(data.new_token_balance);
                 }
-
+                
                 const tempImg = new Image();
                 tempImg.onload = () => {
                     updateView('result');
                 };
-                tempImg.onerror = () => {
+                tempImg.onerror = () => { 
                     showError("Не удалось загрузить сгенерированное изображение.");
                     updateView('initial');
                 };
                 tempImg.src = data.output_url;
-
+                
             } catch (error) {
                 console.error('Ошибка при отправке/обработке:', error);
                 showError("Произошла ошибка: " + error.message);
-                updateView('initial');
+                updateView('initial'); 
             } finally {
                 if(submitButton) submitButton.disabled = false;
             }
@@ -947,23 +941,23 @@ INDEX_HTML = """
             } else if (action === "change") {
                 prefillText = "Change the [object you want to be changed] to the [object you want to be added]";
             }
-
+            
             if(promptInput) {
                 promptInput.value = prefillText;
                 promptInput.focus();
             }
         });
     });
-
+    
     const logoElement = document.querySelector('.logo');
     if (logoElement) {
         logoElement.addEventListener('click', () => {
-            if (currentView !== 'loading') {
+            if (currentView !== 'loading') { 
                  updateView('initial');
             }
         });
     }
-
+    
     updateView('initial');
     </script>
 </body>
@@ -1027,10 +1021,10 @@ def improve_prompt_with_openai(user_prompt):
         return user_prompt
 
 @app.route('/process-image', methods=['POST'])
-@login_required
+@login_required 
 def process_image():
     if current_user.token_balance < 1:
-        return jsonify({'error': 'Недостаточно токенов'}), 403
+        return jsonify({'error': 'Недостаточно токенов'}), 403 
 
     if 'image' not in request.files or 'prompt' not in request.form:
         return jsonify({'error': 'Отсутствует изображение или промпт'}), 400
@@ -1038,20 +1032,20 @@ def process_image():
     image_file = request.files['image']
     original_prompt_text = request.form['prompt']
     final_prompt_text = improve_prompt_with_openai(original_prompt_text)
-
+    
     model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
 
     try:
         if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
             print("!!! ОШИБКА: Не все переменные AWS S3 настроены.")
             return jsonify({'error': 'Ошибка конфигурации сервера для загрузки изображений.'}), 500
-
+        
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         _, f_ext = os.path.splitext(image_file.filename)
-        object_name = f"uploads/{uuid.uuid4()}{f_ext}"
-
+        object_name = f"uploads/{uuid.uuid4()}{f_ext}" 
+        
         s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': image_file.content_type})
-
+        
         hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
         print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
 
@@ -1062,28 +1056,28 @@ def process_image():
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {
             "version": model_version_id,
-            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text}
+            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text} 
         }
-
+        
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-
+        
         if start_response.status_code >= 400:
             print(f"!!! Ошибка от Replicate при запуске предсказания: {start_response.status_code} - {start_response.text}")
             try:
                 error_data = start_response.json()
                 detail = error_data.get("detail", start_response.text)
                 return jsonify({'error': f'Ошибка API Replicate: {detail}'}), start_response.status_code
-            except ValueError:
+            except ValueError: 
                  return jsonify({'error': f'Ошибка API Replicate: {start_response.text}'}), start_response.status_code
 
         prediction_data = start_response.json()
         get_url = prediction_data["urls"]["get"]
-
+        
         output_url = None
-        max_retries = 60
+        max_retries = 60 
         retries = 0
         while retries < max_retries:
-            time.sleep(2)
+            time.sleep(2) 
             get_response = requests.get(get_url, headers=headers)
             if get_response.status_code >= 400:
                 print(f"!!! Ошибка от Replicate при получении статуса: {get_response.status_code} - {get_response.text}")
@@ -1096,13 +1090,13 @@ def process_image():
 
             status_data = get_response.json()
             print(f"Статус генерации Replicate: {status_data['status']}")
-
+            
             if status_data["status"] == "succeeded":
-                if isinstance(status_data["output"], list):
-                    output_url = status_data["output"][0]
-                else:
-                    output_url = str(status_data["output"])
-
+                if isinstance(status_data["output"], list): 
+                    output_url = status_data["output"][0] 
+                else: 
+                    output_url = str(status_data["output"]) 
+                
                 current_user.token_balance -= 1
                 db.session.commit()
                 break
@@ -1110,15 +1104,15 @@ def process_image():
                 error_detail = status_data.get('error', 'неизвестная ошибка Replicate')
                 raise Exception(f"Генерация Replicate не удалась: {error_detail}")
             retries += 1
-
+        
         if not output_url:
             return jsonify({'error': 'Генерация Replicate заняла слишком много времени или не вернула результат.'}), 500
-
+            
         return jsonify({'output_url': output_url, 'new_token_balance': current_user.token_balance})
-
+        
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
-if __name__ == '__main__':
+if __name__ == '__main__':  
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
