@@ -4,13 +4,13 @@ import uuid
 import requests
 import time
 import openai
-from flask import Flask, request, jsonify, render_template_string, url_for, redirect, flash
+from flask import Flask, request, jsonify, render_template_string, url_for, redirect # Removed flash as it's not used
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user, roles_accepted, roles_required
+from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
 from flask_security.utils import hash_password
-from flask_mail import Mail # Flask-Security-Too использует Flask-Mail
+from flask_mail import Mail
 from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref # backref might not be needed if not explicitly used
 from flask_security import AsaList
 
 
@@ -22,12 +22,15 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'super-secret-key-for-dev-only') 
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'super-secret-salt-for-dev-only') 
+# ВАЖНО: Установите надежные ключи в переменных окружения для продакшена
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'super-secret-key-for-dev-only-please-change-in-prod') 
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'super-secret-salt-for-dev-only-please-change-in-prod') 
 
+# Конфигурация базы данных
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Настройки Flask-Security-Too (убраны дубликаты)
 app.config['SECURITY_REGISTERABLE'] = True 
 app.config['SECURITY_SEND_REGISTER_EMAIL'] = False 
 app.config['SECURITY_RECOVERABLE'] = True 
@@ -36,18 +39,24 @@ app.config['SECURITY_CONFIRMABLE'] = False
 app.config['SECURITY_USERNAME_ENABLE'] = True 
 app.config['SECURITY_USERNAME_REQUIRED'] = False 
 app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} 
-app.config['SECURITY_POST_LOGIN_VIEW'] = '/' # Куда перенаправлять после логина
-app.config['SECURITY_POST_LOGOUT_VIEW'] = '/' # Куда перенаправлять после выхода
-app.config['SECURITY_POST_REGISTER_VIEW'] = '/' # Куда перенаправлять после регистрации
+app.config['SECURITY_POST_LOGIN_VIEW'] = '/' 
+app.config['SECURITY_POST_LOGOUT_VIEW'] = '/' 
+app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
+app.config['SECURITY_LOGIN_URL'] = '/login' # Стандартный URL для страницы входа
+app.config['SECURITY_LOGOUT_URL'] = '/logout'
+app.config['SECURITY_REGISTER_URL'] = '/register'
+app.config['SECURITY_CHANGE_URL'] = '/change-password' # Для страницы смены пароля
+app.config['SECURITY_RESET_URL'] = '/reset-password' # Для страницы сброса пароля
 
 
+# Настройки Flask-Mail 
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
 app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@example.com')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', ("Changer AI", 'noreply@example.com'))
 app.config['SECURITY_EMAIL_SENDER'] = app.config['MAIL_DEFAULT_SENDER']
 
 
@@ -67,7 +76,7 @@ class Role(db.Model, RoleMixin):
     description = db.Column(db.String(255))
     permissions = db.Column(MutableList.as_mutable(AsaList()), nullable=True)
 
-class User(db.Model, UserMixin):
+class User(db.Model, UserMixin): # Убраны дублирующиеся поля
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     username = db.Column(db.String(255), unique=True, nullable=True) 
@@ -102,7 +111,6 @@ INDEX_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Changer AI</title>
     <style>
-        /* ... (предыдущие стили остаются здесь, я их не удаляю) ... */
         @font-face {
             font-family: 'ChangerFont';
             src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
@@ -111,26 +119,24 @@ INDEX_HTML = """
         }
 
         :root {
-            --text-accent-color: #D9F47A; /* Основной акцентный цвет (желто-зеленый) */
-            --controls-bg-color: #F8F8F8; /* Светлый фон для контролов */
+            --text-accent-color: #D9F47A;
+            --controls-bg-color: #F8F8F8;
             --blur-intensity: 8px;
             --mob-spacing-unit: 20px;
             --desktop-spacing-unit: 30px;
             --download-icon-size: 28px; 
-            --footer-height: 70px; 
-            --action-buttons-height: 60px; 
-            --header-elements-bg: rgba(248, 248, 248, 0.1); /* Полупрозрачный фон для элементов хедера */
-            --header-elements-blur: 5px; /* Блюр для элементов хедера */
-            --header-text-color: #FFFFFF; /* Белый текст для хедера на темном фоне */
-            --header-border-radius: 25px; /* Скругление для элементов хедера */
-            --coin-color: #D9F47A; /* Цвет монетки */
+            --header-elements-bg: rgba(50, 50, 50, 0.6); /* Сделаем фон чуть темнее для контраста */
+            --header-elements-blur: 6px; 
+            --header-text-color: #FFFFFF; 
+            --header-border-radius: 22px; /* Единый радиус для элементов хедера */
+            --coin-color: #D9F47A; 
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'ChangerFont', sans-serif;
-            color: var(--text-accent-color); /* Это основной цвет текста, но для хедера будет другой */
+            color: var(--text-accent-color);
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -139,7 +145,6 @@ INDEX_HTML = """
             flex-direction: column;
             min-height: 100vh;
             overflow-x: hidden;
-            transition: filter 0.4s ease-in-out;
         }
         
         .app-container-wrapper {
@@ -151,147 +156,96 @@ INDEX_HTML = """
         .app-container-wrapper.bg-blur { filter: blur(var(--blur-intensity)); }
 
         .app-container {
-            width: 100%; max-width: 1200px; margin: 0 auto; padding: var(--mob-spacing-unit);
+            width: 100%; max-width: 1200px; margin: 0 auto; 
+            padding-left: var(--mob-spacing-unit);
+            padding-right: var(--mob-spacing-unit);
+            padding-top: calc(var(--mob-spacing-unit) + 30px + 20px); /* top_padding + logo_height + space_below_logo */
+            padding-bottom: calc(70px + var(--mob-spacing-unit)); /* Space for fixed footer */
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
         }
 
-        .app-header { /* Контейнер для лого и навигации справа */
-            width: 100%;
-            padding: 0 var(--mob-spacing-unit); /* Паддинги по бокам */
-            display: flex;
-            justify-content: space-between; /* Лого слева, навигация справа */
-            align-items: center;
-            position: absolute;
+        /* --- Header Elements --- */
+        .page-header-container { 
+            position: absolute; /* Или fixed, если хедер должен быть всегда наверху экрана */
             top: var(--mob-spacing-unit);
-            left: 0; 
-            right: 0;
-            z-index: 100;
-            max-width: 1200px; /* Чтобы совпадало с app-container */
-            margin: 0 auto; /* Центрирование, если app-container уже */
-        }
-
-        .logo { height: 30px; cursor: pointer; }
-
-        /* Новый блок для элементов в правом верхнем углу */
-        .top-right-nav {
-            position: relative; /* Для позиционирования выпадающего меню */
-            display: flex;
-            align-items: center;
-        }
-
-        .user-controls-loggedin {
-            display: flex;
-            align-items: center;
-            background-color: var(--header-elements-bg);
-            backdrop-filter: blur(var(--header-elements-blur));
-            -webkit-backdrop-filter: blur(var(--header-elements-blur));
-            padding: 8px 8px 8px 15px; /* Паддинг слева больше для баланса */
-            border-radius: var(--header-border-radius);
-            gap: 10px;
-        }
-
-        .token-display, .token-display-menu {
-            display: flex;
-            align-items: center;
-            color: var(--header-text-color);
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-        .token-coin {
-            width: 18px;
-            height: 18px;
-            background-color: var(--coin-color);
-            border-radius: 50%;
-            margin-left: 6px;
-            box-shadow: 0 0 5px rgba(217, 244, 122, 0.7);
-        }
-
-        .burger-menu-btn {
-            background-color: var(--text-accent-color);
-            border: none;
-            border-radius: 50%; /* Круглая кнопка для бургера */
-            padding: 0;
-            cursor: pointer;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.3s ease;
-        }
-        .burger-menu-btn:hover {
-            background-color: #c8e070; /* Темнее при наведении */
-        }
-        .burger-menu-btn svg {
-            display: block;
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-             fill: #333; /* Темный цвет для линий бургера/крестика */
-        }
-         .burger-menu-btn svg line, .burger-menu-btn svg rect {
-            stroke: #333; /* Для SVG с line */
-            fill: #333; /* Для SVG с rect */
-        }
-
-        .burger-menu-btn .burger-icon line, .burger-menu-btn .burger-icon rect { transition: transform 0.3s 0.1s ease-in-out; }
-        .burger-menu-btn.open .burger-icon .line1 { transform: rotate(45deg) translate(18px, -18px); }
-        .burger-menu-btn.open .burger-icon .line2 { opacity: 0; transform: translateX(-20px); }
-        .burger-menu-btn.open .burger-icon .line3 { transform: rotate(-45deg) translate(18px, 18px); }
-        
-        .burger-menu-btn.open .close-icon { display: block; transform: rotate(0deg); opacity: 1;}
-        .burger-menu-btn .close-icon { display: none; transform: rotate(-45deg); opacity: 0;}
-
-
-        .dropdown-menu {
-            position: absolute;
-            top: calc(100% + 10px); /* 10px отступ снизу от кнопки */
-            right: 0;
-            background-color: rgba(248, 248, 248, 0.85); /* Чуть менее прозрачный для читаемости */
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 15px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-            padding: 15px;
-            width: 220px; /* Фиксированная ширина меню */
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0.3s linear;
-        }
-        .dropdown-menu.open {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0s linear;
-        }
-        .dropdown-header {
+            left: var(--mob-spacing-unit);
+            right: var(--mob-spacing-unit);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
+            z-index: 105; 
+            max-width: calc(1200px - 2 * var(--mob-spacing-unit)); 
+            margin: 0 auto; 
         }
-         .dropdown-header .token-display-menu .token-coin {
-             box-shadow: none; /* Убрать тень у монетки в меню */
-         }
-        .dropdown-header .token-display-menu { color: #333; } /* Темный текст для баланса в меню */
+        .app-logo-link { display: inline-block; line-height: 0; } 
+        .logo { height: 30px; cursor: pointer; display: block;}
 
-        .close-menu-btn {
-            background: none; border: none; padding: 0; cursor: pointer;
+        .top-right-nav { position: relative; display: flex; align-items: center; }
+
+        .user-controls-loggedin {
+            display: flex; align-items: center;
+            background-color: var(--header-elements-bg);
+            backdrop-filter: blur(var(--header-elements-blur));
+            -webkit-backdrop-filter: blur(var(--header-elements-blur));
+            padding: 6px 6px 6px 12px; 
+            border-radius: var(--header-border-radius);
+            gap: 8px;
+        }
+        .token-display, .token-display-menu {
+            display: flex; align-items: center; color: var(--header-text-color);
+            font-size: 0.85rem; font-weight: normal; /* Сделаем текст чуть менее жирным */
+        }
+        .token-coin {
+            width: 16px; height: 16px; background-color: var(--coin-color);
+            border-radius: 50%; margin-left: 5px; 
+            /* box-shadow: 0 0 4px rgba(217, 244, 122, 0.6); */ /* Уменьшил тень */
+        }
+        .burger-menu-btn {
+            background-color: var(--text-accent-color); border: none; border-radius: 50%;
+            padding: 0; cursor: pointer; width: 34px; height: 34px; /* Уменьшил кнопку */
             display: flex; align-items: center; justify-content: center;
+            transition: background-color 0.3s ease, transform 0.3s ease;
         }
-        .close-menu-btn svg { stroke: #555; } /* Цвет крестика закрытия */
+        .burger-menu-btn:hover { background-color: #c8e070; }
+        .burger-menu-btn svg { display: block; transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+        .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: center;}
+        
+        .burger-menu-btn .burger-icon { width: 18px; height: 14px; } /* Размеры для линий бургера */
+        .burger-menu-btn .burger-icon .line1 { transform-origin: 0% 0%;}
+        .burger-menu-btn .burger-icon .line3 { transform-origin: 0% 100%;}
 
+        .burger-menu-btn.open .burger-icon .line1 { transform: rotate(45deg) translate(2px, -1px); width: 110%;}
+        .burger-menu-btn.open .burger-icon .line2 { opacity: 0; transform: translateX(-10px); }
+        .burger-menu-btn.open .burger-icon .line3 { transform: rotate(-45deg) translate(2px, 1px); width: 110%;}
+        
+
+        .dropdown-menu {
+            position: absolute; top: calc(100% + 8px); right: 0;
+            background-color: rgba(248, 248, 248, 0.9); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 12px; width: 200px; z-index: 1000;
+            opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.95);
+            transform-origin: top right;
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0.25s linear;
+        }
+        .dropdown-menu.open {
+            opacity: 1; visibility: visible; transform: translateY(0) scale(1);
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0s linear;
+        }
+        .dropdown-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+        .dropdown-header .token-display-menu .token-coin { box-shadow: none; }
+        .dropdown-header .token-display-menu { color: #333; font-size: 0.9rem;}
+        .close-menu-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width:20px; height:20px;}
+        .close-menu-btn svg { stroke: #555; stroke-width:10; stroke-linecap:round; }
         .dropdown-menu ul { list-style: none; padding: 0; margin: 0; }
         .dropdown-menu li a {
-            display: block;
-            padding: 10px 0;
-            color: #333; /* Темный текст для ссылок */
-            text-decoration: none;
-            font-size: 0.95rem;
-            transition: color 0.2s ease;
+            display: block; padding: 8px 0; color: #333; text-decoration: none;
+            font-size: 0.9rem; transition: color 0.2s ease;
         }
         .dropdown-menu li a:hover { color: var(--text-accent-color); }
 
@@ -299,100 +253,274 @@ INDEX_HTML = """
             background-color: var(--header-elements-bg);
             backdrop-filter: blur(var(--header-elements-blur));
             -webkit-backdrop-filter: blur(var(--header-elements-blur));
-            padding: 10px 20px;
-            border-radius: var(--header-border-radius);
-            display: flex;
-            align-items: center;
+            padding: 8px 15px; border-radius: var(--header-border-radius); display: flex; align-items: center;
         }
         .user-controls-loggedout .auth-button {
-            color: var(--header-text-color);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: bold;
+            color: var(--header-text-color); text-decoration: none; font-size: 0.85rem; font-weight: normal;
         }
         .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
-        .user-controls-loggedout .auth-separator {
-            color: var(--header-text-color);
-            margin: 0 8px;
-            opacity: 0.7;
+        .user-controls-loggedout .auth-separator { color: var(--header-text-color); margin: 0 6px; opacity: 0.6; }
+
+        /* --- Main Content Area (Восстанавливаем стили, похожие на "вчерашние") --- */
+        .app-main {
+            width: 100%; display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; /* Основное содержимое сверху */
+            flex-grow: 1;
+            padding-top: 0; /* Отступ сверху теперь управляется .app-container */
+            padding-bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit)); /* Отступ для футера */
+            gap: var(--desktop-spacing-unit); /* Используем десктопный отступ для основного контента */
+            text-align: center;
+        }
+        
+        .initial-top-group { 
+            display: flex; flex-direction: column; align-items: center;
+            gap: var(--desktop-spacing-unit); /* Отступ между элементами в этой группе */
+            width: 100%;
+        }
+        .desktop-main-text-img { 
+            display: none; /* Скрыто по умолчанию, показывается в @media для десктопа */
+            max-width: 800px; width: auto; max-height: 75vh; object-fit: contain; 
+        }
+        .mobile-main-text-img { 
+            display: block; /* Показывается по умолчанию (mobile-first) */
+            max-height: 25vh; /* Немного увеличим для мобилки */
+            max-width: 90%; object-fit: contain; 
         }
 
-        /* Остальные стили остаются без изменений */
-        .app-main { /* Увеличим отступ снизу, чтобы фиксированные элементы не перекрывали контент */
-             padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3 + 20px); 
+        .image-drop-area-mobile {
+            width: 80%; max-width: 280px; height: 165px; background-color: transparent; 
+            border-radius: 25px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; position: relative; overflow: hidden; 
+            border: 2px dashed rgba(248, 248, 248, 0.3); 
         }
-        .action-buttons { bottom: calc(var(--footer-height) + var(--mob-spacing-unit) + 25px); } /* Поднимаем баблы еще выше */
+        .image-drop-area-mobile.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
+        .image-drop-area-mobile .mob-drop-placeholder-img { 
+            width: auto; max-width: 80%; max-height: 40%; height: auto; object-fit: contain; 
+        }
+        .image-drop-area-mobile::before { 
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(248, 248, 248, 0.1); 
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            z-index: -1; border-radius: inherit;
+        }
+        .image-drop-area-mobile .image-preview-mobile-img {
+            display: none; width: 100%; height: 100%; object-fit: cover;
+            border-radius: inherit; position: relative; z-index: 1;
+        }
+        
+        .action-buttons { /* НЕ ФИКСИРОВАННЫЕ, часть потока .app-main */
+            display: flex; justify-content: center; align-items: center;
+            gap: 10px; /* Отступы для мобильной версии */
+            flex-wrap: wrap; 
+            width: 100%; max-width: 320px; 
+            margin-top: var(--mob-spacing-unit); 
+            margin-bottom: var(--mob-spacing-unit);
+        }
+        .action-btn img { 
+            height: calc(45px / 2); width: auto; max-width: 80px; 
+            object-fit: contain; cursor: pointer; transition: transform 0.2s ease;
+            display: block; visibility: visible; 
+        }
+        .action-btn img:hover { transform: scale(1.05); }
 
+        .result-image-wrapper {
+             justify-content: center; flex-grow: 1; display: inline-flex; 
+             align-items: center; width: auto; max-width: 100%; 
+             position: relative; 
+             margin-bottom: calc(var(--download-icon-size) + 20px + 10px); 
+        }
+        #result-image {
+            max-width: 90vw; max-height: 60vh; object-fit: contain;
+            border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
+            display: block; 
+        }
+
+        .download-action-link {
+            display: none; position: absolute;
+            bottom: calc(-1 * (var(--download-icon-size) + 20px)); 
+            right: 0; z-index: 10; cursor: pointer;
+            padding: 5px; line-height: 0; 
+        }
+        .download-button-icon { 
+            height: var(--download-icon-size); width: var(--download-icon-size); display: block;
+        }
+
+        .loader-container {
+            justify-content: center; align-items: center; min-height: 200px; 
+            z-index: 101; flex-grow: 1; display: flex; 
+        }
+        .pulsating-dot {
+            width: 100px; height: 100px; background-color: var(--text-accent-color);
+            border-radius: 50%; position: relative; 
+            animation: pulse 1.5s infinite ease-in-out; 
+        }
+        @keyframes pulse { 
+            0%, 100% { transform: scale(0.8); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        .app-footer { /* Фиксированный футер */
+            width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
+            max-width: 500px; padding: 0; position: fixed;
+            bottom: var(--mob-spacing-unit); left: 50%;
+            transform: translateX(-50%); z-index: 100;
+        }
+        .input-area { 
+            display: flex; align-items: center;
+            background-color: rgba(248, 248, 248, 0.8); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-radius: 50px; padding: 6px 8px; width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px dashed transparent; 
+        }
+        .input-area.dragover { border-color: var(--text-accent-color); }
+        #image-file-common { display: none; } 
+        .file-upload-label-desktop { display: none; }
+        #prompt {
+            flex-grow: 1; border: none; padding: 12px 10px; font-size: 0.9rem; 
+            background-color: transparent; outline: none; color: #333333; 
+            font-family: 'ChangerFont', sans-serif; line-height: 1.3;
+        }
+        #prompt::placeholder { color: #888888; opacity: 1; }
+        .submit-button-element { 
+            background-color: transparent; border: none; cursor: pointer; padding: 0;
+            margin-left: 8px; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; 
+        }
+        .submit-button-icon-img { height: 40px; width: 40px; }
+        .submit-button-text-content { display: none; }
+
+        .error-message {
+            display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
+            background-color: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
+            padding: 10px 15px; border-radius: 8px; position: fixed;
+            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) * 2); /* Над футером */
+            left: 50%; transform: translateX(-50%);
+            width: calc(100% - calc(4 * var(--mob-spacing-unit)));
+            max-width: 480px; z-index: 105; text-align: center;
+        }
+
+        /* --- Desktop Styles --- */
         @media (min-width: 769px) {
+             .app-container-wrapper { background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}"); }
+            .app-container { 
+                padding-left: var(--desktop-spacing-unit);
+                padding-right: var(--desktop-spacing-unit);
+                padding-top: calc(var(--desktop-spacing-unit) + 35px + 20px); /* top_padding + logo_height + space */
+                padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); /* Space for fixed footer */
+            }
+            .page-header-container {
+                top: var(--desktop-spacing-unit);
+                left: var(--desktop-spacing-unit);
+                right: var(--desktop-spacing-unit);
+                max-width: calc(1200px - 2 * var(--desktop-spacing-unit));
+            }
             .logo { height: 35px; }
-            .app-header { padding: 0 var(--desktop-spacing-unit); top: var(--desktop-spacing-unit); }
-            .app-main { padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--desktop-spacing-unit) * 3 + 20px); }
-            .action-buttons { bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) + 25px); }
+            .app-main { 
+                gap: var(--desktop-spacing-unit);
+                padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); /* Отступ для футера */
+            }
+            
+            .initial-top-group { gap: var(--desktop-spacing-unit); }
+            .mobile-main-text-img { display: none; }
+            .desktop-main-text-img { display: block; }
+            .image-drop-area-mobile { display: none; } 
+            
+            .action-buttons {
+                gap: 50px; 
+                max-width: 700px; /* Соответствует ширине футера на десктопе */
+                margin-top: var(--desktop-spacing-unit);
+                margin-bottom: var(--desktop-spacing-unit);
+            }
+            .action-btn img { height: calc(48px / 2); max-width: 120px; }
+            
+            .download-action-link { /* Позиционирование кнопки скачать для десктопа */
+                 bottom: calc(-1 * (var(--download-icon-size) + 20px)); /* Ниже изображения */
+                 right: 0; /* Справа от изображения */
+            }
+            #result-image { max-height: 60vh; }
+            .app-footer { max-width: 700px; bottom: var(--desktop-spacing-unit); }
+            .input-area { padding: 10px 12px; border-radius: 30px; }
+            .file-upload-label-desktop { 
+                display: flex; cursor: pointer; padding: 0; margin-right: 12px;
+                align-items: center; justify-content: center; position: relative;
+                width: calc(56px / 1.5); height: calc(56px / 1.5); 
+                background-color: transparent; border-radius: 12px; 
+                flex-shrink: 0; overflow: hidden;
+            }
+            .upload-icon-desktop-img { height: 100%; width: 100%; object-fit: contain;}
+            .image-preview-desktop-img { display: none; width: 100%; height: 100%; object-fit: cover; border-radius: inherit;}
+            #prompt { padding: 15px 15px; font-size: 1rem;}
+            .submit-button-icon-img { height: 48px; width: 48px;}
+
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
             .token-display, .token-display-menu { font-size: 1rem; }
             .token-coin { width: 20px; height: 20px; }
             .burger-menu-btn { width: 42px; height: 42px; }
             .user-controls-loggedout { padding: 12px 25px; }
             .user-controls-loggedout .auth-button { font-size: 1rem; }
+            .error-message { bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) * 2); }
         }
-        /* ... (остальные ваши стили) ... */
     </style>
 </head>
 <body>
-    <!-- Новый блок для навигации в правом верхнем углу -->
-    <div class="top-right-nav">
-        {% if current_user.is_authenticated %}
-            <div class="user-controls-loggedin">
-                <span class="token-display">
-                    <span id="token-balance-display">{{ current_user.token_balance }}</span>
-                    <span class="token-coin"></span>
-                </span>
-                <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
-                    <svg class="burger-icon" viewBox="0 0 100 80" width="24" height="24">
-                        <rect class="line1" width="100" height="12" rx="6"></rect>
-                        <rect class="line2" y="34" width="100" height="12" rx="6"></rect>
-                        <rect class="line3" y="68" width="100" height="12" rx="6"></rect>
-                    </svg>
-                </button>
-            </div>
-            <div class="dropdown-menu" id="dropdown-menu">
-                <div class="dropdown-header">
-                     <span class="token-display-menu">
-                        <span id="token-balance-dropdown">{{ current_user.token_balance }}</span>
+    <div class="app-container-wrapper" id="app-bg-wrapper"></div>
+    
+    <div class="page-header-container">
+        <a href="{{ url_for('index') }}" class="app-logo-link">
+            <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
+        </a>
+        <div class="top-right-nav">
+            {% if current_user.is_authenticated %}
+                <div class="user-controls-loggedin">
+                    <span class="token-display">
+                        <span id="token-balance-display">{{ current_user.token_balance }}</span>
                         <span class="token-coin"></span>
                     </span>
-                    <button class="close-menu-btn" id="close-menu-btn-inner" aria-label="Закрыть меню">
-                         <svg viewBox="0 0 100 100" width="20" height="20">
-                            <line x1="10" y1="10" x2="90" y2="90" stroke-width="12" stroke-linecap="round"/>
-                            <line x1="10" y1="90" x2="90" y2="10" stroke-width="12" stroke-linecap="round"/>
+                    <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
+                        <svg class="burger-icon" viewBox="0 0 100 80" width="20" height="20"> <!-- Уменьшил SVG для лучшего вида в кнопке -->
+                            <rect class="line line1" width="100" height="12" rx="6"></rect>
+                            <rect class="line line2" y="34" width="100" height="12" rx="6"></rect>
+                            <rect class="line line3" y="68" width="100" height="12" rx="6"></rect>
                         </svg>
                     </button>
                 </div>
-                <ul>
-                    <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
-                    <li><a href="{{ url_for_security('change_password') }}">Сменить пароль</a></li>
-                    <li><a href="{{ url_for_security('logout') }}">Выйти</a></li>
-                </ul>
-            </div>
-        {% else %}
-            <div class="user-controls-loggedout">
-                <a href="{{ url_for_security('login') }}" class="auth-button">Логин</a>
-                <span class="auth-separator">|</span>
-                <a href="{{ url_for_security('register') }}" class="auth-button">Регистрация</a>
-            </div>
-        {% endif %}
+                <div class="dropdown-menu" id="dropdown-menu">
+                    <div class="dropdown-header">
+                         <span class="token-display-menu">
+                            <span id="token-balance-dropdown">{{ current_user.token_balance }}</span>
+                            <span class="token-coin"></span>
+                        </span>
+                        <button class="close-menu-btn" id="close-menu-btn-inner" aria-label="Закрыть меню">
+                             <svg viewBox="0 0 100 100" width="18" height="18">
+                                <line x1="10" y1="10" x2="90" y2="90"/>
+                                <line x1="10" y1="90" x2="90" y2="10"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <ul>
+                        <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
+                        <li><a href="{{ url_for_security('change_password') }}">Сменить пароль</a></li>
+                        <li><a href="{{ url_for_security('logout') }}">Выйти</a></li>
+                    </ul>
+                </div>
+            {% else %}
+                <div class="user-controls-loggedout">
+                    <a href="{{ url_for_security('login') }}" class="auth-button">Логин</a>
+                    <span class="auth-separator">|</span>
+                    <a href="{{ url_for_security('register') }}" class="auth-button">Регистрация</a>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="app-container-wrapper" id="app-bg-wrapper"></div>
     <div class="app-container">
-        <header class="app-header">
+        <!-- <header class="app-header"> Логотип теперь в .page-header-container
             <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
-            <!-- Элементы .top-right-nav теперь будут здесь, если они не абсолютно позиционированы относительно viewport -->
-        </header>
+        </header> -->
 
         <main class="app-main auth-required-content">
-            <!-- ... (остальной HTML вашего .app-main) ... -->
-             <div class="initial-top-group">
+            <div class="initial-top-group">
                 <img src="{{ url_for('static', filename='images/DESK_MAIN.png') }}" alt="Change Everything" class="main-text-display-img desktop-main-text-img">
                 <img src="{{ url_for('static', filename='images/MOB_MAIN.svg') }}" alt="Change Everything" class="main-text-display-img mobile-main-text-img">
 
@@ -442,15 +570,15 @@ INDEX_HTML = """
 
     <script>
     // --- DOM Elements ---
-    const tokenBalanceSpan = document.getElementById('token-balance-display'); // Обновленный ID
+    const tokenBalanceDisplaySpan = document.getElementById('token-balance-display'); 
     const tokenBalanceDropdownSpan = document.getElementById('token-balance-dropdown');
     const burgerMenuToggle = document.getElementById('burger-menu-toggle');
     const dropdownMenu = document.getElementById('dropdown-menu');
     const closeMenuBtnInner = document.getElementById('close-menu-btn-inner');
 
     function updateTokenBalanceDisplay(newBalance) {
-        if (tokenBalanceSpan) {
-            tokenBalanceSpan.textContent = newBalance;
+        if (tokenBalanceDisplaySpan) {
+            tokenBalanceDisplaySpan.textContent = newBalance;
         }
         if (tokenBalanceDropdownSpan) {
             tokenBalanceDropdownSpan.textContent = newBalance;
@@ -458,11 +586,12 @@ INDEX_HTML = """
     }
 
     if (burgerMenuToggle && dropdownMenu) {
-        burgerMenuToggle.addEventListener('click', () => {
+        burgerMenuToggle.addEventListener('click', (e) => {
+            e.stopPropagation(); // Предотвращаем всплытие, чтобы не закрывалось сразу по клику на документ
             const isOpen = burgerMenuToggle.getAttribute('aria-expanded') === 'true';
             burgerMenuToggle.setAttribute('aria-expanded', !isOpen);
             dropdownMenu.classList.toggle('open');
-            burgerMenuToggle.classList.toggle('open'); // Для анимации бургера в крестик
+            burgerMenuToggle.classList.toggle('open'); 
         });
     }
     if (closeMenuBtnInner && dropdownMenu && burgerMenuToggle) {
@@ -473,7 +602,6 @@ INDEX_HTML = """
         });
     }
     
-    // Закрытие меню по клику вне его
     document.addEventListener('click', function(event) {
         if (dropdownMenu && burgerMenuToggle && dropdownMenu.classList.contains('open')) {
             const isClickInsideMenu = dropdownMenu.contains(event.target);
@@ -488,6 +616,7 @@ INDEX_HTML = """
 
 
     // --- Остальной JavaScript код ---
+    // ... (остальной ваш JS код, который был рабочим для основной страницы) ...
     const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInput = document.getElementById('image-file-common');
     
@@ -543,7 +672,7 @@ INDEX_HTML = """
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
-        if (actionButtonsContainer) {
+        if (actionButtonsContainer) { // Эти кнопки теперь не фиксированные, а в потоке
             if (viewName === 'loading') {
                 actionButtonsContainer.style.display = 'none';
             } else {
@@ -551,9 +680,11 @@ INDEX_HTML = """
             }
         }
 
+
         if (mobileMainTextImg) mobileMainTextImg.style.display = 'none'; 
         if (desktopMainTextImg) desktopMainTextImg.style.display = 'none'; 
         if (mobileDropArea) mobileDropArea.style.display = 'none'; 
+
 
         if (viewName === 'initial') {
             if (initialTopGroup) initialTopGroup.style.display = 'flex';
@@ -739,7 +870,7 @@ INDEX_HTML = """
                 
                 if (!response.ok) {
                     let errorDetail = data.error || data.detail || 'Неизвестная ошибка сервера';
-                    if (response.status === 403 && (data.error === 'Недостаточно токенов' || data.detail === 'Недостаточно токенов')) { // Adjusted to check data.detail too
+                    if (response.status === 403 && (data.error === 'Недостаточно токенов' || data.detail === 'Недостаточно токенов')) { 
                          errorDetail = 'У вас недостаточно токенов для генерации. Пожалуйста, пополните баланс.';
                     }
                     throw new Error(errorDetail);
@@ -748,7 +879,7 @@ INDEX_HTML = """
 
                 if(resultImage) resultImage.src = data.output_url;
                 if(downloadLink) downloadLink.href = data.output_url;
-                if (data.new_token_balance !== undefined) { // Check if new_token_balance is in response
+                if (data.new_token_balance !== undefined) { 
                     updateTokenBalanceDisplay(data.new_token_balance);
                 }
                 
@@ -802,21 +933,7 @@ INDEX_HTML = """
         });
     }
     
-    // Initial setup of view based on authentication status (passed from Flask)
-    // This is a simplified way; ideally, Flask-Security handles redirects for protected routes.
-    // const isAuthenticated = {{ current_user.is_authenticated | tojson }};
-    // if (!isAuthenticated) {
-    //    // Hide main content if not logged in, or redirect (Flask-Security handles redirects better)
-    //    const mainContentElements = document.querySelectorAll('.auth-required-content');
-    //    mainContentElements.forEach(el => el.style.display = 'none');
-    // } else {
-    //    updateView('initial');
-    // }
-    // For now, let's assume Flask-Security's @login_required handles access control.
-    // We just need to ensure the correct elements are shown/hidden by updateView.
     updateView('initial');
-
-
     </script>
 </body>
 </html>
@@ -824,17 +941,12 @@ INDEX_HTML = """
 
 # Маршрут для главной страницы
 @app.route('/')
-# @login_required # Если главная страница требует логина, раскомментируйте
 def index():
     return render_template_string(INDEX_HTML)
 
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
-    # Здесь будет ваша логика для отображения опций покупки токенов
-    # и интеграции с Tilda или другой платежной системой.
-    # Пока это просто заглушка.
-    # Вы можете передать URL для возврата после "оплаты" через Tilda, например.
     return """
         <!DOCTYPE html>
         <html lang="ru">
@@ -853,21 +965,15 @@ def buy_tokens_page():
         <body>
             <div class="container">
                 <h1>Купить токены</h1>
-                <p>Привет, {{ current_user.email }}!</p>
+                <p>Привет, {{ current_user.email or current_user.username }}!</p>
                 <p>Ваш текущий баланс: <strong>{{ current_user.token_balance }}</strong> токенов.</p>
                 <p>Здесь будет информация о пакетах токенов и кнопка для перехода к оплате (например, на Tilda).</p>
-                
-                <!-- Пример кнопки, которая может вести на Tilda -->
-                <!-- <a href="YOUR_TILDA_PAYMENT_PAGE_URL?user_id={{current_user.id}}" class="button">Перейти к покупке</a> -->
-                
-                <p>Для теста, администратор может вручную пополнить ваш баланс.</p>
                 <p><a href="{{ url_for('index') }}">Вернуться на главную</a></p>
             </div>
         </body>
         </html>
     """
 
-# Python-часть для обработки запросов
 def improve_prompt_with_openai(user_prompt):
     if not OPENAI_API_KEY:
         print("OpenAI API ключ не настроен, возвращаем оригинальный промпт.")
@@ -893,7 +999,7 @@ def improve_prompt_with_openai(user_prompt):
 @login_required 
 def process_image():
     if current_user.token_balance < 1:
-        return jsonify({'error': 'Недостаточно токенов'}), 403 # Forbidden
+        return jsonify({'error': 'Недостаточно токенов'}), 403 
 
     if 'image' not in request.files or 'prompt' not in request.form:
         return jsonify({'error': 'Отсутствует изображение или промпт'}), 400
