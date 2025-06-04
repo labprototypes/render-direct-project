@@ -95,9 +95,6 @@ if OPENAI_API_KEY:
 else:
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
 
-# ==================================================================================
-# INDEX_HTML - Взят из вашего файла app (1).py и дополнен новым хедером
-# ==================================================================================
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -115,20 +112,27 @@ INDEX_HTML = """
 
         :root {
             --text-accent-color: #D9F47A;
-            --controls-bg-color: #F8F8F8;
+            --controls-bg-color: #F8F8F8; /* Основной цвет для подложек контролов */
+            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8); /* F8F8F8 с 80% непрозрачностью */
             --blur-intensity: 8px;
             --mob-spacing-unit: 20px;
             --desktop-spacing-unit: 30px;
             --download-icon-size: 28px; 
+            
             /* Стили для нового хедера */
-            --header-elements-bg: rgba(50, 50, 50, 0.6); 
-            --header-elements-blur: 6px; 
-            --header-text-color: #FFFFFF; 
+            --header-text-color-on-light-bg: #333333; /* Темный текст для светлой подложки хедера */
+            --header-text-color-on-dark-bg: #FFFFFF; /* Белый текст для темной подложки хедера (если будет) */
             --header-border-radius: 22px; 
             --coin-color: #D9F47A; 
-            --header-vertical-padding: 15px; /* Отступы для хедера сверху/снизу */
+            --header-vertical-padding: 15px; 
             --header-logo-height-mob: 30px;
             --header-logo-height-desk: 35px;
+            
+            /* Приблизительные высоты фиксированных элементов для расчета padding-bottom у app-main */
+            --footer-height-mob: 70px; 
+            --action-buttons-height-mob: 50px; /* Примерная высота ряда баблов на мобилке */
+            --footer-height-desk: 80px;
+            --action-buttons-height-desk: 60px; /* Примерная высота ряда баблов на десктопе */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -158,28 +162,32 @@ INDEX_HTML = """
             width: 100%; max-width: 1200px; margin: 0 auto; 
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
-            /* Отступ сверху для .app-container теперь учитывает высоту .page-header-container */
             padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
-            padding-bottom: calc(70px + var(--mob-spacing-unit)); /* 70px - примерная высота футера */
+            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); /* Отступ для футера и баблов */
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
         }
 
         /* --- Новый Хедер --- */
         .page-header-container { 
-            position: fixed; /* Фиксируем хедер */
+            position: fixed; 
             top: 0;
-            left: 0;
+            left: 0; /* Растягиваем на всю ширину для внутреннего центрирования контента */
             right: 0;
+            width: 100%;
+            z-index: 105; 
+            display: flex;
+            justify-content: center; /* Центрируем внутренний контейнер */
+        }
+        .page-header-inner { /* Внутренний контейнер для ограничения ширины и отступов */
+            width: 100%;
+            max-width: 1200px; /* Такая же как у app-container */
+            padding: var(--header-vertical-padding) var(--mob-spacing-unit);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: var(--header-vertical-padding) var(--mob-spacing-unit);
-            z-index: 105; 
-            /* Можно добавить фон для хедера, если фон страницы очень светлый */
-            /* background-color: rgba(0,0,0,0.1); */ 
-            /* backdrop-filter: blur(3px); */
         }
+
         .app-logo-link { display: inline-block; line-height: 0; } 
         .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
 
@@ -187,15 +195,15 @@ INDEX_HTML = """
 
         .user-controls-loggedin {
             display: flex; align-items: center;
-            background-color: var(--header-elements-bg);
+            background-color: var(--controls-bg-color-transparent); /* Используем F8F8F8 с 80% */
             backdrop-filter: blur(var(--header-elements-blur));
             -webkit-backdrop-filter: blur(var(--header-elements-blur));
             padding: 6px 6px 6px 12px; 
             border-radius: var(--header-border-radius);
             gap: 8px;
         }
-        .token-display { /* Убрали .token-display-menu, используем один стиль */
-            display: flex; align-items: center; color: var(--header-text-color);
+        .token-display {
+            display: flex; align-items: center; color: var(--header-text-color-on-light-bg); /* Темный текст на светлом фоне */
             font-size: 0.85rem; font-weight: normal; 
         }
         .token-coin {
@@ -207,24 +215,24 @@ INDEX_HTML = """
             padding: 0; cursor: pointer; width: 34px; height: 34px; 
             display: flex; align-items: center; justify-content: center;
             transition: background-color 0.3s ease, transform 0.3s ease;
-            position: relative; /* Для абсолютного позиционирования SVG внутри */
+            position: relative; 
         }
         .burger-menu-btn:hover { background-color: #c8e070; }
         .burger-menu-btn svg { 
             display: block; 
-            position: absolute; /* Для точного центрирования и анимации */
+            position: absolute; 
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; 
         }
-        .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: center;}
+        .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         
         .burger-menu-btn .burger-icon { width: 18px; height: 14px; } 
         .burger-menu-btn .close-icon { width: 16px; height: 16px; opacity: 0; transform: translate(-50%, -50%) rotate(-45deg); }
-
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(12px) rotate(45deg); } /* Скорректировано для центрирования */
+        /* Анимация бургера в крестик */
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(11px) rotate(45deg); } 
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
-        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-12px) rotate(-45deg); }
+        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-11px) rotate(-45deg); }
         
         .burger-menu-btn.open .burger-icon { opacity: 0; transform: translate(-50%, -50%) rotate(45deg); }
         .burger-menu-btn.open .close-icon { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
@@ -248,14 +256,10 @@ INDEX_HTML = """
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.08);
         }
-        .dropdown-user-email { /* Новый стиль для email */
-            color: #333; 
-            font-size: 0.9rem;
-            font-weight: bold;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex-grow: 1; /* Чтобы занимал доступное место */
+        .dropdown-user-email { 
+            color: #333; font-size: 0.9rem; font-weight: bold;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            flex-grow: 1; 
         }
         .close-menu-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width:20px; height:20px;}
         .close-menu-btn svg { stroke: #555; stroke-width:10; stroke-linecap:round; }
@@ -267,110 +271,80 @@ INDEX_HTML = """
         .dropdown-menu li a:hover { color: var(--text-accent-color); }
 
         .user-controls-loggedout {
-            background-color: var(--header-elements-bg);
+            background-color: var(--controls-bg-color-transparent);
             backdrop-filter: blur(var(--header-elements-blur));
             -webkit-backdrop-filter: blur(var(--header-elements-blur));
             padding: 8px 15px; border-radius: var(--header-border-radius); display: flex; align-items: center;
         }
         .user-controls-loggedout .auth-button {
-            color: var(--header-text-color); text-decoration: none; font-size: 0.85rem; font-weight: normal;
+            color: var(--header-text-color-on-light-bg); /* Темный текст на светлом фоне */
+            text-decoration: none; font-size: 0.85rem; font-weight: normal;
         }
         .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
-        .user-controls-loggedout .auth-separator { color: var(--header-text-color); margin: 0 6px; opacity: 0.6; }
+        .user-controls-loggedout .auth-separator { color: var(--header-text-color-on-light-bg); margin: 0 6px; opacity: 0.6; }
 
         /* --- Стили из вашего файла app (1).py --- */
-        /* Я буду стараться минимально их изменять, только для адаптации к новому хедеру */
-
         .app-main {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start; /* Изменено с center для более предсказуемого потока */
+            width: 100%; display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; 
             flex-grow: 1;
-            /* padding-top УПРАВЛЯЕТСЯ .app-container */
-            padding-bottom: calc(70px + var(--mob-spacing-unit)); /* 70px - примерная высота футера */
-            gap: var(--mob-spacing-unit); /* Используется для отступов между основными блоками */
+            padding-top: var(--mob-spacing-unit); /* Отступ для DESK_MAIN.png */
+            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); 
+            gap: var(--mob-spacing-unit); 
         }
         
-        .initial-content, .result-image-wrapper, .loader-container {
+        .initial-top-group { 
+            display: flex; flex-direction: column; align-items: center;
+            gap: var(--mob-spacing-unit); 
+            width: 100%;
+            margin-top: 30px; /* Дополнительный отступ для DESK_MAIN.png */
+        }
+        .desktop-main-text-img { 
             display: none; 
-            flex-direction: column;
-            align-items: center;
-            gap: inherit; 
-            width: 100%;
+            max-width: 800px; width: auto; max-height: 75vh; object-fit: contain; 
         }
-        .initial-content.active, .result-image-wrapper.active, .loader-container.active {
-            display: flex;
+        .mobile-main-text-img { 
+            display: block; 
+            max-height: 20vh; 
+            max-width: 90%; object-fit: contain; 
         }
-        
-        .initial-top-group { /* Контейнер для DESK_MAIN/MOB_MAIN и зоны загрузки */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: var(--mob-spacing-unit); /* Отступ между текстом и зоной загрузки на мобильных */
-            width: 100%;
-        }
-
-        .main-text-display-img { /* Общий класс для MOB_MAIN и DESK_MAIN */
-            width: auto; 
-            max-width: 90%; 
-            height: auto;
-            object-fit: contain; 
-        }
-        .desktop-main-text-img { display: none; } /* Скрыт по умолчанию */
-        .mobile-main-text-img { display: block; max-height: 20vh; } /* Виден по умолчанию */
 
         .image-drop-area-mobile {
-            width: 80%;
-            max-width: 280px; 
-            height: 165px; 
-            background-color: transparent; 
-            border-radius: 25px; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden; 
+            width: 80%; max-width: 280px; height: 165px; background-color: transparent; 
+            border-radius: 25px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; position: relative; overflow: hidden; 
             border: 2px dashed rgba(248, 248, 248, 0.3); 
         }
-        .image-drop-area-mobile.dragover {
-            border-color: var(--text-accent-color);
-            background-color: rgba(217, 244, 122, 0.1);
-        }
+        .image-drop-area-mobile.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
         .image-drop-area-mobile .mob-drop-placeholder-img { 
-            width: auto; 
-            max-width: 80%; 
-            max-height: 40%; 
-            height: auto; 
-            object-fit: contain; 
+            width: auto; max-width: 80%; max-height: 40%; height: auto; object-fit: contain; 
         }
-         .image-drop-area-mobile::before { 
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+        .image-drop-area-mobile::before { 
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(248, 248, 248, 0.1); 
-            backdrop-filter: blur(4px); 
-            -webkit-backdrop-filter: blur(4px);
-            z-index: -1; 
-            border-radius: inherit;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            z-index: -1; border-radius: inherit;
         }
         .image-drop-area-mobile .image-preview-mobile-img {
             display: none; width: 100%; height: 100%; object-fit: cover;
             border-radius: inherit; position: relative; z-index: 1;
         }
         
-        .action-buttons { /* НЕ ФИКСИРОВАННЫЕ */
+        .action-buttons { /* Теперь фиксированные */
             display: flex; justify-content: center; align-items: center;
-            gap: 30px; 
-            flex-wrap: wrap; 
-            width: 100%; max-width: 320px; 
-            margin-top: var(--mob-spacing-unit); 
-            margin-bottom: var(--mob-spacing-unit); 
+            gap: 10px; 
+            flex-wrap: nowrap; 
+            width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
+            max-width: 320px; 
+            padding: 10px 0; 
+            position: fixed; 
+            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) + 5px); /* Отступ над футером */
+            left: 50%; transform: translateX(-50%);
+            z-index: 99; 
+            /* Убираем фон и блюр для баблов */
         }
         .action-btn img { 
-            height: calc(45px / 2); width: auto; max-width: 80px; 
+            height: 22px; width: auto; max-width: 70px; 
             object-fit: contain; cursor: pointer; transition: transform 0.2s ease;
             display: block; visibility: visible; 
         }
@@ -412,7 +386,7 @@ INDEX_HTML = """
             50% { transform: scale(1.2); opacity: 1; }
         }
 
-        .app-footer { /* Фиксированный футер */
+        .app-footer { 
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
             max-width: 500px; padding: 0; position: fixed;
             bottom: var(--mob-spacing-unit); left: 50%;
@@ -420,7 +394,7 @@ INDEX_HTML = """
         }
         .input-area { 
             display: flex; align-items: center;
-            background-color: rgba(248, 248, 248, 0.8); 
+            background-color: var(--controls-bg-color-transparent); 
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 50px; padding: 6px 8px; width: 100%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -447,7 +421,7 @@ INDEX_HTML = """
             display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
             background-color: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
             padding: 10px 15px; border-radius: 8px; position: fixed;
-            bottom: calc(70px + var(--mob-spacing-unit) * 2); /* 70px - высота футера */
+            bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); 
             left: 50%; transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
             max-width: 480px; z-index: 105; text-align: center;
@@ -460,37 +434,33 @@ INDEX_HTML = """
                 padding-left: var(--desktop-spacing-unit);
                 padding-right: var(--desktop-spacing-unit);
                 padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit)); 
-                padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); 
+                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
             }
             .page-header-container {
-                top: var(--desktop-spacing-unit);
-                left: var(--desktop-spacing-unit);
-                right: var(--desktop-spacing-unit);
-                max-width: calc(1200px - 2 * var(--desktop-spacing-unit));
+                padding: var(--header-vertical-padding) var(--desktop-spacing-unit);
             }
             .logo { height: var(--header-logo-height-desk); }
             .app-main { 
                 gap: var(--desktop-spacing-unit);
-                padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); 
+                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
             }
             
-            .initial-top-group { gap: var(--desktop-spacing-unit); }
+            .initial-top-group { 
+                gap: var(--desktop-spacing-unit); 
+                margin-top: 40px; /* Дополнительный отступ для DESK_MAIN.png на десктопе */
+            }
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img { display: block; }
             .image-drop-area-mobile { display: none; } 
             
-            .action-buttons {
-                gap: 50px; 
+            .action-buttons { /* Фиксированные баблы для десктопа */
+                gap: 25px; /* Отступы для десктопа */
                 max-width: 700px; 
-                margin-top: var(--desktop-spacing-unit);
-                margin-bottom: var(--desktop-spacing-unit);
+                bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) + 10px); /* Отступ над футером */
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
-            .download-action-link { 
-                 bottom: calc(-1 * (var(--download-icon-size) + 20px)); 
-                 right: 0; 
-            }
+            .download-action-link { }
             #result-image { max-height: 60vh; }
             .app-footer { max-width: 700px; bottom: var(--desktop-spacing-unit); }
             .input-area { padding: 10px 12px; border-radius: 30px; }
@@ -507,12 +477,12 @@ INDEX_HTML = """
             .submit-button-icon-img { height: 48px; width: 48px;}
 
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
-            .token-display { font-size: 1rem; } /* Убрали .token-display-menu */
+            .token-display { font-size: 1rem; } 
             .token-coin { width: 20px; height: 20px; }
             .burger-menu-btn { width: 42px; height: 42px; }
             .user-controls-loggedout { padding: 12px 25px; }
             .user-controls-loggedout .auth-button { font-size: 1rem; }
-            .error-message { bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) * 2); }
+            .error-message { bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); }
         }
     </style>
 </head>
@@ -536,7 +506,7 @@ INDEX_HTML = """
                             <rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect>
                             <rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect>
                         </svg>
-                         <svg class="close-icon" viewBox="0 0 100 100" width="18" height="18">
+                         <svg class="close-icon" viewBox="0 0 100 100" width="18" height="18"> <!-- Иконка крестика -->
                             <line x1="10" y1="10" x2="90" y2="90"/>
                             <line x1="10" y1="90" x2="90" y2="10"/>
                         </svg>
@@ -621,27 +591,32 @@ INDEX_HTML = """
     <script>
     // --- DOM Elements ---
     const tokenBalanceDisplaySpan = document.getElementById('token-balance-display'); 
-    const tokenBalanceDropdownSpan = document.getElementById('token-balance-dropdown');
+    const tokenBalanceDropdownSpan = document.getElementById('token-balance-dropdown'); // This ID is not used anymore for balance
     const burgerMenuToggle = document.getElementById('burger-menu-toggle');
     const dropdownMenu = document.getElementById('dropdown-menu');
     const closeMenuBtnInner = document.getElementById('close-menu-btn-inner');
     const burgerIcon = burgerMenuToggle ? burgerMenuToggle.querySelector('.burger-icon') : null;
-    const closeIconForBurger = burgerMenuToggle ? burgerMenuToggle.querySelector('.close-icon') : null; // This was for a separate close icon, adapting
+    const closeIconForBurger = burgerMenuToggle ? burgerMenuToggle.querySelector('.close-icon') : null; 
 
     function updateTokenBalanceDisplay(newBalance) {
         if (tokenBalanceDisplaySpan) {
             tokenBalanceDisplaySpan.textContent = newBalance;
         }
-        if (tokenBalanceDropdownSpan) { // This element is now replaced by email
-            // tokenBalanceDropdownSpan.textContent = newBalance; 
-        }
+        // If you decide to show balance in dropdown again, uncomment below
+        // if (tokenBalanceDropdownSpan) { 
+        //     tokenBalanceDropdownSpan.textContent = newBalance;
+        // }
     }
 
     if (burgerMenuToggle && dropdownMenu) {
+        const burgerLines = burgerMenuToggle.querySelectorAll('.burger-icon .line');
+        const closeLines = burgerMenuToggle.querySelectorAll('.close-icon line');
+
+
         burgerMenuToggle.addEventListener('click', (e) => {
             e.stopPropagation(); 
-            const isOpen = burgerMenuToggle.classList.contains('open'); // Check class instead of aria-expanded
-            burgerMenuToggle.setAttribute('aria-expanded', !isOpen);
+            const isOpen = burgerMenuToggle.classList.contains('open');
+            burgerMenuToggle.setAttribute('aria-expanded', String(!isOpen));
             dropdownMenu.classList.toggle('open');
             burgerMenuToggle.classList.toggle('open'); 
         });
@@ -658,7 +633,7 @@ INDEX_HTML = """
     document.addEventListener('click', function(event) {
         if (dropdownMenu && burgerMenuToggle && dropdownMenu.classList.contains('open')) {
             const isClickInsideMenu = dropdownMenu.contains(event.target);
-            const isClickOnBurger = burgerMenuToggle.contains(event.target);
+            const isClickOnBurger = burgerMenuToggle.contains(event.target) || burgerMenuToggle.querySelector('svg').contains(event.target);
             if (!isClickInsideMenu && !isClickOnBurger) {
                 burgerMenuToggle.setAttribute('aria-expanded', 'false');
                 dropdownMenu.classList.remove('open');
@@ -723,6 +698,7 @@ INDEX_HTML = """
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
+        // Управление видимостью action-buttons (теперь не фиксированные)
         if (actionButtonsContainer) { 
             if (viewName === 'loading') {
                 actionButtonsContainer.style.display = 'none';
