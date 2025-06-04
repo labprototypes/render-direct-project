@@ -10,7 +10,7 @@ from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMix
 from flask_security.utils import hash_password
 from flask_mail import Mail
 from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy.orm import relationship # Removed backref as it's not explicitly used in the models provided
+from sqlalchemy.orm import relationship
 from flask_security import AsaList
 
 
@@ -22,15 +22,12 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-# ВАЖНО: Установите надежные ключи в переменных окружения для продакшена
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'super-secret-key-for-dev-only-please-change-in-prod') 
 app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'super-secret-salt-for-dev-only-please-change-in-prod') 
 
-# Конфигурация базы данных
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Настройки Flask-Security-Too
 app.config['SECURITY_REGISTERABLE'] = True 
 app.config['SECURITY_SEND_REGISTER_EMAIL'] = False 
 app.config['SECURITY_RECOVERABLE'] = True 
@@ -48,8 +45,6 @@ app.config['SECURITY_REGISTER_URL'] = '/register'
 app.config['SECURITY_CHANGE_URL'] = '/change-password'
 app.config['SECURITY_RESET_URL'] = '/reset-password'
 
-
-# Настройки Flask-Mail 
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
@@ -59,10 +54,8 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', ("Changer AI", 'noreply@example.com'))
 app.config['SECURITY_EMAIL_SENDER'] = app.config['MAIL_DEFAULT_SENDER']
 
-
 db = SQLAlchemy(app)
 mail = Mail(app)
-
 
 roles_users = db.Table(
     "roles_users",
@@ -92,7 +85,6 @@ class User(db.Model, UserMixin):
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
-
 app.static_folder = 'static'
 
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
@@ -103,6 +95,9 @@ if OPENAI_API_KEY:
 else:
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
 
+# ==================================================================================
+# INDEX_HTML - Взят из вашего файла app (1).py и дополнен новым хедером
+# ==================================================================================
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -125,12 +120,15 @@ INDEX_HTML = """
             --mob-spacing-unit: 20px;
             --desktop-spacing-unit: 30px;
             --download-icon-size: 28px; 
+            /* Стили для нового хедера */
             --header-elements-bg: rgba(50, 50, 50, 0.6); 
             --header-elements-blur: 6px; 
             --header-text-color: #FFFFFF; 
             --header-border-radius: 22px; 
             --coin-color: #D9F47A; 
-            --header-height: 60px; /* Approximate height for the new header area */
+            --header-vertical-padding: 15px; /* Отступы для хедера сверху/снизу */
+            --header-logo-height-mob: 30px;
+            --header-logo-height-desk: 35px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -160,29 +158,30 @@ INDEX_HTML = """
             width: 100%; max-width: 1200px; margin: 0 auto; 
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
-            padding-top: calc(var(--header-height) + var(--mob-spacing-unit)); /* Space for the new fixed header */
-            padding-bottom: calc(70px + var(--mob-spacing-unit)); 
+            /* Отступ сверху для .app-container теперь учитывает высоту .page-header-container */
+            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
+            padding-bottom: calc(70px + var(--mob-spacing-unit)); /* 70px - примерная высота футера */
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
         }
 
-        /* --- New Header Elements --- */
+        /* --- Новый Хедер --- */
         .page-header-container { 
-            position: fixed; /* Fixed header */
+            position: fixed; /* Фиксируем хедер */
             top: 0;
             left: 0;
             right: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: var(--mob-spacing-unit);
-            padding-top: 15px; /* Adjust top padding for aesthetic balance */
-            padding-bottom: 10px;
+            padding: var(--header-vertical-padding) var(--mob-spacing-unit);
             z-index: 105; 
-            background-color: transparent; /* Header itself is transparent, elements inside might have bg */
+            /* Можно добавить фон для хедера, если фон страницы очень светлый */
+            /* background-color: rgba(0,0,0,0.1); */ 
+            /* backdrop-filter: blur(3px); */
         }
         .app-logo-link { display: inline-block; line-height: 0; } 
-        .logo { height: 30px; cursor: pointer; display: block;}
+        .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
 
         .top-right-nav { position: relative; display: flex; align-items: center; }
 
@@ -195,7 +194,7 @@ INDEX_HTML = """
             border-radius: var(--header-border-radius);
             gap: 8px;
         }
-        .token-display, .token-display-menu {
+        .token-display { /* Убрали .token-display-menu, используем один стиль */
             display: flex; align-items: center; color: var(--header-text-color);
             font-size: 0.85rem; font-weight: normal; 
         }
@@ -208,26 +207,35 @@ INDEX_HTML = """
             padding: 0; cursor: pointer; width: 34px; height: 34px; 
             display: flex; align-items: center; justify-content: center;
             transition: background-color 0.3s ease, transform 0.3s ease;
+            position: relative; /* Для абсолютного позиционирования SVG внутри */
         }
         .burger-menu-btn:hover { background-color: #c8e070; }
-        .burger-menu-btn svg { display: block; transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+        .burger-menu-btn svg { 
+            display: block; 
+            position: absolute; /* Для точного центрирования и анимации */
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; 
+        }
         .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: center;}
         
         .burger-menu-btn .burger-icon { width: 18px; height: 14px; } 
-        .burger-menu-btn .burger-icon .line1 { transform-origin: 0% 0%;}
-        .burger-menu-btn .burger-icon .line3 { transform-origin: 0% 100%;}
+        .burger-menu-btn .close-icon { width: 16px; height: 16px; opacity: 0; transform: translate(-50%, -50%) rotate(-45deg); }
 
-        .burger-menu-btn.open .burger-icon .line1 { transform: rotate(45deg) translate(2px, -1px); width: 110%;}
-        .burger-menu-btn.open .burger-icon .line2 { opacity: 0; transform: translateX(-10px); }
-        .burger-menu-btn.open .burger-icon .line3 { transform: rotate(-45deg) translate(2px, 1px); width: 110%;}
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(12px) rotate(45deg); } /* Скорректировано для центрирования */
+        .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
+        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-12px) rotate(-45deg); }
         
+        .burger-menu-btn.open .burger-icon { opacity: 0; transform: translate(-50%, -50%) rotate(45deg); }
+        .burger-menu-btn.open .close-icon { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
+
 
         .dropdown-menu {
             position: absolute; top: calc(100% + 8px); right: 0;
             background-color: rgba(248, 248, 248, 0.9); 
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            padding: 12px; width: 200px; z-index: 1000;
+            padding: 12px; width: 220px; z-index: 1000;
             opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.95);
             transform-origin: top right;
             transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0.25s linear;
@@ -240,8 +248,15 @@ INDEX_HTML = """
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.08);
         }
-        .dropdown-header .token-display-menu .token-coin { box-shadow: none; }
-        .dropdown-header .token-display-menu { color: #333; font-size: 0.9rem;}
+        .dropdown-user-email { /* Новый стиль для email */
+            color: #333; 
+            font-size: 0.9rem;
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1; /* Чтобы занимал доступное место */
+        }
         .close-menu-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width:20px; height:20px;}
         .close-menu-btn svg { stroke: #555; stroke-width:10; stroke-linecap:round; }
         .dropdown-menu ul { list-style: none; padding: 0; margin: 0; }
@@ -263,62 +278,96 @@ INDEX_HTML = """
         .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
         .user-controls-loggedout .auth-separator { color: var(--header-text-color); margin: 0 6px; opacity: 0.6; }
 
-        /* --- Original Main Content Area Styles (Restored) --- */
-        .app-main { /* This is the main content area below the header */
+        /* --- Стили из вашего файла app (1).py --- */
+        /* Я буду стараться минимально их изменять, только для адаптации к новому хедеру */
+
+        .app-main {
             width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Content starts from top */
+            justify-content: flex-start; /* Изменено с center для более предсказуемого потока */
             flex-grow: 1;
-            padding-top: 0; /* app-container handles top padding now */
-            gap: var(--mob-spacing-unit); 
-            text-align: center;
+            /* padding-top УПРАВЛЯЕТСЯ .app-container */
+            padding-bottom: calc(70px + var(--mob-spacing-unit)); /* 70px - примерная высота футера */
+            gap: var(--mob-spacing-unit); /* Используется для отступов между основными блоками */
         }
         
-        .initial-top-group { 
-            display: flex; flex-direction: column; align-items: center;
-            gap: var(--mob-spacing-unit); 
+        .initial-content, .result-image-wrapper, .loader-container {
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            gap: inherit; 
             width: 100%;
         }
-        .desktop-main-text-img { 
-            display: none; 
-            max-width: 800px; width: auto; max-height: 75vh; object-fit: contain; 
+        .initial-content.active, .result-image-wrapper.active, .loader-container.active {
+            display: flex;
         }
-        .mobile-main-text-img { 
-            display: block; 
-            max-height: 20vh; 
-            max-width: 90%; object-fit: contain; 
+        
+        .initial-top-group { /* Контейнер для DESK_MAIN/MOB_MAIN и зоны загрузки */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--mob-spacing-unit); /* Отступ между текстом и зоной загрузки на мобильных */
+            width: 100%;
         }
 
+        .main-text-display-img { /* Общий класс для MOB_MAIN и DESK_MAIN */
+            width: auto; 
+            max-width: 90%; 
+            height: auto;
+            object-fit: contain; 
+        }
+        .desktop-main-text-img { display: none; } /* Скрыт по умолчанию */
+        .mobile-main-text-img { display: block; max-height: 20vh; } /* Виден по умолчанию */
+
         .image-drop-area-mobile {
-            width: 80%; max-width: 280px; height: 165px; background-color: transparent; 
-            border-radius: 25px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; position: relative; overflow: hidden; 
+            width: 80%;
+            max-width: 280px; 
+            height: 165px; 
+            background-color: transparent; 
+            border-radius: 25px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden; 
             border: 2px dashed rgba(248, 248, 248, 0.3); 
         }
-        .image-drop-area-mobile.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
-        .image-drop-area-mobile .mob-drop-placeholder-img { 
-            width: auto; max-width: 80%; max-height: 40%; height: auto; object-fit: contain; 
+        .image-drop-area-mobile.dragover {
+            border-color: var(--text-accent-color);
+            background-color: rgba(217, 244, 122, 0.1);
         }
-        .image-drop-area-mobile::before { 
-            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        .image-drop-area-mobile .mob-drop-placeholder-img { 
+            width: auto; 
+            max-width: 80%; 
+            max-height: 40%; 
+            height: auto; 
+            object-fit: contain; 
+        }
+         .image-drop-area-mobile::before { 
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(248, 248, 248, 0.1); 
-            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-            z-index: -1; border-radius: inherit;
+            backdrop-filter: blur(4px); 
+            -webkit-backdrop-filter: blur(4px);
+            z-index: -1; 
+            border-radius: inherit;
         }
         .image-drop-area-mobile .image-preview-mobile-img {
             display: none; width: 100%; height: 100%; object-fit: cover;
             border-radius: inherit; position: relative; z-index: 1;
         }
         
-        .action-buttons { 
+        .action-buttons { /* НЕ ФИКСИРОВАННЫЕ */
             display: flex; justify-content: center; align-items: center;
             gap: 30px; 
             flex-wrap: wrap; 
             width: 100%; max-width: 320px; 
             margin-top: var(--mob-spacing-unit); 
-            margin-bottom: var(--mob-spacing-unit); /* Space above fixed footer */
+            margin-bottom: var(--mob-spacing-unit); 
         }
         .action-btn img { 
             height: calc(45px / 2); width: auto; max-width: 80px; 
@@ -363,7 +412,7 @@ INDEX_HTML = """
             50% { transform: scale(1.2); opacity: 1; }
         }
 
-        .app-footer { 
+        .app-footer { /* Фиксированный футер */
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
             max-width: 500px; padding: 0; position: fixed;
             bottom: var(--mob-spacing-unit); left: 50%;
@@ -398,7 +447,7 @@ INDEX_HTML = """
             display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
             background-color: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
             padding: 10px 15px; border-radius: 8px; position: fixed;
-            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) * 2); 
+            bottom: calc(70px + var(--mob-spacing-unit) * 2); /* 70px - высота футера */
             left: 50%; transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
             max-width: 480px; z-index: 105; text-align: center;
@@ -410,7 +459,7 @@ INDEX_HTML = """
             .app-container { 
                 padding-left: var(--desktop-spacing-unit);
                 padding-right: var(--desktop-spacing-unit);
-                padding-top: calc(var(--header-height) + var(--desktop-spacing-unit)); 
+                padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit)); 
                 padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); 
             }
             .page-header-container {
@@ -419,7 +468,7 @@ INDEX_HTML = """
                 right: var(--desktop-spacing-unit);
                 max-width: calc(1200px - 2 * var(--desktop-spacing-unit));
             }
-            .logo { height: 35px; }
+            .logo { height: var(--header-logo-height-desk); }
             .app-main { 
                 gap: var(--desktop-spacing-unit);
                 padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); 
@@ -458,7 +507,7 @@ INDEX_HTML = """
             .submit-button-icon-img { height: 48px; width: 48px;}
 
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
-            .token-display, .token-display-menu { font-size: 1rem; }
+            .token-display { font-size: 1rem; } /* Убрали .token-display-menu */
             .token-coin { width: 20px; height: 20px; }
             .burger-menu-btn { width: 42px; height: 42px; }
             .user-controls-loggedout { padding: 12px 25px; }
@@ -483,18 +532,19 @@ INDEX_HTML = """
                     </span>
                     <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
                         <svg class="burger-icon" viewBox="0 0 100 80" width="20" height="20"> 
-                            <rect class="line line1" width="100" height="12" rx="6"></rect>
-                            <rect class="line line2" y="34" width="100" height="12" rx="6"></rect>
-                            <rect class="line line3" y="68" width="100" height="12" rx="6"></rect>
+                            <rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect>
+                            <rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect>
+                            <rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect>
+                        </svg>
+                         <svg class="close-icon" viewBox="0 0 100 100" width="18" height="18">
+                            <line x1="10" y1="10" x2="90" y2="90"/>
+                            <line x1="10" y1="90" x2="90" y2="10"/>
                         </svg>
                     </button>
                 </div>
                 <div class="dropdown-menu" id="dropdown-menu">
                     <div class="dropdown-header">
-                         <span class="token-display-menu">
-                            <span id="token-balance-dropdown">{{ current_user.token_balance }}</span>
-                            <span class="token-coin"></span>
-                        </span>
+                         <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
                         <button class="close-menu-btn" id="close-menu-btn-inner" aria-label="Закрыть меню">
                              <svg viewBox="0 0 100 100" width="18" height="18">
                                 <line x1="10" y1="10" x2="90" y2="90"/>
@@ -575,27 +625,30 @@ INDEX_HTML = """
     const burgerMenuToggle = document.getElementById('burger-menu-toggle');
     const dropdownMenu = document.getElementById('dropdown-menu');
     const closeMenuBtnInner = document.getElementById('close-menu-btn-inner');
+    const burgerIcon = burgerMenuToggle ? burgerMenuToggle.querySelector('.burger-icon') : null;
+    const closeIconForBurger = burgerMenuToggle ? burgerMenuToggle.querySelector('.close-icon') : null; // This was for a separate close icon, adapting
 
     function updateTokenBalanceDisplay(newBalance) {
         if (tokenBalanceDisplaySpan) {
             tokenBalanceDisplaySpan.textContent = newBalance;
         }
-        if (tokenBalanceDropdownSpan) {
-            tokenBalanceDropdownSpan.textContent = newBalance;
+        if (tokenBalanceDropdownSpan) { // This element is now replaced by email
+            // tokenBalanceDropdownSpan.textContent = newBalance; 
         }
     }
 
     if (burgerMenuToggle && dropdownMenu) {
         burgerMenuToggle.addEventListener('click', (e) => {
             e.stopPropagation(); 
-            const isOpen = burgerMenuToggle.getAttribute('aria-expanded') === 'true';
+            const isOpen = burgerMenuToggle.classList.contains('open'); // Check class instead of aria-expanded
             burgerMenuToggle.setAttribute('aria-expanded', !isOpen);
             dropdownMenu.classList.toggle('open');
             burgerMenuToggle.classList.toggle('open'); 
         });
     }
     if (closeMenuBtnInner && dropdownMenu && burgerMenuToggle) {
-         closeMenuBtnInner.addEventListener('click', () => {
+         closeMenuBtnInner.addEventListener('click', (e) => {
+            e.stopPropagation();
             burgerMenuToggle.setAttribute('aria-expanded', 'false');
             dropdownMenu.classList.remove('open');
             burgerMenuToggle.classList.remove('open');
