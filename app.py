@@ -4,13 +4,13 @@ import uuid
 import requests
 import time
 import openai
-from flask import Flask, request, jsonify, render_template_string, url_for, redirect # Removed flash as it's not used
+from flask import Flask, request, jsonify, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
+from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user, roles_accepted, roles_required
 from flask_security.utils import hash_password
-from flask_mail import Mail
+from flask_mail import Mail # Flask-Security-Too использует Flask-Mail
 from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy.orm import relationship, backref # backref might not be needed if not explicitly used
+from sqlalchemy.orm import relationship, backref
 from flask_security import AsaList
 
 
@@ -22,41 +22,32 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-# ВАЖНО: Установите надежные ключи в переменных окружения для продакшена
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'super-secret-key-for-dev-only-please-change-in-prod') 
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'super-secret-salt-for-dev-only-please-change-in-prod') 
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'super-secret-key-for-dev') # ВАЖНО: Установите надежный ключ в переменной окружения
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'super-secret-salt-for-dev') # ВАЖНО: Установите надежный salt
 
-# Конфигурация базы данных
+# Конфигурация базы данных (SQLite для простоты, замените на PostgreSQL для Render)
+# Для Render может выглядеть так: app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Настройки Flask-Security-Too (убраны дубликаты)
-app.config['SECURITY_REGISTERABLE'] = True 
-app.config['SECURITY_SEND_REGISTER_EMAIL'] = False 
-app.config['SECURITY_RECOVERABLE'] = True 
-app.config['SECURITY_CHANGEABLE'] = True 
-app.config['SECURITY_CONFIRMABLE'] = False 
-app.config['SECURITY_USERNAME_ENABLE'] = True 
-app.config['SECURITY_USERNAME_REQUIRED'] = False 
-app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} 
-app.config['SECURITY_POST_LOGIN_VIEW'] = '/' 
-app.config['SECURITY_POST_LOGOUT_VIEW'] = '/' 
-app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
-app.config['SECURITY_LOGIN_URL'] = '/login' # Стандартный URL для страницы входа
-app.config['SECURITY_LOGOUT_URL'] = '/logout'
-app.config['SECURITY_REGISTER_URL'] = '/register'
-app.config['SECURITY_CHANGE_URL'] = '/change-password' # Для страницы смены пароля
-app.config['SECURITY_RESET_URL'] = '/reset-password' # Для страницы сброса пароля
+# Настройки Flask-Security-Too
+app.config['SECURITY_REGISTERABLE'] = True # Разрешить регистрацию новых пользователей
+app.config['SECURITY_SEND_REGISTER_EMAIL'] = False # Отключить отправку email для подтверждения (для упрощения)
+app.config['SECURITY_RECOVERABLE'] = True # Разрешить восстановление пароля
+app.config['SECURITY_CHANGEABLE'] = True # Разрешить смену пароля
+app.config['SECURITY_CONFIRMABLE'] = False # Отключить обязательное подтверждение email
+app.config['SECURITY_USERNAME_ENABLE'] = True # Если хотите использовать username помимо email
+app.config['SECURITY_USERNAME_REQUIRED'] = False # Если username не обязателен при регистрации (email будет основным)
+app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} # Отключить проверку доставляемости email
 
-
-# Настройки Flask-Mail 
+# Настройки Flask-Mail (заполните своими данными, если будете использовать отправку почты)
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
 app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', ("Changer AI", 'noreply@example.com'))
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@example.com')
 app.config['SECURITY_EMAIL_SENDER'] = app.config['MAIL_DEFAULT_SENDER']
 
 
@@ -64,6 +55,7 @@ db = SQLAlchemy(app)
 mail = Mail(app)
 
 
+# Модели для Flask-Security-Too
 roles_users = db.Table(
     "roles_users",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
@@ -76,25 +68,27 @@ class Role(db.Model, RoleMixin):
     description = db.Column(db.String(255))
     permissions = db.Column(MutableList.as_mutable(AsaList()), nullable=True)
 
-class User(db.Model, UserMixin): # Убраны дублирующиеся поля
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    username = db.Column(db.String(255), unique=True, nullable=True) 
+    username = db.Column(db.String(255), unique=True, nullable=True) # Можно сделать nullable=False если username обязателен
     password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False) 
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False) # Убедитесь, что это поле есть
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship(
         "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
     )
-    token_balance = db.Column(db.Integer, default=10, nullable=False)
+    token_balance = db.Column(db.Integer, default=10, nullable=False) # Начальный баланс токенов для новых пользователей
 
+# Настройка Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
 
 app.static_folder = 'static'
 
+# API ключи из переменных окружения
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
@@ -111,6 +105,35 @@ INDEX_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Changer AI</title>
     <style>
+        /* ... (все ваши CSS стили остаются здесь, я их не меняю в этом шаге) ... */
+        /* Добавим немного стилей для информации о пользователе и ссылок */
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: var(--text-accent-color);
+            font-size: 0.9rem;
+            z-index: 101;
+        }
+        .user-info a {
+            color: var(--text-accent-color);
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        .user-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Стили для скрытия/показа контента в зависимости от авторизации */
+        .auth-required-content {
+            /* Изначально может быть скрыто, если хотите строгий контроль */
+            /* display: none; */ 
+        }
+        body.user-not-authenticated .auth-required-content {
+            /* Стили, если контент нужно скрыть или показать сообщение "Войдите" */
+            /* Например, можно добавить overlay с сообщением */
+        }
+        
         @font-face {
             font-family: 'ChangerFont';
             src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
@@ -125,14 +148,15 @@ INDEX_HTML = """
             --mob-spacing-unit: 20px;
             --desktop-spacing-unit: 30px;
             --download-icon-size: 28px; 
-            --header-elements-bg: rgba(50, 50, 50, 0.6); /* Сделаем фон чуть темнее для контраста */
-            --header-elements-blur: 6px; 
-            --header-text-color: #FFFFFF; 
-            --header-border-radius: 22px; /* Единый радиус для элементов хедера */
-            --coin-color: #D9F47A; 
+            --footer-height: 70px; 
+            --action-buttons-height: 60px; 
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'ChangerFont', sans-serif;
@@ -145,379 +169,487 @@ INDEX_HTML = """
             flex-direction: column;
             min-height: 100vh;
             overflow-x: hidden;
+            transition: filter 0.4s ease-in-out;
         }
         
         .app-container-wrapper {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center center; background-repeat: no-repeat;
-            z-index: -1; transition: filter 0.4s ease-in-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: -1;
+            transition: filter 0.4s ease-in-out;
             background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}"); 
         }
-        .app-container-wrapper.bg-blur { filter: blur(var(--blur-intensity)); }
+        .app-container-wrapper.bg-blur {
+             filter: blur(var(--blur-intensity));
+        }
 
         .app-container {
-            width: 100%; max-width: 1200px; margin: 0 auto; 
-            padding-left: var(--mob-spacing-unit);
-            padding-right: var(--mob-spacing-unit);
-            padding-top: calc(var(--mob-spacing-unit) + 30px + 20px); /* top_padding + logo_height + space_below_logo */
-            padding-bottom: calc(70px + var(--mob-spacing-unit)); /* Space for fixed footer */
-            display: flex; flex-direction: column; align-items: center;
-            flex-grow: 1; position: relative; z-index: 1;
-        }
-
-        /* --- Header Elements --- */
-        .page-header-container { 
-            position: absolute; /* Или fixed, если хедер должен быть всегда наверху экрана */
-            top: var(--mob-spacing-unit);
-            left: var(--mob-spacing-unit);
-            right: var(--mob-spacing-unit);
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--mob-spacing-unit);
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            z-index: 105; 
-            max-width: calc(1200px - 2 * var(--mob-spacing-unit)); 
-            margin: 0 auto; 
-        }
-        .app-logo-link { display: inline-block; line-height: 0; } 
-        .logo { height: 30px; cursor: pointer; display: block;}
-
-        .top-right-nav { position: relative; display: flex; align-items: center; }
-
-        .user-controls-loggedin {
-            display: flex; align-items: center;
-            background-color: var(--header-elements-bg);
-            backdrop-filter: blur(var(--header-elements-blur));
-            -webkit-backdrop-filter: blur(var(--header-elements-blur));
-            padding: 6px 6px 6px 12px; 
-            border-radius: var(--header-border-radius);
-            gap: 8px;
-        }
-        .token-display, .token-display-menu {
-            display: flex; align-items: center; color: var(--header-text-color);
-            font-size: 0.85rem; font-weight: normal; /* Сделаем текст чуть менее жирным */
-        }
-        .token-coin {
-            width: 16px; height: 16px; background-color: var(--coin-color);
-            border-radius: 50%; margin-left: 5px; 
-            /* box-shadow: 0 0 4px rgba(217, 244, 122, 0.6); */ /* Уменьшил тень */
-        }
-        .burger-menu-btn {
-            background-color: var(--text-accent-color); border: none; border-radius: 50%;
-            padding: 0; cursor: pointer; width: 34px; height: 34px; /* Уменьшил кнопку */
-            display: flex; align-items: center; justify-content: center;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-        .burger-menu-btn:hover { background-color: #c8e070; }
-        .burger-menu-btn svg { display: block; transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
-        .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: center;}
-        
-        .burger-menu-btn .burger-icon { width: 18px; height: 14px; } /* Размеры для линий бургера */
-        .burger-menu-btn .burger-icon .line1 { transform-origin: 0% 0%;}
-        .burger-menu-btn .burger-icon .line3 { transform-origin: 0% 100%;}
-
-        .burger-menu-btn.open .burger-icon .line1 { transform: rotate(45deg) translate(2px, -1px); width: 110%;}
-        .burger-menu-btn.open .burger-icon .line2 { opacity: 0; transform: translateX(-10px); }
-        .burger-menu-btn.open .burger-icon .line3 { transform: rotate(-45deg) translate(2px, 1px); width: 110%;}
-        
-
-        .dropdown-menu {
-            position: absolute; top: calc(100% + 8px); right: 0;
-            background-color: rgba(248, 248, 248, 0.9); 
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            padding: 12px; width: 200px; z-index: 1000;
-            opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.95);
-            transform-origin: top right;
-            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0.25s linear;
-        }
-        .dropdown-menu.open {
-            opacity: 1; visibility: visible; transform: translateY(0) scale(1);
-            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0s linear;
-        }
-        .dropdown-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.08);
-        }
-        .dropdown-header .token-display-menu .token-coin { box-shadow: none; }
-        .dropdown-header .token-display-menu { color: #333; font-size: 0.9rem;}
-        .close-menu-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width:20px; height:20px;}
-        .close-menu-btn svg { stroke: #555; stroke-width:10; stroke-linecap:round; }
-        .dropdown-menu ul { list-style: none; padding: 0; margin: 0; }
-        .dropdown-menu li a {
-            display: block; padding: 8px 0; color: #333; text-decoration: none;
-            font-size: 0.9rem; transition: color 0.2s ease;
-        }
-        .dropdown-menu li a:hover { color: var(--text-accent-color); }
-
-        .user-controls-loggedout {
-            background-color: var(--header-elements-bg);
-            backdrop-filter: blur(var(--header-elements-blur));
-            -webkit-backdrop-filter: blur(var(--header-elements-blur));
-            padding: 8px 15px; border-radius: var(--header-border-radius); display: flex; align-items: center;
-        }
-        .user-controls-loggedout .auth-button {
-            color: var(--header-text-color); text-decoration: none; font-size: 0.85rem; font-weight: normal;
-        }
-        .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
-        .user-controls-loggedout .auth-separator { color: var(--header-text-color); margin: 0 6px; opacity: 0.6; }
-
-        /* --- Main Content Area (Восстанавливаем стили, похожие на "вчерашние") --- */
-        .app-main {
-            width: 100%; display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; /* Основное содержимое сверху */
             flex-grow: 1;
-            padding-top: 0; /* Отступ сверху теперь управляется .app-container */
-            padding-bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit)); /* Отступ для футера */
-            gap: var(--desktop-spacing-unit); /* Используем десктопный отступ для основного контента */
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-header {
+            width: 100%;
+            padding-top: 10px;
+            text-align: center;
+            position: absolute;
+            top: var(--mob-spacing-unit);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        .logo {
+            height: 30px; 
+            cursor: pointer;
+        }
+
+        .app-main {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; 
+            flex-grow: 1;
+            padding-top: calc(30px + var(--mob-spacing-unit) + 15px + var(--mob-spacing-unit)); 
+            padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); 
+            gap: var(--mob-spacing-unit); 
             text-align: center;
         }
         
-        .initial-top-group { 
-            display: flex; flex-direction: column; align-items: center;
-            gap: var(--desktop-spacing-unit); /* Отступ между элементами в этой группе */
+        .initial-content, .result-image-wrapper, .loader-container {
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            gap: inherit; 
             width: 100%;
         }
-        .desktop-main-text-img { 
-            display: none; /* Скрыто по умолчанию, показывается в @media для десктопа */
-            max-width: 800px; width: auto; max-height: 75vh; object-fit: contain; 
-        }
-        .mobile-main-text-img { 
-            display: block; /* Показывается по умолчанию (mobile-first) */
-            max-height: 25vh; /* Немного увеличим для мобилки */
-            max-width: 90%; object-fit: contain; 
-        }
-
-        .image-drop-area-mobile {
-            width: 80%; max-width: 280px; height: 165px; background-color: transparent; 
-            border-radius: 25px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; position: relative; overflow: hidden; 
-            border: 2px dashed rgba(248, 248, 248, 0.3); 
-        }
-        .image-drop-area-mobile.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
-        .image-drop-area-mobile .mob-drop-placeholder-img { 
-            width: auto; max-width: 80%; max-height: 40%; height: auto; object-fit: contain; 
-        }
-        .image-drop-area-mobile::before { 
-            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(248, 248, 248, 0.1); 
-            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-            z-index: -1; border-radius: inherit;
-        }
-        .image-drop-area-mobile .image-preview-mobile-img {
-            display: none; width: 100%; height: 100%; object-fit: cover;
-            border-radius: inherit; position: relative; z-index: 1;
+        .initial-content.active, .result-image-wrapper.active, .loader-container.active {
+            display: flex;
         }
         
-        .action-buttons { /* НЕ ФИКСИРОВАННЫЕ, часть потока .app-main */
-            display: flex; justify-content: center; align-items: center;
-            gap: 10px; /* Отступы для мобильной версии */
+        .initial-top-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: inherit;
+            width: 100%;
+            flex-shrink: 0; 
+        }
+
+
+        .main-text-display-img {
+            width: auto; 
+            max-width: 90%; 
+            height: auto;
+            object-fit: contain; 
+        }
+        .desktop-main-text-img { display: none; }
+        .mobile-main-text-img { display: block; max-height: 20vh; }
+
+
+        .image-drop-area-mobile {
+            width: 80%;
+            max-width: 280px; 
+            height: 165px; 
+            background-color: transparent; 
+            border-radius: 25px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden; 
+            border: 2px dashed rgba(248, 248, 248, 0.3); 
+        }
+        .image-drop-area-mobile.dragover {
+            border-color: var(--text-accent-color);
+            background-color: rgba(217, 244, 122, 0.1);
+        }
+        .image-drop-area-mobile .mob-drop-placeholder-img { 
+            width: auto; 
+            max-width: 80%; 
+            max-height: 40%; 
+            height: auto; 
+            object-fit: contain; 
+        }
+         .image-drop-area-mobile::before { 
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(248, 248, 248, 0.1); 
+            backdrop-filter: blur(4px); 
+            -webkit-backdrop-filter: blur(4px);
+            z-index: -1; 
+            border-radius: inherit;
+        }
+
+        .image-drop-area-mobile .image-preview-mobile-img {
+            display: none;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: inherit; 
+            position: relative; 
+            z-index: 1;
+        }
+        
+        .action-buttons { 
+            display: flex;
+            justify-content: center; 
+            align-items: center;
+            gap: 30px; 
             flex-wrap: wrap; 
-            width: 100%; max-width: 320px; 
-            margin-top: var(--mob-spacing-unit); 
-            margin-bottom: var(--mob-spacing-unit);
+            width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
+            max-width: 500px; 
+            padding: 10px 0; 
+            
+            position: fixed; 
+            bottom: calc(var(--footer-height) + var(--mob-spacing-unit) + 15px); 
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99; 
+            border-radius: 20px; 
         }
         .action-btn img { 
-            height: calc(45px / 2); width: auto; max-width: 80px; 
-            object-fit: contain; cursor: pointer; transition: transform 0.2s ease;
-            display: block; visibility: visible; 
+            height: calc(45px / 2); 
+            width: auto; 
+            max-width: 80px; 
+            object-fit: contain; 
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            display: block; 
+            visibility: visible; 
         }
-        .action-btn img:hover { transform: scale(1.05); }
+        .action-btn img:hover {
+            transform: scale(1.05);
+        }
 
         .result-image-wrapper {
-             justify-content: center; flex-grow: 1; display: inline-flex; 
-             align-items: center; width: auto; max-width: 100%; 
+             justify-content: center; 
+             flex-grow: 1; 
+             display: inline-flex; 
+             align-items: center; 
+             width: auto; 
+             max-width: 100%; 
              position: relative; 
              margin-bottom: calc(var(--download-icon-size) + 20px + 10px); 
         }
         #result-image {
-            max-width: 90vw; max-height: 60vh; object-fit: contain;
-            border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
+            max-width: 90vw; 
+            max-height: 60vh; 
+            object-fit: contain;
+            border-radius: 12px; 
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
             display: block; 
+        }
+        #result-image.result-aspect-portrait { 
+        }
+        #result-image.result-aspect-landscape { 
         }
 
         .download-action-link {
-            display: none; position: absolute;
+            display: none; 
+            position: absolute;
             bottom: calc(-1 * (var(--download-icon-size) + 20px)); 
-            right: 0; z-index: 10; cursor: pointer;
-            padding: 5px; line-height: 0; 
+            right: 0; 
+            z-index: 10;
+            cursor: pointer;
+            padding: 5px; 
+            line-height: 0; 
         }
         .download-button-icon { 
-            height: var(--download-icon-size); width: var(--download-icon-size); display: block;
+            height: var(--download-icon-size);
+            width: var(--download-icon-size);
+            display: block;
         }
 
+
         .loader-container {
-            justify-content: center; align-items: center; min-height: 200px; 
-            z-index: 101; flex-grow: 1; display: flex; 
+            justify-content: center;
+            align-items: center;
+            min-height: 200px; 
+            z-index: 101;
+            flex-grow: 1; 
+            display: flex; 
         }
         .pulsating-dot {
-            width: 100px; height: 100px; background-color: var(--text-accent-color);
-            border-radius: 50%; position: relative; 
+            width: 100px; 
+            height: 100px; 
+            background-color: var(--text-accent-color);
+            border-radius: 50%;
+            position: relative; 
             animation: pulse 1.5s infinite ease-in-out; 
         }
+        
         @keyframes pulse { 
             0%, 100% { transform: scale(0.8); opacity: 0.7; }
             50% { transform: scale(1.2); opacity: 1; }
         }
 
-        .app-footer { /* Фиксированный футер */
+
+        .app-footer {
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
-            max-width: 500px; padding: 0; position: fixed;
-            bottom: var(--mob-spacing-unit); left: 50%;
-            transform: translateX(-50%); z-index: 100;
+            max-width: 500px; 
+            padding: 0; 
+            position: fixed;
+            bottom: var(--mob-spacing-unit);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
         }
         .input-area { 
-            display: flex; align-items: center;
+            display: flex;
+            align-items: center;
             background-color: rgba(248, 248, 248, 0.8); 
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border-radius: 50px; padding: 6px 8px; width: 100%;
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50px; 
+            padding: 6px 8px; 
+            width: 100%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             border: 2px dashed transparent; 
         }
-        .input-area.dragover { border-color: var(--text-accent-color); }
-        #image-file-common { display: none; } 
-        .file-upload-label-desktop { display: none; }
-        #prompt {
-            flex-grow: 1; border: none; padding: 12px 10px; font-size: 0.9rem; 
-            background-color: transparent; outline: none; color: #333333; 
-            font-family: 'ChangerFont', sans-serif; line-height: 1.3;
+        .input-area.dragover {
+            border-color: var(--text-accent-color);
         }
-        #prompt::placeholder { color: #888888; opacity: 1; }
+        #image-file-common { display: none; } 
+
+        .file-upload-label-desktop { 
+            display: none; 
+            border: 2px dashed rgba(248, 248, 248, 0.3); 
+        }
+         .file-upload-label-desktop.dragover {
+            border-color: var(--text-accent-color);
+            background-color: rgba(217, 244, 122, 0.1);
+        }
+        
+        #prompt {
+            flex-grow: 1;
+            border: none;
+            padding: 12px 10px; 
+            font-size: 0.9rem; 
+            background-color: transparent;
+            outline: none;
+            color: #333333; 
+            font-family: 'ChangerFont', sans-serif; 
+            line-height: 1.3;
+        }
+        #prompt::placeholder {
+            color: #888888; 
+            opacity: 1;
+        }
+
         .submit-button-element { 
-            background-color: transparent; border: none; cursor: pointer; padding: 0;
-            margin-left: 8px; display: flex; align-items: center; justify-content: center;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 8px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0; 
         }
-        .submit-button-icon-img { height: 40px; width: 40px; }
-        .submit-button-text-content { display: none; }
+        .submit-button-icon-img { 
+            height: 40px; 
+            width: 40px;
+        }
+        .submit-button-text-content { 
+            display: none; 
+            color: #000000; 
+            font-size: 0.9rem;
+            font-family: 'ChangerFont', sans-serif; 
+            padding: 10px 15px;
+            white-space: nowrap;
+        }
+
 
         .error-message {
-            display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
-            background-color: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
-            padding: 10px 15px; border-radius: 8px; position: fixed;
-            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) * 2); /* Над футером */
-            left: 50%; transform: translateX(-50%);
+            display: none;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-accent-color); 
+            background-color: rgba(0,0,0,0.65); 
+            backdrop-filter: blur(5px);
+            padding: 10px 15px;
+            border-radius: 8px;
+            position: fixed;
+            bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 3); 
+            left: 50%;
+            transform: translateX(-50%);
             width: calc(100% - calc(4 * var(--mob-spacing-unit)));
-            max-width: 480px; z-index: 105; text-align: center;
+            max-width: 480px;
+            z-index: 105; 
+            text-align: center;
         }
 
         /* --- Desktop Styles --- */
         @media (min-width: 769px) {
-             .app-container-wrapper { background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}"); }
-            .app-container { 
-                padding-left: var(--desktop-spacing-unit);
-                padding-right: var(--desktop-spacing-unit);
-                padding-top: calc(var(--desktop-spacing-unit) + 35px + 20px); /* top_padding + logo_height + space */
-                padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); /* Space for fixed footer */
+            :root {
+                 --footer-height: 80px; 
+                 --action-buttons-height: 70px; 
             }
-            .page-header-container {
-                top: var(--desktop-spacing-unit);
-                left: var(--desktop-spacing-unit);
-                right: var(--desktop-spacing-unit);
-                max-width: calc(1200px - 2 * var(--desktop-spacing-unit));
+             .app-container-wrapper {
+                background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
             }
-            .logo { height: 35px; }
-            .app-main { 
+            .app-container {
+                padding: var(--desktop-spacing-unit);
+            }
+            .logo {
+                height: 35px; 
+            }
+            .app-header {
+                 top: var(--desktop-spacing-unit);
+            }
+            .app-main {
+                padding-top: calc(35px + var(--desktop-spacing-unit) + 15px); 
+                padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--desktop-spacing-unit) * 3); 
                 gap: var(--desktop-spacing-unit);
-                padding-bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit)); /* Отступ для футера */
+                justify-content: space-between; 
             }
             
-            .initial-top-group { gap: var(--desktop-spacing-unit); }
+            .initial-top-group { 
+                 margin-bottom: 0; 
+                 flex-grow: 1; 
+                 justify-content: center; 
+            }
+
             .mobile-main-text-img { display: none; }
-            .desktop-main-text-img { display: block; }
+            .desktop-main-text-img {
+                display: block;
+                max-width: 800px; 
+                width: auto; 
+                max-height: 75vh; 
+                object-fit: contain; 
+            }
+
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons {
+                width: auto; 
+                max-width: none; 
                 gap: 50px; 
-                max-width: 700px; /* Соответствует ширине футера на десктопе */
-                margin-top: var(--desktop-spacing-unit);
-                margin-bottom: var(--desktop-spacing-unit);
+                justify-content: center; 
+                flex-wrap: nowrap; 
+                padding-bottom: 0; 
+                margin-top: 0; 
+                bottom: calc(var(--footer-height) + var(--desktop-spacing-unit) + 15px); 
+                max-width: 700px; 
             }
-            .action-btn img { height: calc(48px / 2); max-width: 120px; }
-            
-            .download-action-link { /* Позиционирование кнопки скачать для десктопа */
-                 bottom: calc(-1 * (var(--download-icon-size) + 20px)); /* Ниже изображения */
-                 right: 0; /* Справа от изображения */
+            .action-btn { 
+                display: flex;
+                justify-content: center;
             }
-            #result-image { max-height: 60vh; }
-            .app-footer { max-width: 700px; bottom: var(--desktop-spacing-unit); }
-            .input-area { padding: 10px 12px; border-radius: 30px; }
-            .file-upload-label-desktop { 
-                display: flex; cursor: pointer; padding: 0; margin-right: 12px;
-                align-items: center; justify-content: center; position: relative;
-                width: calc(56px / 1.5); height: calc(56px / 1.5); 
-                background-color: transparent; border-radius: 12px; 
-                flex-shrink: 0; overflow: hidden;
+            .action-btn img { 
+                height: calc(48px / 2); 
+                width: auto; 
+                max-width: 120px; 
+                object-fit: contain;
+                display: block; 
+                visibility: visible; 
             }
-            .upload-icon-desktop-img { height: 100%; width: 100%; object-fit: contain;}
-            .image-preview-desktop-img { display: none; width: 100%; height: 100%; object-fit: cover; border-radius: inherit;}
-            #prompt { padding: 15px 15px; font-size: 1rem;}
-            .submit-button-icon-img { height: 48px; width: 48px;}
+            #result-image {
+                max-height: 60vh; 
+            }
 
-            .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
-            .token-display, .token-display-menu { font-size: 1rem; }
-            .token-coin { width: 20px; height: 20px; }
-            .burger-menu-btn { width: 42px; height: 42px; }
-            .user-controls-loggedout { padding: 12px 25px; }
-            .user-controls-loggedout .auth-button { font-size: 1rem; }
-            .error-message { bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) * 2); }
+            .download-action-link {
+            }
+
+             #result-image.result-aspect-landscape { 
+                max-width: min(700px, 90%); 
+            }
+
+            .app-footer {
+                max-width: 700px; 
+                bottom: var(--desktop-spacing-unit);
+            }
+            .input-area {
+                padding: 10px 12px; 
+                border-radius: 30px; 
+            }
+            .file-upload-label-desktop { 
+                display: flex; 
+                cursor: pointer;
+                padding: 0;
+                margin-right: 12px;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                width: calc(56px / 1.5); 
+                height: calc(56px / 1.5); 
+                background-color: transparent; 
+                border-radius: 12px; 
+                flex-shrink: 0;
+                overflow: hidden;
+            }
+            .upload-icon-desktop-img { 
+                height: 100%; 
+                width: 100%;
+                object-fit: contain;
+            }
+            .image-preview-desktop-img { 
+                display: none;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: inherit;
+            }
+
+            #prompt {
+                padding: 15px 15px;
+                font-size: 1rem;
+            }
+            .submit-button-icon-img { 
+                height: 48px; 
+                width: 48px;
+            }
+            .submit-button-text-content { 
+                 font-size: 1rem;
+            }
+        }
+        @media (max-width: 768px) {
+            .app-main {
+                 padding-bottom: calc(var(--footer-height) + var(--action-buttons-height) + var(--mob-spacing-unit) * 2 + 10px); 
+            }
+            .action-buttons {
+                gap: 30px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="app-container-wrapper" id="app-bg-wrapper"></div>
-    
-    <div class="page-header-container">
-        <a href="{{ url_for('index') }}" class="app-logo-link">
-            <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
-        </a>
-        <div class="top-right-nav">
-            {% if current_user.is_authenticated %}
-                <div class="user-controls-loggedin">
-                    <span class="token-display">
-                        <span id="token-balance-display">{{ current_user.token_balance }}</span>
-                        <span class="token-coin"></span>
-                    </span>
-                    <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
-                        <svg class="burger-icon" viewBox="0 0 100 80" width="20" height="20"> <!-- Уменьшил SVG для лучшего вида в кнопке -->
-                            <rect class="line line1" width="100" height="12" rx="6"></rect>
-                            <rect class="line line2" y="34" width="100" height="12" rx="6"></rect>
-                            <rect class="line line3" y="68" width="100" height="12" rx="6"></rect>
-                        </svg>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="dropdown-menu">
-                    <div class="dropdown-header">
-                         <span class="token-display-menu">
-                            <span id="token-balance-dropdown">{{ current_user.token_balance }}</span>
-                            <span class="token-coin"></span>
-                        </span>
-                        <button class="close-menu-btn" id="close-menu-btn-inner" aria-label="Закрыть меню">
-                             <svg viewBox="0 0 100 100" width="18" height="18">
-                                <line x1="10" y1="10" x2="90" y2="90"/>
-                                <line x1="10" y1="90" x2="90" y2="10"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <ul>
-                        <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
-                        <li><a href="{{ url_for_security('change_password') }}">Сменить пароль</a></li>
-                        <li><a href="{{ url_for_security('logout') }}">Выйти</a></li>
-                    </ul>
-                </div>
-            {% else %}
-                <div class="user-controls-loggedout">
-                    <a href="{{ url_for_security('login') }}" class="auth-button">Логин</a>
-                    <span class="auth-separator">|</span>
-                    <a href="{{ url_for_security('register') }}" class="auth-button">Регистрация</a>
-                </div>
-            {% endif %}
-        </div>
+    <div class="user-info">
+        {% if current_user.is_authenticated %}
+            Привет, {{ current_user.email or current_user.username }}! 
+            Токены: <span id="token-balance">{{ current_user.token_balance }}</span>
+            <a href="{{ url_for_security('logout') }}">Выйти</a>
+            <a href="{{ url_for('buy_tokens_page') }}">Купить токены</a> 
+        {% else %}
+            <a href="{{ url_for_security('login') }}">Войти</a>
+            <a href="{{ url_for_security('register') }}">Зарегистрироваться</a>
+        {% endif %}
     </div>
 
+    <div class="app-container-wrapper" id="app-bg-wrapper"></div>
     <div class="app-container">
-        <!-- <header class="app-header"> Логотип теперь в .page-header-container
+        <header class="app-header">
             <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
-        </header> -->
+        </header>
 
         <main class="app-main auth-required-content">
             <div class="initial-top-group">
@@ -570,53 +702,16 @@ INDEX_HTML = """
 
     <script>
     // --- DOM Elements ---
-    const tokenBalanceDisplaySpan = document.getElementById('token-balance-display'); 
-    const tokenBalanceDropdownSpan = document.getElementById('token-balance-dropdown');
-    const burgerMenuToggle = document.getElementById('burger-menu-toggle');
-    const dropdownMenu = document.getElementById('dropdown-menu');
-    const closeMenuBtnInner = document.getElementById('close-menu-btn-inner');
+    // ... (остальной JavaScript код остается здесь, я его не меняю в этом шаге, кроме добавления обновления баланса токенов) ...
+    const tokenBalanceSpan = document.getElementById('token-balance');
 
     function updateTokenBalanceDisplay(newBalance) {
-        if (tokenBalanceDisplaySpan) {
-            tokenBalanceDisplaySpan.textContent = newBalance;
+        if (tokenBalanceSpan) {
+            tokenBalanceSpan.textContent = newBalance;
         }
-        if (tokenBalanceDropdownSpan) {
-            tokenBalanceDropdownSpan.textContent = newBalance;
-        }
-    }
-
-    if (burgerMenuToggle && dropdownMenu) {
-        burgerMenuToggle.addEventListener('click', (e) => {
-            e.stopPropagation(); // Предотвращаем всплытие, чтобы не закрывалось сразу по клику на документ
-            const isOpen = burgerMenuToggle.getAttribute('aria-expanded') === 'true';
-            burgerMenuToggle.setAttribute('aria-expanded', !isOpen);
-            dropdownMenu.classList.toggle('open');
-            burgerMenuToggle.classList.toggle('open'); 
-        });
-    }
-    if (closeMenuBtnInner && dropdownMenu && burgerMenuToggle) {
-         closeMenuBtnInner.addEventListener('click', () => {
-            burgerMenuToggle.setAttribute('aria-expanded', 'false');
-            dropdownMenu.classList.remove('open');
-            burgerMenuToggle.classList.remove('open');
-        });
     }
     
-    document.addEventListener('click', function(event) {
-        if (dropdownMenu && burgerMenuToggle && dropdownMenu.classList.contains('open')) {
-            const isClickInsideMenu = dropdownMenu.contains(event.target);
-            const isClickOnBurger = burgerMenuToggle.contains(event.target);
-            if (!isClickInsideMenu && !isClickOnBurger) {
-                burgerMenuToggle.setAttribute('aria-expanded', 'false');
-                dropdownMenu.classList.remove('open');
-                burgerMenuToggle.classList.remove('open');
-            }
-        }
-    });
-
-
-    // --- Остальной JavaScript код ---
-    // ... (остальной ваш JS код, который был рабочим для основной страницы) ...
+    // --- DOM Elements ---
     const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInput = document.getElementById('image-file-common');
     
@@ -672,7 +767,7 @@ INDEX_HTML = """
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
-        if (actionButtonsContainer) { // Эти кнопки теперь не фиксированные, а в потоке
+        if (actionButtonsContainer) {
             if (viewName === 'loading') {
                 actionButtonsContainer.style.display = 'none';
             } else {
@@ -839,6 +934,16 @@ INDEX_HTML = """
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             
+            // Flask-Security: Check if user is authenticated
+            // This check should ideally happen before showing the form or on the server-side more strictly
+            // For now, we assume the route is protected by @login_required
+            // if (!{{ current_user.is_authenticated | tojson }}) {
+            //     showError("Пожалуйста, войдите в систему для генерации изображений.");
+            //     // Redirect to login, e.g., window.location.href = "{{ url_for_security('login') }}";
+            //     return;
+            // }
+
+
             if (submitButton.dataset.action === "startover") {
                 updateView('initial');
                 return;
@@ -870,7 +975,7 @@ INDEX_HTML = """
                 
                 if (!response.ok) {
                     let errorDetail = data.error || data.detail || 'Неизвестная ошибка сервера';
-                    if (response.status === 403 && (data.error === 'Недостаточно токенов' || data.detail === 'Недостаточно токенов')) { 
+                    if (response.status === 403 && data.error === 'Недостаточно токенов') {
                          errorDetail = 'У вас недостаточно токенов для генерации. Пожалуйста, пополните баланс.';
                     }
                     throw new Error(errorDetail);
@@ -879,8 +984,8 @@ INDEX_HTML = """
 
                 if(resultImage) resultImage.src = data.output_url;
                 if(downloadLink) downloadLink.href = data.output_url;
-                if (data.new_token_balance !== undefined) { 
-                    updateTokenBalanceDisplay(data.new_token_balance);
+                if (data.new_token_balance !== undefined && tokenBalanceSpan) {
+                    tokenBalanceSpan.textContent = data.new_token_balance;
                 }
                 
                 const tempImg = new Image();
@@ -896,7 +1001,7 @@ INDEX_HTML = """
             } catch (error) {
                 console.error('Ошибка при отправке/обработке:', error);
                 showError("Произошла ошибка: " + error.message);
-                updateView('initial'); 
+                updateView('initial'); // Возвращаем в начальное состояние при ошибке
             } finally {
                 if(submitButton) submitButton.disabled = false;
             }
@@ -932,7 +1037,12 @@ INDEX_HTML = """
             }
         });
     }
-    
+
+    // Add class to body if user is not authenticated for potential CSS rules
+    // if (!{{ current_user.is_authenticated | tojson }}) {
+    //     document.body.classList.add('user-not-authenticated');
+    // }
+
     updateView('initial');
     </script>
 </body>
@@ -942,38 +1052,27 @@ INDEX_HTML = """
 # Маршрут для главной страницы
 @app.route('/')
 def index():
+    # Если пользователь не аутентифицирован, можно сразу перенаправлять на страницу логина
+    # if not current_user.is_authenticated:
+    #     return redirect(url_for_security('login', next=request.url))
     return render_template_string(INDEX_HTML)
 
+# Пример страницы для покупки токенов (очень базовый)
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
+    # Здесь будет ваша логика для отображения опций покупки токенов
+    # и интеграции с Tilda или другой платежной системой.
+    # Пока это просто заглушка.
     return """
-        <!DOCTYPE html>
-        <html lang="ru">
-        <head>
-            <meta charset="UTF-8">
-            <title>Покупка токенов</title>
-            <style>
-                body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-                .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-                h1 { color: #333; }
-                a { color: #007bff; text-decoration: none; }
-                a:hover { text-decoration: underline; }
-                .button { display: inline-block; padding: 10px 20px; background-color: #D9F47A; color: #333; border-radius: 5px; text-decoration: none; margin-top:15px;}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>Купить токены</h1>
-                <p>Привет, {{ current_user.email or current_user.username }}!</p>
-                <p>Ваш текущий баланс: <strong>{{ current_user.token_balance }}</strong> токенов.</p>
-                <p>Здесь будет информация о пакетах токенов и кнопка для перехода к оплате (например, на Tilda).</p>
-                <p><a href="{{ url_for('index') }}">Вернуться на главную</a></p>
-            </div>
-        </body>
-        </html>
+        <h1>Купить токены</h1>
+        <p>Здесь будет информация о пакетах токенов и кнопка для перехода к оплате.</p>
+        <p><a href="/">Назад</a></p>
+        <p>Для теста, администратор может вручную пополнить ваш баланс.</p>
     """
 
+
+# Python-часть для обработки запросов
 def improve_prompt_with_openai(user_prompt):
     if not OPENAI_API_KEY:
         print("OpenAI API ключ не настроен, возвращаем оригинальный промпт.")
@@ -996,10 +1095,10 @@ def improve_prompt_with_openai(user_prompt):
         return user_prompt
 
 @app.route('/process-image', methods=['POST'])
-@login_required 
+@login_required # Защищаем этот маршрут
 def process_image():
     if current_user.token_balance < 1:
-        return jsonify({'error': 'Недостаточно токенов'}), 403 
+        return jsonify({'error': 'Недостаточно токенов'}), 403
 
     if 'image' not in request.files or 'prompt' not in request.form:
         return jsonify({'error': 'Отсутствует изображение или промпт'}), 400
@@ -1011,6 +1110,7 @@ def process_image():
     model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
 
     try:
+        # ... (код загрузки на S3 остается прежним)
         if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
             print("!!! ОШИБКА: Не все переменные AWS S3 настроены.")
             return jsonify({'error': 'Ошибка конфигурации сервера для загрузки изображений.'}), 500
@@ -1033,7 +1133,7 @@ def process_image():
             "version": model_version_id,
             "input": {"input_image": hosted_image_url, "prompt": final_prompt_text} 
         }
-        
+        # ... (код вызова Replicate API остается прежним) ...
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         
         if start_response.status_code >= 400:
@@ -1072,6 +1172,7 @@ def process_image():
                 else: 
                     output_url = str(status_data["output"]) 
                 
+                # Списываем токен только после успешной генерации
                 current_user.token_balance -= 1
                 db.session.commit()
                 break
@@ -1089,5 +1190,28 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
+# Команда для создания базы данных (если еще не создана)
+# Выполните это один раз в Python консоли вашего проекта:
+# from app import app, db, user_datastore # если ваш файл называется app.py
+# with app.app_context():
+#     db.create_all()
+#     # Можно создать тестового пользователя и роль, если нужно
+#     # user_datastore.find_or_create_role(name="admin", description="Administrator")
+#     # if not user_datastore.find_user(email="admin@example.com"):
+#     #     user_datastore.create_user(email="admin@example.com", password=hash_password("password"), roles=["admin"], token_balance=100)
+#     # db.session.commit()
+#     print("Database tables created.")
+
+
 if __name__ == '__main__':  
+    # Для первого запуска и создания БД раскомментируйте и выполните код ниже ОДИН РАЗ локально,
+    # затем закомментируйте обратно. На Render база данных обычно создается и настраивается отдельно.
+    # with app.app_context():
+    #     db.create_all()
+    #     # Можно создать тестового пользователя и роль для удобства
+    #     # user_datastore.find_or_create_role(name="user", description="User")
+    #     # if not user_datastore.find_user(email="test@example.com"):
+    #     #     user_datastore.create_user(email="test@example.com", password=hash_password("password"), roles=["user"], token_balance=50)
+    #     # db.session.commit()
+    #     # print("Database tables created and test user added (if didn't exist).")
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
