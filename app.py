@@ -115,8 +115,8 @@ INDEX_HTML = """
             --controls-bg-color: #F8F8F8;
             --controls-bg-color-transparent: rgba(248, 248, 248, 0.8);
             --blur-intensity: 8px;
-            --mob-spacing-unit: 5px; /* ИЗМЕНЕНИЕ: Уменьшен отступ для мобильных */
-            --desktop-spacing-unit: 8px; /* ИЗМЕНЕНИЕ: Уменьшен отступ для десктопа */
+            --mob-spacing-unit: 5px;
+            --desktop-spacing-unit: 8px;
             --download-icon-size: 28px;
 
             --header-text-color-on-light-bg: #333333;
@@ -188,7 +188,6 @@ INDEX_HTML = """
         .app-logo-link {
             display: inline-block;
             line-height: 0;
-            /* ИЗМЕНЕНИЕ: Убраны position:relative и смещения */
         }
         .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
 
@@ -196,7 +195,6 @@ INDEX_HTML = """
             position: relative;
             display: flex;
             align-items: center;
-            /* ИЗМЕНЕНИЕ: Убраны смещения top и right */
         }
 
         .user-controls-loggedin {
@@ -313,7 +311,7 @@ INDEX_HTML = """
             width: auto;
             max-height: 85vh;
             object-fit: contain;
-            margin-top: 8vh; /* ИЗМЕНЕНИЕ: Увеличен отступ сверху, чтобы было ниже */
+            margin-top: 8vh;
         }
         .mobile-main-text-img {
             display: block;
@@ -400,7 +398,8 @@ INDEX_HTML = """
         .app-footer {
             width: calc(100% - calc(2 * var(--mob-spacing-unit)));
             max-width: 500px; padding: 0; position: fixed;
-            bottom: var(--mob-spacing-unit); left: 50%;
+            bottom: calc(var(--mob-spacing-unit) * 3); /* ИЗМЕНЕНИЕ: Отступ увеличен в 3 раза */
+            left: 50%;
             transform: translateX(-50%); z-index: 100;
         }
         .input-area {
@@ -473,7 +472,10 @@ INDEX_HTML = """
 
             .download-action-link { }
             #result-image { max-height: 60vh; }
-            .app-footer { max-width: 700px; bottom: var(--desktop-spacing-unit); }
+            .app-footer {
+                max-width: 700px;
+                bottom: calc(var(--desktop-spacing-unit) * 3); /* ИЗМЕНЕНИЕ: Отступ увеличен в 3 раза */
+            }
             .input-area { padding: 10px 12px; border-radius: 30px; }
             .file-upload-label-desktop {
                 display: flex; cursor: pointer; padding: 0; margin-right: 12px;
