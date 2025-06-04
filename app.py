@@ -22,8 +22,8 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'super-secret-key-for-dev-only-please-change-in-prod') 
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'super-secret-salt-for-dev-only-please-change-in-prod') 
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME') 
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME') 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -112,27 +112,24 @@ INDEX_HTML = """
 
         :root {
             --text-accent-color: #D9F47A;
-            --controls-bg-color: #F8F8F8; /* Основной цвет для подложек контролов */
-            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8); /* F8F8F8 с 80% непрозрачностью */
+            --controls-bg-color: #F8F8F8;
+            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8);
             --blur-intensity: 8px;
             --mob-spacing-unit: 20px;
             --desktop-spacing-unit: 30px;
             --download-icon-size: 28px; 
             
-            /* Стили для нового хедера */
-            --header-text-color-on-light-bg: #333333; /* Темный текст для светлой подложки хедера */
-            --header-text-color-on-dark-bg: #FFFFFF; /* Белый текст для темной подложки хедера (если будет) */
+            --header-text-color-on-light-bg: #333333;
             --header-border-radius: 22px; 
             --coin-color: #D9F47A; 
             --header-vertical-padding: 15px; 
             --header-logo-height-mob: 30px;
             --header-logo-height-desk: 35px;
             
-            /* Приблизительные высоты фиксированных элементов для расчета padding-bottom у app-main */
             --footer-height-mob: 70px; 
-            --action-buttons-height-mob: 50px; /* Примерная высота ряда баблов на мобилке */
+            --action-buttons-height-mob: 50px; 
             --footer-height-desk: 80px;
-            --action-buttons-height-desk: 60px; /* Примерная высота ряда баблов на десктопе */
+            --action-buttons-height-desk: 60px; 
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -162,8 +159,8 @@ INDEX_HTML = """
             width: 100%; max-width: 1200px; margin: 0 auto; 
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
-            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
-            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); /* Отступ для футера и баблов */
+            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit) + 20px); /* Increased top padding for DESK_MAIN */
+            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2 + 10px); /* Space for fixed footer and action buttons */
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
         }
@@ -172,16 +169,16 @@ INDEX_HTML = """
         .page-header-container { 
             position: fixed; 
             top: 0;
-            left: 0; /* Растягиваем на всю ширину для внутреннего центрирования контента */
+            left: 0;
             right: 0;
             width: 100%;
             z-index: 105; 
             display: flex;
-            justify-content: center; /* Центрируем внутренний контейнер */
+            justify-content: center; 
         }
-        .page-header-inner { /* Внутренний контейнер для ограничения ширины и отступов */
+        .page-header-inner { 
             width: 100%;
-            max-width: 1200px; /* Такая же как у app-container */
+            max-width: 1200px; 
             padding: var(--header-vertical-padding) var(--mob-spacing-unit);
             display: flex;
             justify-content: space-between;
@@ -195,15 +192,15 @@ INDEX_HTML = """
 
         .user-controls-loggedin {
             display: flex; align-items: center;
-            background-color: var(--controls-bg-color-transparent); /* Используем F8F8F8 с 80% */
-            backdrop-filter: blur(var(--header-elements-blur));
-            -webkit-backdrop-filter: blur(var(--header-elements-blur));
+            background-color: var(--controls-bg-color-transparent); /* F8F8F8 80% */
+            backdrop-filter: blur(var(--blur-intensity)); /* Consistent blur */
+            -webkit-backdrop-filter: blur(var(--blur-intensity));
             padding: 6px 6px 6px 12px; 
             border-radius: var(--header-border-radius);
             gap: 8px;
         }
         .token-display {
-            display: flex; align-items: center; color: var(--header-text-color-on-light-bg); /* Темный текст на светлом фоне */
+            display: flex; align-items: center; color: var(--header-text-color-on-light-bg); 
             font-size: 0.85rem; font-weight: normal; 
         }
         .token-coin {
@@ -225,14 +222,14 @@ INDEX_HTML = """
             transform: translate(-50%, -50%);
             transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; 
         }
-        .burger-menu-btn svg .line { stroke: #333; stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
+        .burger-menu-btn svg .line { stroke: #333; stroke-width:8; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         
-        .burger-menu-btn .burger-icon { width: 18px; height: 14px; } 
-        .burger-menu-btn .close-icon { width: 16px; height: 16px; opacity: 0; transform: translate(-50%, -50%) rotate(-45deg); }
-        /* Анимация бургера в крестик */
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(11px) rotate(45deg); } 
+        .burger-menu-btn .burger-icon { width: 16px; height: 12px; } /* Adjusted for better centering */
+        .burger-menu-btn .close-icon { width: 14px; height: 14px; opacity: 0; transform: translate(-50%, -50%) rotate(-45deg); }
+        
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(10px) rotate(45deg); } 
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
-        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-11px) rotate(-45deg); }
+        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-10px) rotate(-45deg); }
         
         .burger-menu-btn.open .burger-icon { opacity: 0; transform: translate(-50%, -50%) rotate(45deg); }
         .burger-menu-btn.open .close-icon { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
@@ -277,19 +274,19 @@ INDEX_HTML = """
             padding: 8px 15px; border-radius: var(--header-border-radius); display: flex; align-items: center;
         }
         .user-controls-loggedout .auth-button {
-            color: var(--header-text-color-on-light-bg); /* Темный текст на светлом фоне */
+            color: var(--header-text-color-on-light-bg); 
             text-decoration: none; font-size: 0.85rem; font-weight: normal;
         }
         .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
         .user-controls-loggedout .auth-separator { color: var(--header-text-color-on-light-bg); margin: 0 6px; opacity: 0.6; }
 
-        /* --- Стили из вашего файла app (1).py --- */
+        /* --- Стили из вашего файла app (1).py (основной дизайн) --- */
         .app-main {
             width: 100%; display: flex; flex-direction: column; align-items: center;
             justify-content: flex-start; 
             flex-grow: 1;
-            padding-top: var(--mob-spacing-unit); /* Отступ для DESK_MAIN.png */
-            padding-bottom: calc(var(--footer-height-mob) + var(--action-buttons-height-mob) + var(--mob-spacing-unit) * 2); 
+            padding-top: var(--mob-spacing-unit); 
+            /* padding-bottom УПРАВЛЯЕТСЯ .app-container */
             gap: var(--mob-spacing-unit); 
         }
         
@@ -297,7 +294,7 @@ INDEX_HTML = """
             display: flex; flex-direction: column; align-items: center;
             gap: var(--mob-spacing-unit); 
             width: 100%;
-            margin-top: 30px; /* Дополнительный отступ для DESK_MAIN.png */
+            margin-top: 20px; /* Отступ для DESK_MAIN.png, чтобы он был ниже хедера */
         }
         .desktop-main-text-img { 
             display: none; 
@@ -330,18 +327,17 @@ INDEX_HTML = """
             border-radius: inherit; position: relative; z-index: 1;
         }
         
-        .action-buttons { /* Теперь фиксированные */
+        .action-buttons { /* Фиксированные баблы */
             display: flex; justify-content: center; align-items: center;
             gap: 10px; 
             flex-wrap: nowrap; 
             width: calc(100% - calc(2 * var(--mob-spacing-unit))); 
             max-width: 320px; 
-            padding: 10px 0; 
+            padding: 5px 0; /* Небольшой внутренний отступ */
             position: fixed; 
-            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) + 5px); /* Отступ над футером */
+            bottom: calc(var(--footer-height-mob) + var(--mob-spacing-unit) + 10px); /* Отступ над футером */
             left: 50%; transform: translateX(-50%);
             z-index: 99; 
-            /* Убираем фон и блюр для баблов */
         }
         .action-btn img { 
             height: 22px; width: auto; max-width: 70px; 
@@ -433,30 +429,30 @@ INDEX_HTML = """
             .app-container { 
                 padding-left: var(--desktop-spacing-unit);
                 padding-right: var(--desktop-spacing-unit);
-                padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit)); 
-                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
+                padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit) + 40px); /* Increased top padding */
+                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2 + 10px); /* Increased bottom padding */
             }
-            .page-header-container {
+            .page-header-inner {
                 padding: var(--header-vertical-padding) var(--desktop-spacing-unit);
             }
             .logo { height: var(--header-logo-height-desk); }
             .app-main { 
                 gap: var(--desktop-spacing-unit);
-                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
+                 padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); /* Adjusted for fixed elements */
             }
             
             .initial-top-group { 
                 gap: var(--desktop-spacing-unit); 
-                margin-top: 40px; /* Дополнительный отступ для DESK_MAIN.png на десктопе */
+                margin-top: 0; /* Reset margin as padding-top of app-main handles it */
             }
             .mobile-main-text-img { display: none; }
             .desktop-main-text-img { display: block; }
             .image-drop-area-mobile { display: none; } 
             
             .action-buttons { /* Фиксированные баблы для десктопа */
-                gap: 25px; /* Отступы для десктопа */
+                gap: 25px; 
                 max-width: 700px; 
-                bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) + 10px); /* Отступ над футером */
+                bottom: calc(var(--footer-height-desk) + var(--desktop-spacing-unit) + 10px); 
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
@@ -490,51 +486,53 @@ INDEX_HTML = """
     <div class="app-container-wrapper" id="app-bg-wrapper"></div>
     
     <div class="page-header-container">
-        <a href="{{ url_for('index') }}" class="app-logo-link">
-            <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
-        </a>
-        <div class="top-right-nav">
-            {% if current_user.is_authenticated %}
-                <div class="user-controls-loggedin">
-                    <span class="token-display">
-                        <span id="token-balance-display">{{ current_user.token_balance }}</span>
-                        <span class="token-coin"></span>
-                    </span>
-                    <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
-                        <svg class="burger-icon" viewBox="0 0 100 80" width="20" height="20"> 
-                            <rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect>
-                            <rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect>
-                            <rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect>
-                        </svg>
-                         <svg class="close-icon" viewBox="0 0 100 100" width="18" height="18"> <!-- Иконка крестика -->
-                            <line x1="10" y1="10" x2="90" y2="90"/>
-                            <line x1="10" y1="90" x2="90" y2="10"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="dropdown-menu">
-                    <div class="dropdown-header">
-                         <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
-                        <button class="close-menu-btn" id="close-menu-btn-inner" aria-label="Закрыть меню">
-                             <svg viewBox="0 0 100 100" width="18" height="18">
-                                <line x1="10" y1="10" x2="90" y2="90"/>
-                                <line x1="10" y1="90" x2="90" y2="10"/>
+        <div class="page-header-inner">
+            <a href="{{ url_for('index') }}" class="app-logo-link">
+                <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
+            </a>
+            <div class="top-right-nav">
+                {% if current_user.is_authenticated %}
+                    <div class="user-controls-loggedin">
+                        <span class="token-display">
+                            <span id="token-balance-display">{{ current_user.token_balance }}</span>
+                            <span class="token-coin"></span>
+                        </span>
+                        <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
+                            <svg class="burger-icon" viewBox="0 0 100 80"> 
+                                <rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect>
+                                <rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect>
+                                <rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect>
+                            </svg>
+                             <svg class="close-icon" viewBox="0 0 80 80"> 
+                                <line class="line" x1="20" y1="20" x2="60" y2="60"/>
+                                <line class="line" x1="60" y1="20" x2="20" y2="60"/>
                             </svg>
                         </button>
                     </div>
-                    <ul>
-                        <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
-                        <li><a href="{{ url_for_security('change_password') }}">Сменить пароль</a></li>
-                        <li><a href="{{ url_for_security('logout') }}">Выйти</a></li>
-                    </ul>
-                </div>
-            {% else %}
-                <div class="user-controls-loggedout">
-                    <a href="{{ url_for_security('login') }}" class="auth-button">Логин</a>
-                    <span class="auth-separator">|</span>
-                    <a href="{{ url_for_security('register') }}" class="auth-button">Регистрация</a>
-                </div>
-            {% endif %}
+                    <div class="dropdown-menu" id="dropdown-menu">
+                        <div class="dropdown-header">
+                             <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
+                            <button class="close-menu-btn" id="close-menu-btn-inner" aria-label="Закрыть меню">
+                                 <svg viewBox="0 0 100 100" width="18" height="18">
+                                    <line x1="10" y1="10" x2="90" y2="90"/>
+                                    <line x1="10" y1="90" x2="90" y2="10"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <ul>
+                            <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
+                            <li><a href="{{ url_for_security('change_password') }}">Сменить пароль</a></li>
+                            <li><a href="{{ url_for_security('logout') }}">Выйти</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="user-controls-loggedout">
+                        <a href="{{ url_for_security('login') }}" class="auth-button">Логин</a>
+                        <span class="auth-separator">|</span>
+                        <a href="{{ url_for_security('register') }}" class="auth-button">Регистрация</a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
@@ -591,28 +589,21 @@ INDEX_HTML = """
     <script>
     // --- DOM Elements ---
     const tokenBalanceDisplaySpan = document.getElementById('token-balance-display'); 
-    const tokenBalanceDropdownSpan = document.getElementById('token-balance-dropdown'); // This ID is not used anymore for balance
     const burgerMenuToggle = document.getElementById('burger-menu-toggle');
     const dropdownMenu = document.getElementById('dropdown-menu');
     const closeMenuBtnInner = document.getElementById('close-menu-btn-inner');
-    const burgerIcon = burgerMenuToggle ? burgerMenuToggle.querySelector('.burger-icon') : null;
-    const closeIconForBurger = burgerMenuToggle ? burgerMenuToggle.querySelector('.close-icon') : null; 
+    const burgerIconSvg = burgerMenuToggle ? burgerMenuToggle.querySelector('.burger-icon') : null;
+    const closeIconSvg = burgerMenuToggle ? burgerMenuToggle.querySelector('.close-icon') : null;
+
 
     function updateTokenBalanceDisplay(newBalance) {
         if (tokenBalanceDisplaySpan) {
             tokenBalanceDisplaySpan.textContent = newBalance;
         }
-        // If you decide to show balance in dropdown again, uncomment below
-        // if (tokenBalanceDropdownSpan) { 
-        //     tokenBalanceDropdownSpan.textContent = newBalance;
-        // }
+        // Email is now displayed in dropdown, not balance
     }
 
     if (burgerMenuToggle && dropdownMenu) {
-        const burgerLines = burgerMenuToggle.querySelectorAll('.burger-icon .line');
-        const closeLines = burgerMenuToggle.querySelectorAll('.close-icon line');
-
-
         burgerMenuToggle.addEventListener('click', (e) => {
             e.stopPropagation(); 
             const isOpen = burgerMenuToggle.classList.contains('open');
@@ -633,7 +624,7 @@ INDEX_HTML = """
     document.addEventListener('click', function(event) {
         if (dropdownMenu && burgerMenuToggle && dropdownMenu.classList.contains('open')) {
             const isClickInsideMenu = dropdownMenu.contains(event.target);
-            const isClickOnBurger = burgerMenuToggle.contains(event.target) || burgerMenuToggle.querySelector('svg').contains(event.target);
+            const isClickOnBurger = burgerMenuToggle.contains(event.target) || (burgerMenuToggle.querySelector('svg') && burgerMenuToggle.querySelector('svg').contains(event.target));
             if (!isClickInsideMenu && !isClickOnBurger) {
                 burgerMenuToggle.setAttribute('aria-expanded', 'false');
                 dropdownMenu.classList.remove('open');
@@ -698,7 +689,6 @@ INDEX_HTML = """
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
         
-        // Управление видимостью action-buttons (теперь не фиксированные)
         if (actionButtonsContainer) { 
             if (viewName === 'loading') {
                 actionButtonsContainer.style.display = 'none';
