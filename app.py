@@ -45,6 +45,11 @@ class User(db.Model, UserMixin):
     token_balance = db.Column(db.Integer, default=10, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     
+    # --- НОВЫЕ ПОЛЯ ДЛЯ ПОДПИСОК ---
+    subscription_status = db.Column(db.String(50), default='inactive', nullable=False)
+    stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
+    stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
+    
     @property
     def is_active(self):
         return True
