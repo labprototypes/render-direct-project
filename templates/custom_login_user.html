@@ -1,23 +1,41 @@
 {% extends "base_security.html" %}
-{% from "security/_macros.html" import render_field_with_errors, render_field %}
-
 {% block title %}Вход - Changer AI{% endblock %}
 
 {% block content %}
 <h2>Вход</h2>
+
 <form action="{{ url_for_security('login') }}" method="POST" name="login_user_form">
     {{ login_user_form.hidden_tag() }}
+
+    {{ login_user_form.email.label(class="form-label") }}
+    {{ login_user_form.email(class="form-control", placeholder="Email или имя пользователя") }}
+    {% if login_user_form.email.errors %}
+        {% for error in login_user_form.email.errors %}
+            <div class="help-block">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {{ login_user_form.password.label(class="form-label") }}
+    {{ login_user_form.password(class="form-control", placeholder="Пароль") }}
+     {% if login_user_form.password.errors %}
+        {% for error in login_user_form.password.errors %}
+            <div class="help-block">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
     
-    {# ---- Оставили только самые базовые поля ---- #}
-    {{ render_field_with_errors(login_user_form.email, placeholder="Email или имя пользователя", class="form-control") }}
-    {{ render_field_with_errors(login_user_form.password, placeholder="Пароль", class="form-control") }}
-    
-    {# ---- Временно убрали галочку "Запомнить меня" и ссылки внизу ---- #}
-    
-    {{ render_field(login_user_form.submit, value="Войти", class="btn btn-primary") }}
+    {% if login_user_form.remember %}
+    <div style="margin-top: 15px; margin-bottom: 15px; font-size: 0.9rem; text-align: left;">
+        {{ login_user_form.remember(style="margin-right: 5px;") }}
+        {{ login_user_form.remember.label.text }}
+    </div>
+    {% endif %}
+
+    {{ login_user_form.submit(class="btn") }}
 </form>
 
-{# ---- Добавим ссылку на регистрацию здесь, чтобы она точно работала ---- #}
-<p style="margin-top: 20px;"><a href="{{ url_for_security('register') }}">Создать аккаунт</a></p>
+<div class="links">
+    <p><a href="{{ url_for_security('forgot_password') }}">Забыли пароль?</a></p>
+    <p><a href="{{ url_for_security('register') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Создать аккаунт</a></p>
+</div>
 
 {% endblock %}
