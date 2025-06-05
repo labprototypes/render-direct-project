@@ -43,6 +43,8 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
     token_balance = db.Column(db.Integer, default=10, nullable=False)
+    # НОВОЕ ПОЛЕ ДЛЯ СОХРАНЕНИЯ СОГЛАСИЯ НА РАССЫЛКУ
+    marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     
     @property
     def is_active(self):
@@ -60,6 +62,16 @@ class RegisterForm(FlaskForm):
     username = StringField('Имя пользователя (опционально)')
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
+    # НОВЫЙ ОБЯЗАТЕЛЬНЫЙ ЧЕКБОКС
+    accept_tos = BooleanField(
+        'Я принимаю условия использования сервиса', 
+        validators=[DataRequired(message="Вы должны принять условия использования.")]
+    )
+    # НОВЫЙ ОПЦИОНАЛЬНЫЙ ЧЕКБОКС (включен по умолчанию)
+    marketing_consent = BooleanField(
+        'Я согласен на получение маркетинговых сообщений',
+        default=True
+    )
     submit = SubmitField('Регистрация')
 
 class ChangePasswordForm(FlaskForm):
@@ -109,7 +121,9 @@ def register():
         new_user = User(
             email=form.email.data,
             username=form.username.data,
-            password=hashed_password
+            password=hashed_password,
+            # Сохраняем значение из нового чекбокса
+            marketing_consent=form.marketing_consent.data 
         )
         db.session.add(new_user)
         db.session.commit()
