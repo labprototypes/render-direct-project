@@ -140,7 +140,6 @@ def change_password():
         db.session.commit()
         flash('Ваш пароль успешно изменен!', 'success')
         return redirect(url_for('index'))
-
     return render_template('custom_change_password.html', form=form)
 
 @app.route('/logout')
@@ -356,7 +355,6 @@ INDEX_HTML = """
             object-fit: contain;
             margin-top: 12vh; 
         }
-        /* ПРАВКА 4: Добавляем width для корректного отображения SVG */
         .mobile-main-text-img { 
             display: block; 
             max-height: 20vh; 
@@ -512,7 +510,6 @@ INDEX_HTML = """
         .submit-button-element.start-over-btn-mobile .submit-button-text-content {
             color: var(--text-accent-color);
         }
-        /* ПРАВКА 6: Уменьшаем кнопку на мобилке на 20% */
         .submit-button-icon-img { height: 32px; width: 32px; }
         .submit-button-text-content { display: none; font-size:0.9rem; line-height:1; }
 
@@ -544,17 +541,15 @@ INDEX_HTML = """
                  padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
             }
             
-            /* ПРАВКА 1: Убираем !important, чтобы JS мог скрыть блок */
             .initial-top-group { 
                 gap: var(--desktop-spacing-unit); 
                 margin-top: 40px; 
-                display: flex;
+                display: flex; 
             }
             .mobile-main-text-img { display: none !important; } 
             .desktop-main-text-img { display: block !important; }
             .image-drop-area-mobile { display: none !important; } 
             
-            /* ПРАВКА 2: Поднимаем на 30px */
             .action-buttons { 
                 gap: 25px; 
                 max-width: 700px; 
@@ -597,7 +592,6 @@ INDEX_HTML = """
             .upload-icon-desktop-img { height: 100%; width: 100%; object-fit: contain;}
             .image-preview-desktop-img { display: none; width: 100%; height: 100%; object-fit: cover; border-radius: inherit;}
             #prompt { padding: 15px 15px; font-size: 1rem;}
-            /* ПРАВКА 7: Уменьшаем кнопку на десктопе на 20% */
             .submit-button-icon-img { height: 38px; width: 38px;}
 
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
@@ -1126,6 +1120,10 @@ INDEX_HTML = """
 </body>
 </html>
 """
+
+@app.route('/')
+def index():
+    return render_template_string(INDEX_HTML)
 
 @app.route('/buy-tokens')
 @login_required
