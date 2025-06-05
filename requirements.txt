@@ -1,5 +1,6 @@
 Flask-SQLAlchemy
-Flask-Security-Too
+flask-login
+flask-wtf
 Flask-Mail
 psycopg2-binary  # Драйвер для PostgreSQL
 flask
@@ -11,3 +12,4 @@ bleach
 argon2_cffi
 Flask-Babel
 Jinja2>=3.0
+werkzeug
