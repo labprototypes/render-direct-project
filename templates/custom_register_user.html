@@ -1,23 +1,47 @@
 {% extends "base_security.html" %}
-{% from "security/_macros.html" import render_field_with_errors, render_field %}
 
-{% block title %}Регистрация - Changer AI{% endblock %}
+{% block title %}Регистрация{% endblock %}
 
 {% block content %}
 <h2>Регистрация</h2>
-<form action="{{ url_for_security('register') }}" method="POST" name="register_user_form">
-    {{ register_user_form.hidden_tag() }}
-    {{ render_field_with_errors(register_user_form.email, placeholder="Ваш Email", class="form-control") }}
-    {% if security.username_enable %}
-      {{ render_field_with_errors(register_user_form.username, placeholder="Имя пользователя (опционально)", class="form-control") }}
-    {% endif %}
-    {{ render_field_with_errors(register_user_form.password, placeholder="Пароль", class="form-control") }}
-    {% if register_user_form.password_confirm %}
-        {{ render_field_with_errors(register_user_form.password_confirm, placeholder="Подтвердите пароль", class="form-control") }}
-    {% endif %}
-    {{ render_field(register_user_form.submit, value="Регистрация", class="btn btn-primary") }}
+<form method="POST" action="{{ url_for('register') }}">
+    {{ form.hidden_tag() }}
+
+    <div>
+        {{ form.email.label }}
+        {{ form.email(class="form-control", placeholder="Email") }}
+        {% for error in form.email.errors %}
+            <div class="help-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+    
+    <div>
+        {{ form.username.label }}
+        {{ form.username(class="form-control", placeholder="Имя пользователя (опционально)") }}
+        {% for error in form.username.errors %}
+            <div class="help-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div>
+        {{ form.password.label }}
+        {{ form.password(class="form-control", placeholder="Придумайте пароль") }}
+        {% for error in form.password.errors %}
+            <div class="help-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+    
+    <div>
+        {{ form.password_confirm.label }}
+        {{ form.password_confirm(class="form-control", placeholder="Подтвердите пароль") }}
+        {% for error in form.password_confirm.errors %}
+            <div class="help-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    {{ form.submit(class="btn") }}
 </form>
-<div class="links" style="margin-top: 20px;">
-    <p><a href="{{ url_for_security('login') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Уже есть аккаунт? Войти</a></p>
+<div class="links">
+    <p><a href="{{ url_for('login') }}">Уже есть аккаунт? Войти</a></p>
 </div>
 {% endblock %}
