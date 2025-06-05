@@ -40,10 +40,11 @@ app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
 app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
 app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
 
-# --- Указываем пути к вашим кастомным HTML-шаблонам ---
-app.config['SECURITY_LOGIN_TEMPLATE'] = 'custom_security/custom_login_user.html'
-app.config['SECURITY_REGISTER_TEMPLATE'] = 'custom_security/custom_register_user.html'
-app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_security/custom_change_password.html'
+# --- КЛЮЧЕВАЯ КОНФИГУРАЦИЯ ШАБЛОНОВ ---
+# Указываем пути к вашим HTML-шаблонам БЕЗ подпапки.
+app.config['SECURITY_LOGIN_TEMPLATE'] = 'custom_login_user.html'
+app.config['SECURITY_REGISTER_TEMPLATE'] = 'custom_register_user.html'
+app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_change_password.html'
 
 # --- Настройки почты ---
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
