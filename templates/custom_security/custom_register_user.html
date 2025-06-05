@@ -1,5 +1,5 @@
 {% extends "base_security.html" %}
-{% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors %}
+{% from "security/_macros.html" import render_error_messages, render_form_errors %}
 
 {% block title %}Регистрация - Changer AI{% endblock %}
 
@@ -8,15 +8,32 @@
     {{ render_form_errors(register_user_form) }}
     <form action="{{ url_for_security('register') }}" method="POST" name="register_user_form">
         {{ register_user_form.hidden_tag() }}
-        {{ render_field_with_errors(register_user_form.email, placeholder="Ваш Email", class="form-control") }}
+        
+        <div class="form-group {% if register_user_form.email.errors %}has-errors{% endif %}">
+            {{ register_user_form.email(placeholder="Ваш Email", class="form-control") }}
+            {{ render_error_messages(register_user_form.email) }}
+        </div>
+
         {% if security.username_enable %}
-          {{ render_field_with_errors(register_user_form.username, placeholder="Имя пользователя (опционально)", class="form-control") }}
+          <div class="form-group {% if register_user_form.username.errors %}has-errors{% endif %}">
+              {{ register_user_form.username(placeholder="Имя пользователя (опционально)", class="form-control") }}
+              {{ render_error_messages(register_user_form.username) }}
+          </div>
         {% endif %}
-        {{ render_field_with_errors(register_user_form.password, placeholder="Пароль", class="form-control") }}
+        
+        <div class="form-group {% if register_user_form.password.errors %}has-errors{% endif %}">
+            {{ register_user_form.password(placeholder="Пароль", class="form-control") }}
+            {{ render_error_messages(register_user_form.password) }}
+        </div>
+
         {% if register_user_form.password_confirm %}
-            {{ render_field_with_errors(register_user_form.password_confirm, placeholder="Подтвердите пароль", class="form-control") }}
+            <div class="form-group {% if register_user_form.password_confirm.errors %}has-errors{% endif %}">
+                {{ register_user_form.password_confirm(placeholder="Подтвердите пароль", class="form-control") }}
+                {{ render_error_messages(register_user_form.password_confirm) }}
+            </div>
         {% endif %}
-        {{ render_field(register_user_form.submit, value="Зарегистрироваться", class="btn") }}
+        
+        {{ register_user_form.submit(class="btn", value="Зарегистрироваться") }}
     </form>
     
     <ul>
