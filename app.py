@@ -35,6 +35,7 @@ app.config['SECURITY_CHANGEABLE'] = True
 app.config['SECURITY_CONFIRMABLE'] = False
 app.config['SECURITY_USERNAME_ENABLE'] = True
 app.config['SECURITY_USERNAME_REQUIRED'] = False
+app.config['SECURITY_DEBUG'] = True
 app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
 app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
 app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
