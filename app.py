@@ -362,6 +362,8 @@ INDEX_HTML = """
         .mobile-main-text-img { 
             display: block; 
             max-height: 20vh; 
+            /* ПРАВКА 4: Добавляем width для корректного отображения SVG */
+            width: 90%; 
             max-width: 90%; object-fit: contain; 
             position: fixed; 
             top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px); 
@@ -512,7 +514,8 @@ INDEX_HTML = """
         .submit-button-element.start-over-btn-mobile .submit-button-text-content {
             color: var(--text-accent-color);
         }
-        .submit-button-icon-img { height: 40px; width: 40px; }
+        /* ПРАВКА 6: Уменьшаем кнопку на мобилке на 20% */
+        .submit-button-icon-img { height: 32px; width: 32px; }
         .submit-button-text-content { display: none; font-size:0.9rem; line-height:1; }
 
         .error-message {
@@ -546,7 +549,8 @@ INDEX_HTML = """
             .initial-top-group { 
                 gap: var(--desktop-spacing-unit); 
                 margin-top: 40px; 
-                display: flex !important; 
+                /* ПРАВКА 1: Убираем !important, чтобы JS мог скрыть блок */
+                display: flex; 
             }
             .mobile-main-text-img { display: none !important; } 
             .desktop-main-text-img { display: block !important; }
@@ -555,7 +559,8 @@ INDEX_HTML = """
             .action-buttons { 
                 gap: 25px; 
                 max-width: 700px; 
-                bottom: calc(5vh + var(--footer-height-desk) - 15px); 
+                /* ПРАВКА 2: Поднимаем на 30px */
+                bottom: calc(5vh + var(--footer-height-desk) + 15px); 
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
@@ -594,7 +599,8 @@ INDEX_HTML = """
             .upload-icon-desktop-img { height: 100%; width: 100%; object-fit: contain;}
             .image-preview-desktop-img { display: none; width: 100%; height: 100%; object-fit: cover; border-radius: inherit;}
             #prompt { padding: 15px 15px; font-size: 1rem;}
-            .submit-button-icon-img { height: 48px; width: 48px;}
+            /* ПРАВКА 7: Уменьшаем кнопку на десктопе на 20% */
+            .submit-button-icon-img { height: 38px; width: 38px;}
 
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
             .token-display { font-size: 1rem; } 
@@ -1123,10 +1129,6 @@ INDEX_HTML = """
 </html>
 """
 
-@app.route('/')
-def index():
-    return render_template_string(INDEX_HTML)
-
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
@@ -1272,11 +1274,8 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
-
-# --- СОЗДАНИЕ ТАБЛИЦ В БАЗЕ ДАННЫХ ПРИ СТАРТЕ ПРИЛОЖЕНИЯ ---
 with app.app_context():
     db.create_all()
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
