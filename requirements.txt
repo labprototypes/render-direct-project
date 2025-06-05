@@ -9,4 +9,4 @@ requests
 openai
 bleach 
 argon2_cffi
-Flask-BabelEx
+Flask-Babel
