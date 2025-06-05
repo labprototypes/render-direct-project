@@ -12,7 +12,7 @@ from flask_mail import Mail
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import relationship
 from flask_security import AsaList
-
+from flask_babelex import Babel # <--- ДОБАВЛЕНО
 
 # --- Настройки для подключения к Amazon S3 ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -22,28 +22,40 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD')
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD') 
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD') 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['SECURITY_REGISTERABLE'] = True
-app.config['SECURITY_SEND_REGISTER_EMAIL'] = False
-app.config['SECURITY_RECOVERABLE'] = True
-app.config['SECURITY_CHANGEABLE'] = True
-app.config['SECURITY_CONFIRMABLE'] = False
-app.config['SECURITY_USERNAME_ENABLE'] = True
-app.config['SECURITY_USERNAME_REQUIRED'] = False
-app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
-app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
-app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
+app.config['SECURITY_REGISTERABLE'] = True 
+app.config['SECURITY_SEND_REGISTER_EMAIL'] = False 
+app.config['SECURITY_RECOVERABLE'] = True 
+app.config['SECURITY_CHANGEABLE'] = True 
+app.config['SECURITY_CONFIRMABLE'] = False 
+app.config['SECURITY_USERNAME_ENABLE'] = True 
+app.config['SECURITY_USERNAME_REQUIRED'] = False 
+app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} 
+app.config['SECURITY_POST_LOGIN_VIEW'] = '/' 
+app.config['SECURITY_POST_LOGOUT_VIEW'] = '/' 
 app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
-app.config['SECURITY_LOGIN_URL'] = '/login'
-app.config['SECURITY_LOGOUT_URL'] = '/logout'
-app.config['SECURITY_REGISTER_URL'] = '/register'
-app.config['SECURITY_CHANGE_URL'] = '/change-password'
-app.config['SECURITY_RESET_URL'] = '/reset-password'
+# app.config['SECURITY_LOGIN_URL'] = '/login' # Эти уже были
+# app.config['SECURITY_LOGOUT_URL'] = '/logout'
+# app.config['SECURITY_REGISTER_URL'] = '/register'
+# app.config['SECURITY_CHANGE_URL'] = '/change-password'
+# app.config['SECURITY_RESET_URL'] = '/reset-password'
+
+# --- НАСТРОЙКА КАСТОМНЫХ ШАБЛОНОВ FLASK-SECURITY ---
+app.config['SECURITY_LOGIN_TEMPLATE'] = 'custom_security/custom_login_user.html'
+app.config['SECURITY_REGISTER_TEMPLATE'] = 'custom_security/custom_register_user.html'
+app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_security/custom_change_password.html'
+# Опционально для других страниц:
+# app.config['SECURITY_FORGOT_PASSWORD_TEMPLATE'] = 'custom_security/custom_forgot_password.html'
+# app.config['SECURITY_RESET_PASSWORD_TEMPLATE'] = 'custom_security/custom_reset_password.html'
+# app.config['SECURITY_SEND_CONFIRMATION_TEMPLATE'] = 'custom_security/custom_send_confirmation.html'
+# app.config['SECURITY_SEND_LOGIN_TEMPLATE'] = 'custom_security/custom_send_login.html'
+# --- КОНЕЦ НАСТРОЙКИ КАСТОМНЫХ ШАБЛОНОВ ---
+
 
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
@@ -56,6 +68,12 @@ app.config['SECURITY_EMAIL_SENDER'] = app.config['MAIL_DEFAULT_SENDER']
 
 db = SQLAlchemy(app)
 mail = Mail(app)
+
+# --- НАСТРОЙКА BABEL ДЛЯ ЛОКАЛИЗАЦИИ ---
+app.config['BABEL_DEFAULT_LOCALE'] = 'ru'
+babel = Babel(app)
+# --- КОНЕЦ НАСТРОЙКИ BABEL ---
+
 
 roles_users = db.Table(
     "roles_users",
@@ -72,10 +90,10 @@ class Role(db.Model, RoleMixin):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    username = db.Column(db.String(255), unique=True, nullable=True)
+    username = db.Column(db.String(255), unique=True, nullable=True) 
     password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False) 
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship(
         "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
@@ -160,13 +178,11 @@ INDEX_HTML = """
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
             padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
-            /* padding-bottom might need adjustment due to fixed elements potentially overlapping footer area */
-            padding-bottom: calc(10vh + var(--footer-height-mob) + var(--action-buttons-height-mob)); /* Increased to prevent overlap */
+            padding-bottom: calc(10vh + var(--footer-height-mob) + var(--action-buttons-height-mob)); 
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
         }
 
-        /* --- Новый Хедер --- */
         .page-header-container { 
             position: fixed; 
             top: 0;
@@ -180,7 +196,7 @@ INDEX_HTML = """
         .page-header-inner { 
             width: 100%;
             max-width: 1200px; 
-            padding: var(--header-vertical-padding) 25px; /* ИЗМЕНЕНИЕ: Боковые отступы 25px для мобильных */
+            padding: var(--header-vertical-padding) 25px; 
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -288,14 +304,10 @@ INDEX_HTML = """
             align-items: center;
             justify-content: flex-start; 
             flex-grow: 1;
-            /* padding-top: var(--mob-spacing-unit); Removed as initial elements are fixed */
             gap: var(--mob-spacing-unit); 
         }
         
         .initial-top-group { 
-            /* This group might not be strictly needed if its mobile children are always fixed */
-            /* display: flex; flex-direction: column; align-items: center; */
-            /* gap: var(--mob-spacing-unit); */
             width: 100%;
         }
         .desktop-main-text-img { 
@@ -364,14 +376,15 @@ INDEX_HTML = """
         .action-btn img:hover { transform: scale(1.05); }
 
         .result-image-wrapper {
-             justify-content: center; flex-grow: 1; display: inline-flex; 
+             justify-content: center; /* flex-grow: 1; -- removed for fixed behavior */ 
+             display: inline-flex; 
              align-items: center; width: auto; max-width: 100%; 
              position: relative; 
-             margin-bottom: calc(var(--download-icon-size) + 5px + 5px); 
+             /* margin-bottom: calc(var(--download-icon-size) + 5px + 5px); -- Handled by fixed or default */
         }
         .result-image-wrapper.fixed-mobile {
             position: fixed;
-            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px); /* Ниже хедера */
+            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px);
             left: 50%;
             transform: translateX(-50%);
             width: 90vw; 
@@ -383,26 +396,26 @@ INDEX_HTML = """
             margin-bottom: 0; 
         }
         #result-image {
-            max-width: 100%; /* Заполнит .fixed-mobile по ширине */
-            max-height: 60vh; /* Ограничение по высоте остается */
+            max-width: 100%; 
+            max-height: 60vh; 
             object-fit: contain;
             border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); 
             display: block; 
         }
 
-        .download-action-link {
+        .download-action-link { /* Default absolute positioning for desktop or non-fixed scenarios */
             display: none; 
-            position: absolute; /* Остается absolute для позиционирования относительно result-image, если НЕ fixed-mobile */
-            bottom: calc(-1 * (var(--download-icon-size) + 5px)); /* ИЗМЕНЕНИЕ: отступ 5px */
+            position: absolute; 
+            bottom: calc(-1 * (var(--download-icon-size) + 5px)); 
             right: 0; 
             z-index: 10; cursor: pointer;
             padding: 5px; line-height: 0; 
         }
-        .result-image-wrapper.fixed-mobile .download-action-link {
-            position: static; /* Становится static внутри fixed-mobile */
-            margin-top: 5px; /* Отступ 5px от изображения */
-            bottom: auto; /* Сброс absolute позиционирования */
-            right: auto;  /* Сброс absolute позиционирования */
+        .result-image-wrapper.fixed-mobile .download-action-link { /* Mobile fixed result view */
+            position: static; 
+            margin-top: 5px; 
+            bottom: auto; 
+            right: auto;  
         }
         .download-button-icon { 
             height: var(--download-icon-size); width: var(--download-icon-size); display: block;
@@ -451,16 +464,16 @@ INDEX_HTML = """
             margin-left: 8px; display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; 
         }
-        .submit-button-element.start-over-btn-mobile { /* Стили для кнопки "Начать заново" */
+        .submit-button-element.start-over-btn-mobile {
             width: 60px;
-            margin-left: auto;
+            margin-left: auto; /* Центрирование кнопки, когда prompt скрыт */
             margin-right: auto;
         }
         .submit-button-element.start-over-btn-mobile .submit-button-text-content {
             color: var(--text-accent-color);
         }
         .submit-button-icon-img { height: 40px; width: 40px; }
-        .submit-button-text-content { display: none; }
+        .submit-button-text-content { display: none; font-size:0.9rem; line-height:1; } /* Добавил немного базовых стилей для текста кнопки */
 
         .error-message {
             display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
@@ -482,7 +495,7 @@ INDEX_HTML = """
                 padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
             }
             .page-header-inner {
-                padding: var(--header-vertical-padding) 0; /* Desktop has 0 side padding */
+                padding: var(--header-vertical-padding) 0; 
             }
             .logo { height: var(--header-logo-height-desk); }
             .app-main { 
@@ -493,7 +506,7 @@ INDEX_HTML = """
             .initial-top-group { 
                 gap: var(--desktop-spacing-unit); 
                 margin-top: 40px; 
-                 display: flex !important; /* Ensure it's shown for desktop */
+                display: flex !important; 
             }
             .mobile-main-text-img { display: none !important; } 
             .desktop-main-text-img { display: block !important; }
@@ -506,18 +519,19 @@ INDEX_HTML = """
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
-             .result-image-wrapper.fixed-mobile { /* Reset fixed positioning for desktop */
+            .result-image-wrapper.fixed-mobile { /* Сброс фиксации для десктопа */
                 position: relative; 
                 width: auto;
                 max-width: 100%;
                 top: auto;
                 left: auto;
                 transform: none;
-                z-index: auto;
-                flex-direction: row; /* or original value */
+                z-index: auto; /* или z-index: 1; */
+                flex-direction: row; 
+                align-items: center; /* или исходное значение */
                 margin-bottom: calc(var(--download-icon-size) + 5px + 5px); 
             }
-            .result-image-wrapper.fixed-mobile .download-action-link {
+            .result-image-wrapper.fixed-mobile .download-action-link { /* Восстановление absolute для десктопа */
                 position: absolute;
                 margin-top: 0;
                 bottom: calc(-1 * (var(--download-icon-size) + 5px)); 
@@ -755,11 +769,10 @@ INDEX_HTML = """
 
         if(appBgWrapper) appBgWrapper.classList.remove('bg-blur');
         
-        // Hide all major view-specific containers by default
         if (initialTopGroup) initialTopGroup.style.display = 'none'; 
         if (resultImageWrapper) {
             resultImageWrapper.style.display = 'none';
-            resultImageWrapper.classList.remove('fixed-mobile'); // Remove fixed class
+            resultImageWrapper.classList.remove('fixed-mobile'); 
         }
         if (loaderContainer) loaderContainer.style.display = 'none';
         if (downloadLink) downloadLink.style.display = 'none'; 
@@ -768,12 +781,10 @@ INDEX_HTML = """
             actionButtonsContainer.style.display = (viewName === 'loading') ? 'none' : 'flex';
         }
         
-        // Hide elements that might be fixed from other views
         if(mobileMainTextImg) mobileMainTextImg.style.display = 'none';
         if(mobileDropArea) mobileDropArea.style.display = 'none';
         if(desktopMainTextImg) desktopMainTextImg.style.display = 'none';
         
-        // Reset common input area elements
         if (promptInput) promptInput.style.display = 'block'; 
         if (submitButton) {
             submitButton.style.flexGrow = '0'; 
@@ -781,7 +792,7 @@ INDEX_HTML = """
         }
         if(magicButtonIconImg) magicButtonIconImg.style.display = 'block';
         if(submitButtonTextContent) submitButtonTextContent.style.display = 'none';
-        if(desktopUploadIcon) desktopUploadIcon.style.display = 'none'; // Default hide, enable per view
+        if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
 
 
         if (viewName === 'initial') {
@@ -807,7 +818,7 @@ INDEX_HTML = """
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
         } else if (viewName === 'result') {
             if (resultImageWrapper) {
-                resultImageWrapper.style.display = 'inline-flex'; 
+                resultImageWrapper.style.display = 'flex'; // Changed to flex for fixed-mobile layout
                 if (!isDesktopView()) {
                     resultImageWrapper.classList.add('fixed-mobile');
                 }
@@ -869,7 +880,7 @@ INDEX_HTML = """
         if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
         if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
         if(desktopUploadIcon) desktopUploadIcon.style.display = isDesktopView() ? 'flex' : 'none';
-        if (resultImageWrapper) resultImageWrapper.classList.remove('fixed-mobile'); // Ensure fixed is removed on resize before updateView
+        if (resultImageWrapper) resultImageWrapper.classList.remove('fixed-mobile'); 
         
         updateView(currentView); 
     });
