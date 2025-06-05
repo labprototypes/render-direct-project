@@ -28,7 +28,7 @@ db = SQLAlchemy(app)
 # --- Настройка Flask-Login ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login' 
 login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
 login_manager.login_message_category = "info"
 
@@ -1123,6 +1123,10 @@ INDEX_HTML = """
 </body>
 </html>
 """
+
+@app.route('/')
+def index():
+    return render_template_string(INDEX_HTML)
 
 @app.route('/buy-tokens')
 @login_required
