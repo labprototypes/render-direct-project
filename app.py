@@ -1,4 +1,5 @@
 import os
+print("!!!!!!!!!! ЗАПУЩЕНА НОВАЯ ВЕРСИЯ КОДА / NEW VERSION IS RUNNING !!!!!!!!!!") # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
 import boto3
 import uuid
 import requests
