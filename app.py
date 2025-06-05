@@ -4,15 +4,15 @@ import uuid
 import requests
 import time
 import openai
-from flask import Flask, request, jsonify, render_template_string, url_for, redirect
+from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
-from flask_security.utils import hash_password
-from flask_mail import Mail
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms.validators import DataRequired, Email, EqualTo, Length
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import relationship
-from flask_security import AsaList
-from flask_babel import Babel
 
 # --- Настройки ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -21,74 +21,59 @@ AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
 AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key')
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'a-very-secret-salt')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key-for-flask-login')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['BABEL_DEFAULT_LOCALE'] = 'ru'
-
-# --- Настройки Flask-Security ---
-app.config['SECURITY_REGISTERABLE'] = True
-app.config['SECURITY_SEND_REGISTER_EMAIL'] = False
-app.config['SECURITY_RECOVERABLE'] = True
-app.config['SECURITY_CHANGEABLE'] = True
-app.config['SECURITY_CONFIRMABLE'] = False
-app.config['SECURITY_USERNAME_ENABLE'] = True
-app.config['SECURITY_USERNAME_REQUIRED'] = False
-app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
-app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
-app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
-app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
-
-# --- КЛЮЧЕВАЯ КОНФИГУРАЦИЯ ШАБЛОНОВ ---
-# Указываем пути к вашим HTML-шаблонам БЕЗ подпапки.
-app.config['SECURITY_LOGIN_TEMPLATE'] = 'custom_login_user.html'
-app.config['SECURITY_REGISTER_TEMPLATE'] = 'custom_register_user.html'
-app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_change_password.html'
-
-# --- Настройки почты ---
-app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
-app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
-app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', ("Changer AI", 'noreply@example.com'))
-app.config['SECURITY_EMAIL_SENDER'] = app.config['MAIL_DEFAULT_SENDER']
 
 db = SQLAlchemy(app)
-mail = Mail(app)
-babel = Babel(app)
+
+# --- Настройка Flask-Login ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login' # Указываем, куда перенаправлять анонимных пользователей
+login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
+login_manager.login_message_category = "info"
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # --- Модели ---
+# Модель Role остается, но больше не используется активно в этом простом варианте
 roles_users = db.Table(
     "roles_users",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
     db.Column("role_id", db.Integer(), db.ForeignKey("role.id")),
 )
 
-class Role(db.Model, RoleMixin):
+class Role(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
-    permissions = db.Column(MutableList.as_mutable(AsaList()), nullable=True)
 
+# Модель User теперь наследуется от UserMixin из Flask-Login
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(255), unique=True, nullable=True)
-    password = db.Column(db.String(255), nullable=False)
+    password = db.Column(db.String(255), nullable=False) # Хранит хэш пароля
     active = db.Column(db.Boolean(), default=True)
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
-    confirmed_at = db.Column(db.DateTime())
-    roles = db.relationship(
-        "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
-    )
+    roles = db.relationship("Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic"))
     token_balance = db.Column(db.Integer, default=10, nullable=False)
 
-# --- Инициализация Security ---
-user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore)
+# --- Формы входа и регистрации (теперь наши собственные) ---
+class LoginForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    remember = BooleanField('Запомнить меня')
+    submit = SubmitField('Войти')
+
+class RegisterForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    username = StringField('Имя пользователя (опционально)')
+    password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
+    password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
+    submit = SubmitField('Регистрация')
 
 app.static_folder = 'static'
 
@@ -99,6 +84,53 @@ if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
 else:
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
+
+# --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password, form.password.data):
+            login_user(user, remember=form.remember.data)
+            return redirect(url_for('index'))
+        else:
+            flash('Неверный email или пароль.', 'error')
+    return render_template('custom_login_user.html', form=form)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = RegisterForm()
+    if form.validate_on_submit():
+        existing_user = User.query.filter_by(email=form.email.data).first()
+        if existing_user:
+            flash('Пользователь с таким email уже существует.', 'error')
+            return redirect(url_for('register'))
+        
+        hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+        new_user = User(
+            email=form.email.data,
+            username=form.username.data,
+            password=hashed_password
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        login_user(new_user)
+        return redirect(url_for('index'))
+    return render_template('custom_register_user.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+# --- Главная страница и API (ОРИГИНАЛЬНЫЙ КОД) ---
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -591,15 +623,15 @@ INDEX_HTML = """
                         </div>
                         <ul>
                             <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
-                            <li><a href="{{ url_for_security('change_password') }}">Сменить пароль</a></li>
-                            <li><a href="{{ url_for_security('logout') }}">Выйти</a></li>
+                            <li><a href="#">Сменить пароль</a></li>
+                            <li><a href="{{ url_for('logout') }}">Выйти</a></li>
                         </ul>
                     </div>
                 {% else %}
                     <div class="user-controls-loggedout">
-                        <a href="{{ url_for_security('login') }}" class="auth-button">Логин</a>
+                        <a href="{{ url_for('login') }}" class="auth-button">Логин</a>
                         <span class="auth-separator">|</span>
-                        <a href="{{ url_for_security('register') }}" class="auth-button">Регистрация</a>
+                        <a href="{{ url_for('register') }}" class="auth-button">Регистрация</a>
                     </div>
                 {% endif %}
             </div>
@@ -1068,10 +1100,6 @@ INDEX_HTML = """
 </body>
 </html>
 """
-
-@app.route('/')
-def index():
-    return render_template_string(INDEX_HTML)
 
 @app.route('/buy-tokens')
 @login_required
