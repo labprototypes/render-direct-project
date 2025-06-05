@@ -24,8 +24,3 @@
         </ul>
     {% endif %}
 {% endmacro %}
-
-{# НОВЫЙ МАКРОС, КОТОРЫЙ РЕШИТ ПРОБЛЕМУ #}
-{% macro prop_next() -%}
-  <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
-{%- endmacro %}
