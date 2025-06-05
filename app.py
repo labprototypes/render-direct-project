@@ -11,8 +11,6 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
-from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy.orm import relationship
 
 # --- Настройки ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -30,7 +28,7 @@ db = SQLAlchemy(app)
 # --- Настройка Flask-Login ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login' # Указываем, куда перенаправлять анонимных пользователей
+login_manager.login_view = 'login'
 login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
 login_manager.login_message_category = "info"
 
@@ -39,7 +37,6 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- Модели ---
-# Модель Role остается, но больше не используется активно в этом простом варианте
 roles_users = db.Table(
     "roles_users",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
@@ -51,17 +48,16 @@ class Role(db.Model):
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
 
-# Модель User теперь наследуется от UserMixin из Flask-Login
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(255), unique=True, nullable=True)
-    password = db.Column(db.String(255), nullable=False) # Хранит хэш пароля
+    password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
     roles = db.relationship("Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic"))
     token_balance = db.Column(db.Integer, default=10, nullable=False)
 
-# --- Формы входа и регистрации (теперь наши собственные) ---
+# --- Формы ---
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Пароль', validators=[DataRequired()])
@@ -74,6 +70,13 @@ class RegisterForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
     submit = SubmitField('Регистрация')
+
+# НОВАЯ ФОРМА ДЛЯ СМЕНЫ ПАРОЛЯ
+class ChangePasswordForm(FlaskForm):
+    old_password = PasswordField('Текущий пароль', validators=[DataRequired()])
+    new_password = PasswordField('Новый пароль', validators=[DataRequired(), Length(min=6)])
+    new_password_confirm = PasswordField('Подтвердите новый пароль', validators=[DataRequired(), EqualTo('new_password', message='Пароли должны совпадать')])
+    submit = SubmitField('Сменить пароль')
 
 app.static_folder = 'static'
 
@@ -123,6 +126,23 @@ def register():
         login_user(new_user)
         return redirect(url_for('index'))
     return render_template('custom_register_user.html', form=form)
+    
+# НОВЫЙ МАРШРУТ ДЛЯ СМЕНЫ ПАРОЛЯ
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if not check_password_hash(current_user.password, form.old_password.data):
+            flash('Неверный текущий пароль.', 'error')
+            return redirect(url_for('change_password'))
+        
+        current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
+        db.session.commit()
+        flash('Ваш пароль успешно изменен!', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('custom_change_password.html', form=form)
 
 @app.route('/logout')
 @login_required
@@ -623,7 +643,7 @@ INDEX_HTML = """
                         </div>
                         <ul>
                             <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
-                            <li><a href="#">Сменить пароль</a></li>
+                            <li><a href="{{ url_for('change_password') }}">Сменить пароль</a></li>
                             <li><a href="{{ url_for('logout') }}">Выйти</a></li>
                         </ul>
                     </div>
@@ -926,7 +946,7 @@ INDEX_HTML = """
         dropZoneElement.addEventListener('dragleave', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            dropZoneElement.classList.remove('dragover');
+            dropZoneElement.classList.remove('dragleave');
         });
 
         dropZoneElement.addEventListener('drop', (event) => {
