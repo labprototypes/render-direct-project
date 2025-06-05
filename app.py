@@ -28,7 +28,7 @@ db = SQLAlchemy(app)
 # --- Настройка Flask-Login ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login' 
 login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
 login_manager.login_message_category = "info"
 
@@ -44,6 +44,9 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False)
     token_balance = db.Column(db.Integer, default=10, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
+    subscription_status = db.Column(db.String(50), default='inactive', nullable=False)
+    stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
+    stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
     
     @property
     def is_active(self):
