@@ -15,7 +15,9 @@
     {% if register_user_form.password_confirm %}
         {{ render_field_with_errors(register_user_form.password_confirm, placeholder="Подтвердите пароль", class="form-control") }}
     {% endif %}
-    {{ render_field(register_user_form.submit, class="btn btn-primary") }}
+    {{ render_field(register_user_form.submit, value="Зарегистрироваться", class="btn") }}
 </form>
-<p><a href="{{ url_for_security('login') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Уже есть аккаунт? Войти</a></p>
+<div class="links">
+    <a href="{{ url_for_security('login') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Уже есть аккаунт? Войти</a>
+</div>
 {% endblock %}
