@@ -49,11 +49,8 @@ app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
 app.config['SECURITY_LOGIN_TEMPLATE'] = 'custom_security/custom_login_user.html'
 app.config['SECURITY_REGISTER_TEMPLATE'] = 'custom_security/custom_register_user.html'
 app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_security/custom_change_password.html'
-# Опционально для других страниц:
-# app.config['SECURITY_FORGOT_PASSWORD_TEMPLATE'] = 'custom_security/custom_forgot_password.html'
-# app.config['SECURITY_RESET_PASSWORD_TEMPLATE'] = 'custom_security/custom_reset_password.html'
-# app.config['SECURITY_SEND_CONFIRMATION_TEMPLATE'] = 'custom_security/custom_send_confirmation.html'
-# app.config['SECURITY_SEND_LOGIN_TEMPLATE'] = 'custom_security/custom_send_login.html'
+app.config['SECURITY_FORGOT_PASSWORD_TEMPLATE'] = 'custom_security/custom_forgot_password.html' # Рекомендую добавить и для других страниц
+app.config['SECURITY_RESET_PASSWORD_TEMPLATE'] = 'custom_security/custom_reset_password.html'   # на случай если понадобятся
 # --- КОНЕЦ НАСТРОЙКИ КАСТОМНЫХ ШАБЛОНОВ ---
 
 
