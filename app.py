@@ -28,13 +28,12 @@ db = SQLAlchemy(app)
 # --- Настройка Flask-Login ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login' 
 login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
 login_manager.login_message_category = "info"
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Эта функция нужна Flask-Login для получения пользователя из БД по ID
     return User.query.get(int(user_id))
 
 # --- Модели ---
@@ -45,7 +44,6 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False)
     token_balance = db.Column(db.Integer, default=10, nullable=False)
     
-    # Flask-Login требует эти свойства, но нам достаточно дефолтных
     @property
     def is_active(self):
         return True
@@ -63,6 +61,12 @@ class RegisterForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
     submit = SubmitField('Регистрация')
+
+class ChangePasswordForm(FlaskForm):
+    old_password = PasswordField('Текущий пароль', validators=[DataRequired()])
+    new_password = PasswordField('Новый пароль', validators=[DataRequired(), Length(min=6)])
+    new_password_confirm = PasswordField('Подтвердите новый пароль', validators=[DataRequired(), EqualTo('new_password', message='Пароли должны совпадать')])
+    submit = SubmitField('Сменить пароль')
 
 app.static_folder = 'static'
 
@@ -112,6 +116,21 @@ def register():
         login_user(new_user)
         return redirect(url_for('index'))
     return render_template('custom_register_user.html', form=form)
+    
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if not check_password_hash(current_user.password, form.old_password.data):
+            flash('Неверный текущий пароль.', 'error')
+            return redirect(url_for('change_password'))
+        
+        current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
+        db.session.commit()
+        flash('Ваш пароль успешно изменен!', 'success')
+        return redirect(url_for('index'))
+    return render_template('custom_change_password.html', form=form)
 
 @app.route('/logout')
 @login_required
@@ -1239,7 +1258,11 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
+
+# --- СОЗДАНИЕ ТАБЛИЦ В БАЗЕ ДАННЫХ ПРИ СТАРТЕ ПРИЛОЖЕНИЯ ---
+with app.app_context():
+    db.create_all()
+
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
