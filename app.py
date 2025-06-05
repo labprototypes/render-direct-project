@@ -28,7 +28,7 @@ db = SQLAlchemy(app)
 # --- Настройка Flask-Login ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login' 
+login_manager.login_view = 'login'
 login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
 login_manager.login_message_category = "info"
 
@@ -43,7 +43,6 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
     token_balance = db.Column(db.Integer, default=10, nullable=False)
-    # НОВОЕ ПОЛЕ ДЛЯ СОХРАНЕНИЯ СОГЛАСИЯ НА РАССЫЛКУ
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     
     @property
@@ -62,12 +61,10 @@ class RegisterForm(FlaskForm):
     username = StringField('Имя пользователя (опционально)')
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
-    # НОВЫЙ ОБЯЗАТЕЛЬНЫЙ ЧЕКБОКС
     accept_tos = BooleanField(
         'Я принимаю условия использования сервиса', 
         validators=[DataRequired(message="Вы должны принять условия использования.")]
     )
-    # НОВЫЙ ОПЦИОНАЛЬНЫЙ ЧЕКБОКС (включен по умолчанию)
     marketing_consent = BooleanField(
         'Я согласен на получение маркетинговых сообщений',
         default=True
@@ -122,7 +119,6 @@ def register():
             email=form.email.data,
             username=form.username.data,
             password=hashed_password,
-            # Сохраняем значение из нового чекбокса
             marketing_consent=form.marketing_consent.data 
         )
         db.session.add(new_user)
@@ -144,6 +140,7 @@ def change_password():
         db.session.commit()
         flash('Ваш пароль успешно изменен!', 'success')
         return redirect(url_for('index'))
+
     return render_template('custom_change_password.html', form=form)
 
 @app.route('/logout')
@@ -152,7 +149,7 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# --- Главная страница и API (ОРИГИНАЛЬНЫЙ КОД) ---
+# --- Главная страница и API ---
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -359,12 +356,13 @@ INDEX_HTML = """
             object-fit: contain;
             margin-top: 12vh; 
         }
+        /* ПРАВКА 4: Добавляем width для корректного отображения SVG */
         .mobile-main-text-img { 
             display: block; 
             max-height: 20vh; 
-            /* ПРАВКА 4: Добавляем width для корректного отображения SVG */
-            width: 90%; 
-            max-width: 90%; object-fit: contain; 
+            width: 90%;
+            max-width: 90%; 
+            object-fit: contain; 
             position: fixed; 
             top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + 20px); 
             left: 50%; 
@@ -546,20 +544,20 @@ INDEX_HTML = """
                  padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
             }
             
+            /* ПРАВКА 1: Убираем !important, чтобы JS мог скрыть блок */
             .initial-top-group { 
                 gap: var(--desktop-spacing-unit); 
                 margin-top: 40px; 
-                /* ПРАВКА 1: Убираем !important, чтобы JS мог скрыть блок */
-                display: flex; 
+                display: flex;
             }
             .mobile-main-text-img { display: none !important; } 
             .desktop-main-text-img { display: block !important; }
             .image-drop-area-mobile { display: none !important; } 
             
+            /* ПРАВКА 2: Поднимаем на 30px */
             .action-buttons { 
                 gap: 25px; 
                 max-width: 700px; 
-                /* ПРАВКА 2: Поднимаем на 30px */
                 bottom: calc(5vh + var(--footer-height-desk) + 15px); 
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
@@ -1274,8 +1272,11 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
+
+# --- СОЗДАНИЕ ТАБЛИЦ В БАЗЕ ДАННЫХ ПРИ СТАРТЕ ПРИЛОЖЕНИЯ ---
 with app.app_context():
     db.create_all()
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
