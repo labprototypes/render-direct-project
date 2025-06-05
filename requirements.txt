@@ -13,3 +13,4 @@ argon2_cffi
 Flask-Babel
 Jinja2>=3.0
 werkzeug
+email-validator
