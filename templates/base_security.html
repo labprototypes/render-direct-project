@@ -14,14 +14,14 @@
         :root {
             --text-accent-color: #D9F47A;
             --controls-bg-color: #F8F8F8;
-            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8);
-            --blur-intensity: 10px;
+            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8); /* Как у input-area */
+            --blur-intensity: 10px; /* Как у input-area */
             --text-main-color: #333333;
             --header-border-radius: 22px;
         }
         body {
             font-family: 'ChangerFont', sans-serif;
-            background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
+            background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}"); /* Или MOB_BACK в зависимости от логики */
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -51,17 +51,6 @@
             margin-bottom: 25px;
             font-size: 1.8rem;
         }
-        /* --- ИЗМЕНЕНИЕ ЗДЕСЬ: Добавлены стили для подзаголовков (label) --- */
-        .security-popup-container form label {
-            display: block;
-            text-align: left;
-            font-size: 0.9rem;
-            margin-bottom: 8px; /* <-- Вот и отступ */
-            font-weight: normal; /* Убираем жирность */
-            color: #495057;
-        }
-        /* --- Конец изменения --- */
-
         .security-popup-container .form-control {
             font-family: 'ChangerFont', sans-serif;
             width: calc(100% - 20px);
@@ -90,24 +79,26 @@
             max-width: 200px;
             display: inline-block;
             text-decoration: none;
-            margin-top: 10px; /* Добавим небольшой отступ сверху для кнопки */
         }
         .security-popup-container .btn:hover {
             background-color: #c8e070;
         }
-        .security-popup-container .links {
-             margin-top: 20px;
+        .security-popup-container ul {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
         }
-        .security-popup-container .links a {
+        .security-popup-container ul li {
+            margin-bottom: 8px;
+        }
+        .security-popup-container ul li a {
             font-family: 'ChangerFont', sans-serif;
-            color: var(--text-main-color);
+            color: var(--text-accent-color);
             text-decoration: none;
             font-size: 0.85rem;
-            opacity: 0.8;
         }
-        .security-popup-container .links a:hover {
+        .security-popup-container ul li a:hover {
             text-decoration: underline;
-            opacity: 1;
         }
         .close-popup-btn {
             position: absolute;
@@ -122,13 +113,14 @@
             width: 18px;
             height: 18px;
             stroke: var(--text-main-color);
-            stroke-width: 8;
+            stroke-width: 8; /* Толще линии для лучшей видимости */
             stroke-linecap: round;
         }
+        /* Стили для ошибок валидации Flask-Security */
         .has-errors .form-control {
-            border-color: #dc3545;
+            border-color: #dc3545; /* Красный для ошибок */
         }
-        .help-block {
+        .help-block { /* Текст ошибки под полем */
             display: block;
             margin-top: -10px;
             margin-bottom: 10px;
@@ -137,7 +129,7 @@
             text-align: left;
             padding-left: 5px;
         }
-         ul.fs-errorlist {
+         ul.fs-errorlist { /* Список ошибок вверху формы */
             list-style: none;
             padding: 0;
             margin-bottom: 15px;
@@ -150,6 +142,7 @@
             font-size: 0.85rem;
             text-align: center;
         }
+
     </style>
 </head>
 <body>
