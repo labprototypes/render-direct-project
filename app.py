@@ -12,7 +12,7 @@ from flask_mail import Mail
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import relationship
 from flask_security import AsaList
-from flask_babelex import Babel # <--- ДОБАВЛЕНО
+from flask_babel import Babel # <--- ИЗМЕНЕНО на flask_babel
 
 # --- Настройки для подключения к Amazon S3 ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -22,22 +22,22 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 # Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD') 
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD') 
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD')
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['SECURITY_REGISTERABLE'] = True 
-app.config['SECURITY_SEND_REGISTER_EMAIL'] = False 
-app.config['SECURITY_RECOVERABLE'] = True 
-app.config['SECURITY_CHANGEABLE'] = True 
-app.config['SECURITY_CONFIRMABLE'] = False 
-app.config['SECURITY_USERNAME_ENABLE'] = True 
-app.config['SECURITY_USERNAME_REQUIRED'] = False 
-app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False} 
-app.config['SECURITY_POST_LOGIN_VIEW'] = '/' 
-app.config['SECURITY_POST_LOGOUT_VIEW'] = '/' 
+app.config['SECURITY_REGISTERABLE'] = True
+app.config['SECURITY_SEND_REGISTER_EMAIL'] = False
+app.config['SECURITY_RECOVERABLE'] = True
+app.config['SECURITY_CHANGEABLE'] = True
+app.config['SECURITY_CONFIRMABLE'] = False
+app.config['SECURITY_USERNAME_ENABLE'] = True
+app.config['SECURITY_USERNAME_REQUIRED'] = False
+app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
+app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
+app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
 app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
 # app.config['SECURITY_LOGIN_URL'] = '/login' # Эти уже были
 # app.config['SECURITY_LOGOUT_URL'] = '/logout'
@@ -90,10 +90,10 @@ class Role(db.Model, RoleMixin):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    username = db.Column(db.String(255), unique=True, nullable=True) 
+    username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False) 
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship(
         "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
@@ -376,11 +376,10 @@ INDEX_HTML = """
         .action-btn img:hover { transform: scale(1.05); }
 
         .result-image-wrapper {
-             justify-content: center; /* flex-grow: 1; -- removed for fixed behavior */ 
+             justify-content: center; 
              display: inline-flex; 
              align-items: center; width: auto; max-width: 100%; 
              position: relative; 
-             /* margin-bottom: calc(var(--download-icon-size) + 5px + 5px); -- Handled by fixed or default */
         }
         .result-image-wrapper.fixed-mobile {
             position: fixed;
@@ -403,7 +402,7 @@ INDEX_HTML = """
             display: block; 
         }
 
-        .download-action-link { /* Default absolute positioning for desktop or non-fixed scenarios */
+        .download-action-link {
             display: none; 
             position: absolute; 
             bottom: calc(-1 * (var(--download-icon-size) + 5px)); 
@@ -411,7 +410,7 @@ INDEX_HTML = """
             z-index: 10; cursor: pointer;
             padding: 5px; line-height: 0; 
         }
-        .result-image-wrapper.fixed-mobile .download-action-link { /* Mobile fixed result view */
+        .result-image-wrapper.fixed-mobile .download-action-link {
             position: static; 
             margin-top: 5px; 
             bottom: auto; 
@@ -466,14 +465,14 @@ INDEX_HTML = """
         }
         .submit-button-element.start-over-btn-mobile {
             width: 60px;
-            margin-left: auto; /* Центрирование кнопки, когда prompt скрыт */
+            margin-left: auto; 
             margin-right: auto;
         }
         .submit-button-element.start-over-btn-mobile .submit-button-text-content {
             color: var(--text-accent-color);
         }
         .submit-button-icon-img { height: 40px; width: 40px; }
-        .submit-button-text-content { display: none; font-size:0.9rem; line-height:1; } /* Добавил немного базовых стилей для текста кнопки */
+        .submit-button-text-content { display: none; font-size:0.9rem; line-height:1; }
 
         .error-message {
             display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
@@ -519,19 +518,19 @@ INDEX_HTML = """
             }
             .action-btn img { height: calc(48px / 2); max-width: 120px; }
             
-            .result-image-wrapper.fixed-mobile { /* Сброс фиксации для десктопа */
+            .result-image-wrapper.fixed-mobile { 
                 position: relative; 
                 width: auto;
                 max-width: 100%;
                 top: auto;
                 left: auto;
                 transform: none;
-                z-index: auto; /* или z-index: 1; */
+                z-index: auto; 
                 flex-direction: row; 
-                align-items: center; /* или исходное значение */
+                align-items: center; 
                 margin-bottom: calc(var(--download-icon-size) + 5px + 5px); 
             }
-            .result-image-wrapper.fixed-mobile .download-action-link { /* Восстановление absolute для десктопа */
+            .result-image-wrapper.fixed-mobile .download-action-link { 
                 position: absolute;
                 margin-top: 0;
                 bottom: calc(-1 * (var(--download-icon-size) + 5px)); 
@@ -818,7 +817,7 @@ INDEX_HTML = """
             if (appBgWrapper) appBgWrapper.classList.add('bg-blur'); 
         } else if (viewName === 'result') {
             if (resultImageWrapper) {
-                resultImageWrapper.style.display = 'flex'; // Changed to flex for fixed-mobile layout
+                resultImageWrapper.style.display = 'flex'; 
                 if (!isDesktopView()) {
                     resultImageWrapper.classList.add('fixed-mobile');
                 }
@@ -1140,10 +1139,10 @@ def improve_prompt_with_openai(user_prompt):
         return user_prompt
 
 @app.route('/process-image', methods=['POST'])
-@login_required 
+@login_required
 def process_image():
     if current_user.token_balance < 1:
-        return jsonify({'error': 'Недостаточно токенов'}), 403 
+        return jsonify({'error': 'Недостаточно токенов'}), 403
 
     if 'image' not in request.files or 'prompt' not in request.form:
         return jsonify({'error': 'Отсутствует изображение или промпт'}), 400
@@ -1161,7 +1160,7 @@ def process_image():
         
         s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         _, f_ext = os.path.splitext(image_file.filename)
-        object_name = f"uploads/{uuid.uuid4()}{f_ext}" 
+        object_name = f"uploads/{uuid.uuid4()}{f_ext}"
         
         s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': image_file.content_type})
         
@@ -1175,7 +1174,7 @@ def process_image():
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {
             "version": model_version_id,
-            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text} 
+            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text}
         }
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
@@ -1186,17 +1185,17 @@ def process_image():
                 error_data = start_response.json()
                 detail = error_data.get("detail", start_response.text)
                 return jsonify({'error': f'Ошибка API Replicate: {detail}'}), start_response.status_code
-            except ValueError: 
+            except ValueError:
                  return jsonify({'error': f'Ошибка API Replicate: {start_response.text}'}), start_response.status_code
 
         prediction_data = start_response.json()
         get_url = prediction_data["urls"]["get"]
         
         output_url = None
-        max_retries = 60 
+        max_retries = 60
         retries = 0
         while retries < max_retries:
-            time.sleep(2) 
+            time.sleep(2)
             get_response = requests.get(get_url, headers=headers)
             if get_response.status_code >= 400:
                 print(f"!!! Ошибка от Replicate при получении статуса: {get_response.status_code} - {get_response.text}")
@@ -1211,10 +1210,10 @@ def process_image():
             print(f"Статус генерации Replicate: {status_data['status']}")
             
             if status_data["status"] == "succeeded":
-                if isinstance(status_data["output"], list): 
-                    output_url = status_data["output"][0] 
-                else: 
-                    output_url = str(status_data["output"]) 
+                if isinstance(status_data["output"], list):
+                    output_url = status_data["output"][0]
+                else:
+                    output_url = str(status_data["output"])
                 
                 current_user.token_balance -= 1
                 db.session.commit()
@@ -1233,5 +1232,5 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
