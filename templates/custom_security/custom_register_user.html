@@ -17,7 +17,8 @@
     {% endif %}
     {{ render_field(register_user_form.submit, value="Зарегистрироваться", class="btn") }}
 </form>
-<div class="links">
-    <a href="{{ url_for_security('login') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Уже есть аккаунт? Войти</a>
-</div>
+
+<ul>
+    <li><a href="{{ url_for_security('login') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Уже есть аккаунт? Войти</a></li>
+</ul>
 {% endblock %}
