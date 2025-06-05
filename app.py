@@ -1,41 +1,73 @@
 import os
+print("!!!!!!!!!! ЗАПУЩЕНА НОВАЯ ВЕРСИЯ КОДА / NEW VERSION IS RUNNING !!!!!!!!!!") # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
 import boto3
 import uuid
 import requests
 import time
 import openai
-from flask import Flask, request, jsonify, render_template_string, url_for, redirect, flash
+from flask import Flask, request, jsonify, render_template_string, url_for, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
-from flask_security.utils import hash_password, login_user, logout_user, verify_password
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo
+from flask_security.utils import hash_password
+from flask_mail import Mail
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import relationship
 from flask_security import AsaList
-from flask_babel import Babel
+from flask_babel import Babel # <--- ИЗМЕНЕНО на flask_babel
 
-# --- Настройки ---
+# --- Настройки для подключения к Amazon S3 ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
 AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
+# Инициализируем Flask приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key')
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'a-very-secret-salt')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'YOUR_VERY_SECRET_KEY_HERE_CHANGE_ME_IN_PROD')
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('FLASK_SECURITY_PASSWORD_SALT', 'YOUR_VERY_SECRET_SALT_HERE_CHANGE_ME_IN_PROD')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['BABEL_DEFAULT_LOCALE'] = 'ru'
-app.config['SECURITY_CHANGEABLE'] = True # Оставляем, чтобы работала смена пароля
-app.config['SECURITY_RECOVERABLE'] = True # Оставляем для восстановления
 
-# --- Flask-Security больше не управляет шаблонами логина/регистрации ---
+app.config['SECURITY_REGISTERABLE'] = True
+app.config['SECURITY_SEND_REGISTER_EMAIL'] = False
+app.config['SECURITY_RECOVERABLE'] = True
+app.config['SECURITY_CHANGEABLE'] = True
+app.config['SECURITY_CONFIRMABLE'] = False
+app.config['SECURITY_USERNAME_ENABLE'] = True
+app.config['SECURITY_USERNAME_REQUIRED'] = False
+app.config['SECURITY_DEBUG'] = True
+app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
+app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
+app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
+app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
+app.config['SECURITY_CHANGE_URL'] = '/change' 
+
+# --- НАСТРОЙКА КАСТОМНЫХ ШАБЛОНОВ С УПРОЩЕННЫМИ ПУТЯМИ ---
+app.config['SECURITY_LOGIN_TEMPLATE'] = 'custom_login_user.html'
+app.config['SECURITY_REGISTER_TEMPLATE'] = 'custom_register_user.html'
+app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_change_password.html'
+# --- КОНЕЦ НАСТРОЙКИ ---
+
+
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', ("Changer AI", 'noreply@example.com'))
+app.config['SECURITY_EMAIL_SENDER'] = app.config['MAIL_DEFAULT_SENDER']
+
 db = SQLAlchemy(app)
-babel = Babel(app)
+mail = Mail(app)
 
-# --- Модели ---
+# --- НАСТРОЙКА BABEL ДЛЯ ЛОКАЛИЗАЦИИ ---
+app.config['BABEL_DEFAULT_LOCALE'] = 'ru'
+babel = Babel(app)
+# --- КОНЕЦ НАСТРОЙКИ BABEL ---
+
+
 roles_users = db.Table(
     "roles_users",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
@@ -54,187 +86,25 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
-    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
     confirmed_at = db.Column(db.DateTime())
-    roles = db.relationship("Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic"))
+    roles = db.relationship(
+        "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
+    )
     token_balance = db.Column(db.Integer, default=10, nullable=False)
 
-# --- Формы входа и регистрации ---
-class LoginForm(FlaskForm):
-    email = StringField('Email или имя пользователя', validators=[DataRequired()])
-    password = PasswordField('Пароль', validators=[DataRequired()])
-    remember = BooleanField('Запомнить меня')
-    submit = SubmitField('Войти')
-
-class RegisterForm(FlaskForm):
-    email = StringField('Ваш Email', validators=[DataRequired(), Email(message='Неверный формат email')])
-    password = PasswordField('Пароль', validators=[DataRequired()])
-    password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
-    submit = SubmitField('Регистрация')
-
-# --- Инициализация Security ---
-# Важно: передаем формы в Security, чтобы он знал о них, но маршруты будут наши
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore,
-                    login_form=LoginForm,
-                    register_form=RegisterForm)
-# Для смены пароля оставляем стандартный обработчик Flask-Security, так как он работал
-app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_change_password.html'
+security = Security(app, user_datastore)
 
-# --- HTML ШАБЛОНЫ ВНУТРИ PYTHON ---
-BASE_SECURITY_HTML = """
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>{{ title }} - Changer AI</title>
-    <style>
-        @font-face {
-            font-family: 'ChangerFont';
-            src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
-            font-weight: normal;
-            font-style: normal;
-        }
-        :root {
-            --text-accent-color: #D9F47A;
-            --controls-bg-color: #F8F8F8;
-            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8);
-            --blur-intensity: 10px;
-            --text-main-color: #333333;
-            --header-border-radius: 22px;
-        }
-        body {
-            font-family: 'ChangerFont', sans-serif;
-            background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
-            background-size: cover; background-position: center center; background-repeat: no-repeat; background-attachment: fixed;
-            display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
-            color: var(--text-main-color);
-        }
-        .security-popup-container {
-            background-color: var(--controls-bg-color-transparent);
-            backdrop-filter: blur(var(--blur-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity));
-            padding: 30px 40px; border-radius: var(--header-border-radius); box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            width: 100%; max-width: 450px; position: relative; text-align: center;
-        }
-        .security-popup-container h2 {
-            font-family: 'ChangerFont', sans-serif; color: var(--text-main-color); margin-bottom: 25px; font-size: 1.8rem;
-        }
-        .security-popup-container form label {
-            display: block; text-align: left; font-size: 0.9rem; margin-bottom: 8px; font-weight: normal; color: #495057;
-        }
-        .security-popup-container .form-control {
-            font-family: 'ChangerFont', sans-serif; box-sizing: border-box; width: 100%; padding: 12px 10px;
-            margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px;
-            background-color: rgba(255,255,255,0.7); color: var(--text-main-color); font-size: 0.9rem;
-        }
-        .security-popup-container .btn {
-            font-family: 'ChangerFont', sans-serif; background-color: var(--text-accent-color); color: var(--text-main-color);
-            border: none; padding: 12px 20px; border-radius: 25px; cursor: pointer; font-size: 1rem;
-            transition: background-color 0.3s ease; width: 100%; max-width: 200px; display: inline-block;
-            text-decoration: none; margin-top: 10px;
-        }
-        .security-popup-container .btn:hover { background-color: #c8e070; }
-        .security-popup-container .links { margin-top: 20px; }
-        .security-popup-container .links a {
-            font-family: 'ChangerFont', sans-serif; color: var(--text-main-color); text-decoration: none;
-            font-size: 0.85rem; opacity: 0.8;
-        }
-        .security-popup-container .links a:hover { text-decoration: underline; opacity: 1; }
-        .close-popup-btn {
-            position: absolute; top: 15px; right: 15px; background: none; border: none; cursor: pointer; padding: 5px;
-        }
-        .close-popup-btn svg { width: 18px; height: 18px; stroke: var(--text-main-color); stroke-width: 8; stroke-linecap: round; }
-        .help-block {
-            display: block; margin-top: -10px; margin-bottom: 10px; font-size: 0.8rem;
-            color: #dc3545; text-align: left; padding-left: 5px;
-        }
-        ul, li { list-style: none; padding: 0; margin: 0; }
-        .flash-errors { margin-bottom: 15px; }
-        .flash-errors li {
-            background-color: rgba(220, 53, 69, 0.1); color: #dc3545; padding: 8px 12px;
-            border-radius: 6px; font-size: 0.85rem; text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <div class="security-popup-container">
-        <a href="{{ url_for('index') }}" class="close-popup-btn" aria-label="Закрыть">
-            <svg viewBox="0 0 80 80"><line x1="20" y1="20" x2="60" y2="60"/><line x1="60" y1="20" x2="20" y2="60"/></svg>
-        </a>
-        <h2>{{ title }}</h2>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <ul class="flash-errors">
-            {% for category, message in messages %}
-              {% if category == 'error' %}
-                <li>{{ message }}</li>
-              {% endif %}
-            {% endfor %}
-            </ul>
-          {% endif %}
-        {% endwith %}
+app.static_folder = 'static'
 
-        <form action="" method="post" name="security_form">
-            {{ form.hidden_tag() }}
-            {% for field in form if field.widget.input_type != 'hidden' and field.name != 'submit' %}
-                <div>
-                    {{ field.label(class="form-label") }}
-                    {{ field(class="form-control") }}
-                    {% if field.errors %}
-                        {% for error in field.errors %}
-                            <div class="help-block">{{ error }}</div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            {% endfor %}
-            {{ form.submit(class="btn") }}
-        </form>
+REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
-        <div class="links">
-          {% if title == "Вход" %}
-            <p><a href="{{ url_for('custom_register') }}">Создать аккаунт</a></p>
-          {% else %}
-            <p><a href="{{ url_for('custom_login') }}">Уже есть аккаунт? Войти</a></p>
-          {% endif %}
-        </div>
-    </div>
-</body>
-</html>
-"""
-
-# --- НОВЫЕ ПОЛЬЗОВАТЕЛЬСКИЕ МАРШРУТЫ ---
-
-@app.route('/login', methods=['GET', 'POST'])
-def custom_login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = security.login_form()
-    if form.validate_on_submit():
-        login_user(form.user, remember=form.remember.data)
-        return redirect(url_for('index'))
-    return render_template_string(BASE_SECURITY_HTML, title="Вход", form=form)
-
-@app.route('/register', methods=['GET', 'POST'])
-def custom_register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = security.register_form()
-    if form.validate_on_submit():
-        user = user_datastore.create_user(email=form.email.data, password=hash_password(form.password.data))
-        db.session.commit()
-        login_user(user)
-        return redirect(url_for('index'))
-    return render_template_string(BASE_SECURITY_HTML, title="Регистрация", form=form)
-
-@app.route('/logout')
-@login_required
-def custom_logout():
-    logout_user()
-    return redirect(url_for('index'))
-
-# --- Главная страница и API (ОРИГИНАЛЬНЫЙ КОД) ---
+if OPENAI_API_KEY:
+    openai.api_key = OPENAI_API_KEY
+else:
+    print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -728,14 +598,14 @@ INDEX_HTML = """
                         <ul>
                             <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
                             <li><a href="{{ url_for_security('change_password') }}">Сменить пароль</a></li>
-                            <li><a href="{{ url_for('custom_logout') }}">Выйти</a></li>
+                            <li><a href="{{ url_for_security('logout') }}">Выйти</a></li>
                         </ul>
                     </div>
                 {% else %}
                     <div class="user-controls-loggedout">
-                        <a href="{{ url_for('custom_login') }}" class="auth-button">Логин</a>
+                        <a href="{{ url_for_security('login') }}" class="auth-button">Логин</a>
                         <span class="auth-separator">|</span>
-                        <a href="{{ url_for('custom_register') }}" class="auth-button">Регистрация</a>
+                        <a href="{{ url_for_security('register') }}" class="auth-button">Регистрация</a>
                     </div>
                 {% endif %}
             </div>
@@ -1205,6 +1075,7 @@ INDEX_HTML = """
 </html>
 """
 
+# Маршрут для главной страницы
 @app.route('/')
 def index():
     return render_template_string(INDEX_HTML)
@@ -1355,6 +1226,4 @@ def process_image():
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
