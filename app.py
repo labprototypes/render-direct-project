@@ -39,19 +39,14 @@ app.config['SECURITY_EMAIL_VALIDATOR_ARGS'] = {"check_deliverability": False}
 app.config['SECURITY_POST_LOGIN_VIEW'] = '/'
 app.config['SECURITY_POST_LOGOUT_VIEW'] = '/'
 app.config['SECURITY_POST_REGISTER_VIEW'] = '/'
-# app.config['SECURITY_LOGIN_URL'] = '/login' # Эти уже были
-# app.config['SECURITY_LOGOUT_URL'] = '/logout'
-# app.config['SECURITY_REGISTER_URL'] = '/register'
-# app.config['SECURITY_CHANGE_URL'] = '/change-password'
-# app.config['SECURITY_RESET_URL'] = '/reset-password'
 
-# --- НАСТРОЙКА КАСТОМНЫХ ШАБЛОНОВ FLASK-SECURITY ---
+# --- ИСПРАВЛЕННЫЙ БЛОК ---
+# Добавляем настройку URL из логов и исправляем шаблоны
+app.config['SECURITY_CHANGE_URL'] = '/change' 
 app.config['SECURITY_LOGIN_TEMPLATE'] = 'custom_security/custom_login_user.html'
 app.config['SECURITY_REGISTER_TEMPLATE'] = 'custom_security/custom_register_user.html'
 app.config['SECURITY_CHANGE_PASSWORD_TEMPLATE'] = 'custom_security/custom_change_password.html'
-app.config['SECURITY_FORGOT_PASSWORD_TEMPLATE'] = 'custom_security/custom_forgot_password.html' # Рекомендую добавить и для других страниц
-app.config['SECURITY_RESET_PASSWORD_TEMPLATE'] = 'custom_security/custom_reset_password.html'   # на случай если понадобятся
-# --- КОНЕЦ НАСТРОЙКИ КАСТОМНЫХ ШАБЛОНОВ ---
+# --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ---
 
 
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
