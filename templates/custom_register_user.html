@@ -39,6 +39,22 @@
         {% endfor %}
     </div>
 
+    <div style="text-align: left; font-size: 0.85rem; margin: 15px 0;">
+        <div>
+            {{ form.accept_tos() }}
+            <label for="accept_tos">
+                Я принимаю <a href="/terms" target="_blank">условия использования</a> и согласен на <a href="/privacy" target="_blank">обработку персональных данных</a>.
+            </label>
+            {% for error in form.accept_tos.errors %}
+                <div class="help-block" style="margin-top: 5px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div style="margin-top: 10px;">
+            {{ form.marketing_consent() }}
+            {{ form.marketing_consent.label }}
+        </div>
+    </div>
+    
     {{ form.submit(class="btn") }}
 </form>
 <div class="links">
