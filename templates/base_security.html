@@ -141,6 +141,84 @@
             border-radius: 6px;
             font-size: 0.85rem;
         }
+         /* Меняем цвет ссылок в попапе */
+        .security-popup-container a {
+            color: var(--text-accent-color);
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .security-popup-container a:hover {
+            text-decoration: underline;
+        }
+
+        /* Контейнер для чекбокса и текста */
+        .custom-checkbox-container {
+            display: flex;
+            align-items: center; /* Выравнивание по центру по вертикали */
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        /* Скрываем стандартный чекбокс */
+        .custom-checkbox-container input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* Создаем кастомный вид для чекбокса */
+        .custom-checkbox-container label {
+            position: relative;
+            padding-left: 28px; /* Место для кастомной галочки */
+        }
+
+        .custom-checkbox-container label::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--text-main-color);
+            border-radius: 4px;
+            background-color: #fff;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        /* Стили для кастомного чекбокса в активном состоянии */
+        .custom-checkbox-container input[type="checkbox"]:checked + label::before {
+            background-color: #D9F47A; /* Ваш цвет D9F47A */
+            border-color: #D9F47A;
+        }
+
+        /* Рисуем саму галочку (крестик) */
+        .custom-checkbox-container label::after {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 50%;
+            width: 5px;
+            height: 10px;
+            border: solid black; /* Цвет галочки - черный */
+            border-width: 0 3px 3px 0;
+            transform: translateY(-60%) rotate(45deg);
+            opacity: 0; /* Скрыта по умолчанию */
+            transition: opacity 0.2s;
+        }
+
+        /* Показываем галочку, когда чекбокс выбран */
+        .custom-checkbox-container input[type="checkbox"]:checked + label::after {
+            opacity: 1;
+        }
+
+        /* Общий контейнер для всех чекбоксов */
+        .checkbox-wrapper {
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
