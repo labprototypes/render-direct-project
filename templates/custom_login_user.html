@@ -23,9 +23,11 @@
         {% endfor %}
     </div>
     
-    <div style="text-align: left; font-size: 0.9rem; margin: 15px 0;">
-        {{ form.remember() }}
-        {{ form.remember.label }}
+    <div class="checkbox-wrapper">
+        <div class="custom-checkbox-container">
+            {{ form.remember() }}
+            <label for="remember">{{ form.remember.label.text }}</label>
+        </div>
     </div>
 
     {{ form.submit(class="btn") }}
