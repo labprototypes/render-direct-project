@@ -217,9 +217,11 @@ INDEX_HTML = """
             width: 100%; max-width: 1200px; margin: 0 auto; 
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
-            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit) + 50px); /* Добавлен отступ для переключателя */
+            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
             padding-bottom: calc(10vh + var(--footer-height-mob) + var(--action-buttons-height-mob)); 
-            display: flex; flex-direction: column; align-items: center;
+            display: flex; flex-direction: column;
+            /* ПРАВКА 1: Выравниваем основной контент по левому краю */
+            align-items: flex-start;
             flex-grow: 1; position: relative; z-index: 1;
         }
 
@@ -240,24 +242,19 @@ INDEX_HTML = """
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: relative;
         }
 
-        /* ПРАВКА 2: Позиционирование переключателя */
-        .header-main-group {
-            position: absolute;
-            left: 25px; /* Выравнивание по отступу .page-header-inner */
-            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) + 10px);
+        .header-left-group {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
+            flex-direction: column; /* ПРАВКА 2: Элементы друг под другом */
+            align-items: flex-start; /* ПРАВКА 2: Выравнивание по левому краю */
+            gap: 15px; /* ПРАВКА 2: Отступ между лого и переключателем */
         }
-        
+
         .app-logo-link { display: inline-block; line-height: 0; } 
         .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
 
-        .top-right-nav { position: relative; display: flex; align-items: center; margin-left: auto; }
+        .top-right-nav { position: relative; display: flex; align-items: center; }
 
         .mode-selector {
             display: flex;
@@ -376,6 +373,18 @@ INDEX_HTML = """
         }
         .user-controls-loggedout .auth-button:hover { text-decoration: underline; }
         .user-controls-loggedout .auth-separator { color: var(--header-text-color-on-light-bg); margin: 0 6px; opacity: 0.6; }
+        
+        /* ПРАВКА 2: Контейнер для всего контента с подложкой */
+        .content-wrapper {
+            width: 100%;
+            max-width: 600px; /* Ширина контента */
+            margin-top: 40px;
+            padding: 25px;
+            background: var(--controls-bg-color-transparent);
+            border-radius: var(--header-border-radius);
+            backdrop-filter: blur(var(--blur-intensity));
+            -webkit-backdrop-filter: blur(var(--blur-intensity));
+        }
 
         .app-main, #upscale-view {
             width: 100%;
@@ -383,7 +392,6 @@ INDEX_HTML = """
             flex-direction: column;
             align-items: center;
             justify-content: flex-start; 
-            flex-grow: 1;
             gap: var(--mob-spacing-unit); 
         }
         
@@ -425,7 +433,10 @@ INDEX_HTML = """
              left: 50%; 
              transform: translateX(-50%); 
              z-index: 10;
-             margin-top: 0;
+        }
+        .image-drop-area.centered {
+            margin-left: auto;
+            margin-right: auto;
         }
         .image-drop-area.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
         .image-drop-area .drop-placeholder-img { 
@@ -561,13 +572,7 @@ INDEX_HTML = """
         .submit-button-text-content { display: none; font-size:0.9rem; line-height:1; }
         
         #upscale-view {
-            width: 100%;
-            max-width: 480px;
-            display: flex;
-            flex-direction: column;
             gap: 20px;
-            margin-top: 40px;
-            color: var(--header-text-color-on-light-bg);
         }
         .control-group {
             width: 100%;
@@ -576,6 +581,7 @@ INDEX_HTML = """
             display: block;
             margin-bottom: 8px;
             font-size: 0.9rem;
+            color: var(--header-text-color-on-light-bg);
         }
         .resolution-selector {
             display: flex;
@@ -644,9 +650,13 @@ INDEX_HTML = """
             font-weight: bold;
             min-width: 30px;
             text-align: right;
+            color: var(--header-text-color-on-light-bg);
         }
         .token-cost {
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
             font-size: 0.9rem;
             color: #6c757d;
             margin-top: 10px;
@@ -677,6 +687,9 @@ INDEX_HTML = """
                 gap: 30px;
             }
             .logo { height: var(--header-logo-height-desk); }
+            .content-wrapper {
+                margin-top: 40px;
+            }
             .app-main, #upscale-view { 
                 gap: var(--desktop-spacing-unit);
                  padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
@@ -750,7 +763,7 @@ INDEX_HTML = """
     
     <div class="page-header-container">
         <div class="page-header-inner">
-            <div class="header-main-group">
+            <div class="header-left-group">
                 <a href="{{ url_for('index') }}" class="app-logo-link">
                     <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
                 </a>
@@ -808,92 +821,97 @@ INDEX_HTML = """
 
     <div class="app-container">
         
-        <div id="edit-view">
-            <main class="app-main">
-                <div class="initial-top-group">
-                    <img src="{{ url_for('static', filename='images/DESK_MAIN.png') }}" alt="Change Everything" class="main-text-display-img desktop-main-text-img"> 
-                    <img src="{{ url_for('static', filename='images/MOB_MAIN.svg') }}" alt="Change Everything" class="main-text-display-img mobile-main-text-img">
+        <div class="content-wrapper">
+            <div id="edit-view">
+                <main class="app-main">
+                    <div class="initial-top-group">
+                        <img src="{{ url_for('static', filename='images/DESK_MAIN.png') }}" alt="Change Everything" class="main-text-display-img desktop-main-text-img"> 
+                        <img src="{{ url_for('static', filename='images/MOB_MAIN.svg') }}" alt="Change Everything" class="main-text-display-img mobile-main-text-img">
 
-                    <label for="image-file-common" class="image-drop-area mobile-only">
-                        <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
-                        <img id="image-preview-mobile" src="#" alt="Preview" class="image-preview-img">
-                    </label>
+                        <label for="image-file-common" class="image-drop-area mobile-only">
+                            <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                            <img id="image-preview-mobile" src="#" alt="Preview" class="image-preview-img">
+                        </label>
+                    </div>
+
+                    <div class="result-image-wrapper">
+                        <img id="result-image" src="" alt="Generated Image">
+                        <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
+                            <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Скачать" class="download-button-icon">
+                        </a>
+                    </div>
+                
+                    <div id="loader" class="loader-container">
+                        <div class="pulsating-dot"></div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.png') }}" alt="Create"></div>
+                        <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/relight.png') }}" alt="Relight"></div>
+                        <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/remove.png') }}" alt="Remove"></div>
+                        <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div>
+                    </div>
+                </main>
+
+                <footer class="app-footer">
+                    <form id="edit-form" class="input-area">
+                        <label for="image-file-common" class="file-upload-label-desktop">
+                            <img src="{{ url_for('static', filename='images/DESK_UPLOAD.png') }}" alt="Upload Icon" class="upload-icon-desktop-img">
+                            <img id="image-preview-desktop" src="#" alt="Preview" class="image-preview-img desktop">
+                        </label>
+                        <input type="file" id="image-file-common" name="image" accept="image/*" style="display: none;">
+                        
+                        <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE">
+                        
+                        <button type="submit" id="submit-button" class="submit-button-element">
+                            <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" id="magic-button-icon-img" class="submit-button-icon-img">
+                            <span id="submit-button-text-content" class="submit-button-text-content">Start over</span>
+                        </button>
+                    </form>
+                </footer>
+            </div>
+
+            <div id="upscale-view" style="display: none;">
+                <div class="control-group">
+                    <label>Resolution</label>
+                    <div class="resolution-selector">
+                        <button class="resolution-btn active" data-value="x2">x2</button>
+                        <button class="resolution-btn" data-value="x4">x4</button>
+                        <button class="resolution-btn" data-value="x8">x8</button>
+                    </div>
                 </div>
 
-                <div class="result-image-wrapper">
-                    <img id="result-image" src="" alt="Generated Image">
-                    <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
-                        <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Скачать" class="download-button-icon">
-                    </a>
-                </div>
-            
-                <div id="loader" class="loader-container">
-                    <div class="pulsating-dot"></div>
+                <div class="control-group">
+                    <div class="slider-container">
+                        <label for="creativity-slider">Creativity</label>
+                        <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
+                        <span class="slider-value" id="creativity-value">70</span>
+                    </div>
                 </div>
 
-                <div class="action-buttons">
-                    <div class="action-btn" data-action="create"><img src="{{ url_for('static', filename='images/Create.png') }}" alt="Create"></div>
-                    <div class="action-btn" data-action="relight"><img src="{{ url_for('static', filename='images/relight.png') }}" alt="Relight"></div>
-                    <div class="action-btn" data-action="remove"><img src="{{ url_for('static', filename='images/remove.png') }}" alt="Remove"></div>
-                    <div class="action-btn" data-action="change"><img src="{{ url_for('static', filename='images/change.png') }}" alt="Change"></div>
+                <div class="control-group">
+                    <div class="slider-container">
+                        <label for="resemblance-slider">Resemblance</label>
+                        <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
+                        <span class="slider-value" id="resemblance-value">80</span>
+                    </div>
                 </div>
-            </main>
 
-            <footer class="app-footer">
-                <form id="edit-form" class="input-area">
-                    <label for="image-file-common" class="file-upload-label-desktop">
-                        <img src="{{ url_for('static', filename='images/DESK_UPLOAD.png') }}" alt="Upload Icon" class="upload-icon-desktop-img">
-                        <img id="image-preview-desktop" src="#" alt="Preview" class="image-preview-img desktop">
-                    </label>
-                    <input type="file" id="image-file-common" name="image" accept="image/*" style="display: none;">
-                    
-                    <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE">
-                    
-                    <button type="submit" id="submit-button" class="submit-button-element">
-                        <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" id="magic-button-icon-img" class="submit-button-icon-img">
-                        <span id="submit-button-text-content" class="submit-button-text-content">Start over</span>
+                <label for="image-file-upscale" class="image-drop-area centered">
+                    <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                    <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
+                </label>
+                <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
+
+                <div style="width: 100%; text-align: center;">
+                    <button type="submit" id="submit-button-upscale" class="submit-button-element" style="margin: 20px auto 0 auto;">
+                        <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
                     </button>
-                </form>
-            </footer>
-        </div>
-
-        <div id="upscale-view" style="display: none;">
-            <div class="control-group">
-                <label>Resolution</label>
-                <div class="resolution-selector">
-                    <button class="resolution-btn active" data-value="x2">x2</button>
-                    <button class="resolution-btn" data-value="x4">x4</button>
-                    <button class="resolution-btn" data-value="x8">x8</button>
+                    <div class="token-cost">
+                        <span>5</span>
+                        <span class="token-coin"></span>
+                    </div>
                 </div>
-            </div>
-
-            <div class="control-group">
-                <div class="slider-container">
-                    <label for="creativity-slider">Creativity</label>
-                    <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
-                    <span class="slider-value" id="creativity-value">70</span>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <div class="slider-container">
-                    <label for="resemblance-slider">Resemblance</label>
-                    <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
-                    <span class="slider-value" id="resemblance-value">80</span>
-                </div>
-            </div>
-
-            <label for="image-file-upscale" class="image-drop-area">
-                <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
-                <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
-            </label>
-            <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
-
-            <div style="width: 100%; text-align: center;">
-                 <button type="submit" id="submit-button-upscale" class="submit-button-element" style="margin: 20px auto 0 auto;">
-                    <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
-                </button>
-                <div class="token-cost">Стоимость: 5 токенов</div>
             </div>
         </div>
 
@@ -985,7 +1003,6 @@ INDEX_HTML = """
         });
     }
 
-
     // --- Shared Logic and Edit View JS ---
     const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInput = document.getElementById('image-file-common');
@@ -1064,10 +1081,8 @@ INDEX_HTML = """
         if(magicButtonIconImg) magicButtonIconImg.style.display = 'block';
         if(submitButtonTextContent) submitButtonTextContent.style.display = 'none';
         
-        // Hide desktop-specific elements in Edit view
-        const desktopUploadIcon = inputArea.querySelector('.file-upload-label-desktop');
+        const desktopUploadIcon = document.querySelector('.file-upload-label-desktop');
         if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
-
 
         if (viewName === 'initial') {
             if (initialTopGroup) initialTopGroup.style.display = 'flex'; 
@@ -1183,9 +1198,11 @@ INDEX_HTML = """
     }
 
     // Setup for Edit view
-    setupDragAndDrop(mobileDropArea, imageFileInput, mobileImagePreviewImg, mobileDropArea.querySelector('.drop-placeholder-img'));
+    setupDragAndDrop(mobileDropArea, imageFileInput, mobileDropArea.querySelector('.image-preview-img'), mobileDropArea.querySelector('.drop-placeholder-img'));
     setupDragAndDrop(desktopUploadLabel, imageFileInput, desktopImagePreviewImg, desktopUploadLabel.querySelector('.upload-icon-desktop-img'));
-    setupDragAndDrop(document.getElementById('edit-form').querySelector('.input-area'), imageFileInput, desktopImagePreviewImg, desktopUploadLabel.querySelector('.upload-icon-desktop-img'));
+    if (document.getElementById('edit-form')) {
+        setupDragAndDrop(document.getElementById('edit-form'), imageFileInput, desktopImagePreviewImg, desktopUploadLabel.querySelector('.upload-icon-desktop-img'));
+    }
     
     // Setup for Upscale view
     setupDragAndDrop(upscaleDropArea, upscaleImageInput, upscaleImagePreviewImg, upscaleDropArea.querySelector('.drop-placeholder-img'));
@@ -1197,9 +1214,19 @@ INDEX_HTML = """
                 img.style.display = 'none';
             }
         });
-        if (mobileDropArea) mobileDropArea.querySelector('.drop-placeholder-img').style.display = 'block';
-        if (desktopUploadLabel) desktopUploadLabel.querySelector('.upload-icon-desktop-img').style.display = 'block';
-        if (upscaleDropArea) upscaleDropArea.querySelector('.drop-placeholder-img').style.display = 'block';
+
+        if (mobileDropArea) {
+            const placeholder = mobileDropArea.querySelector('.drop-placeholder-img');
+            if(placeholder) placeholder.style.display = 'block'; 
+        }
+        if (desktopUploadLabel) {
+            const placeholder = desktopUploadLabel.querySelector('.upload-icon-desktop-img');
+            if(placeholder) placeholder.style.display = 'block';
+        }
+        if (upscaleDropArea) {
+            const placeholder = upscaleDropArea.querySelector('.drop-placeholder-img');
+            if(placeholder) placeholder.style.display = 'block';
+        }
         
         if (imageFileInput) imageFileInput.value = ''; 
         if (upscaleImageInput) upscaleImageInput.value = '';
@@ -1214,11 +1241,11 @@ INDEX_HTML = """
                 return;
             }
 
-            if (!imageFileInput || !imageFileInput.files || imageFileInput.files.length === 0) {
+            if (!imageFileInput.files || imageFileInput.files.length === 0) {
                 showError("Пожалуйста, выберите файл для загрузки.");
                 return;
             }
-            if (!promptInput || !promptInput.value.trim()) {
+            if (!promptInput.value.trim()) {
                 showError("Пожалуйста, введите текстовый промпт.");
                 return;
             }
@@ -1246,7 +1273,6 @@ INDEX_HTML = """
                     throw new Error(errorDetail);
                 }
 
-
                 if(resultImage) resultImage.src = data.output_url;
                 if(downloadLink) downloadLink.href = data.output_url;
                 if (data.new_token_balance !== undefined) { 
@@ -1254,9 +1280,7 @@ INDEX_HTML = """
                 }
                 
                 const tempImg = new Image();
-                tempImg.onload = () => {
-                    updateView('result');
-                };
+                tempImg.onload = () => { updateView('result'); };
                 tempImg.onerror = () => { 
                     showError("Не удалось загрузить сгенерированное изображение.");
                     updateView('initial');
