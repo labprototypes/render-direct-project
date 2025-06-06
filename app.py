@@ -217,7 +217,7 @@ INDEX_HTML = """
             width: 100%; max-width: 1200px; margin: 0 auto; 
             padding-left: var(--mob-spacing-unit);
             padding-right: var(--mob-spacing-unit);
-            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit)); 
+            padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit) + 50px); /* Добавлен отступ для переключателя */
             padding-bottom: calc(10vh + var(--footer-height-mob) + var(--action-buttons-height-mob)); 
             display: flex; flex-direction: column; align-items: center;
             flex-grow: 1; position: relative; z-index: 1;
@@ -240,34 +240,39 @@ INDEX_HTML = """
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
 
-        .header-left-group {
+        /* ПРАВКА 2: Позиционирование переключателя */
+        .header-main-group {
+            position: absolute;
+            left: 25px; /* Выравнивание по отступу .page-header-inner */
+            top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) + 10px);
             display: flex;
-            align-items: center;
-            gap: 30px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
         }
-
+        
         .app-logo-link { display: inline-block; line-height: 0; } 
         .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
 
-        .top-right-nav { position: relative; display: flex; align-items: center; }
+        .top-right-nav { position: relative; display: flex; align-items: center; margin-left: auto; }
 
-        /* СТИЛИ ДЛЯ ПЕРЕКЛЮЧАТЕЛЯ РЕЖИМОВ */
         .mode-selector {
             display: flex;
             align-items: center;
             background-color: var(--controls-bg-color-transparent);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
-            padding: 8px;
+            padding: 6px;
             border-radius: var(--header-border-radius);
-            gap: 8px;
+            gap: 6px;
         }
         .mode-btn {
             background-color: transparent;
             border: none;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 18px;
             cursor: pointer;
             font-family: 'ChangerFont', sans-serif;
@@ -413,7 +418,6 @@ INDEX_HTML = """
             position: relative;
             overflow: hidden; 
             border: 2px dashed rgba(248, 248, 248, 0.3);
-            margin-top: 15px;
         }
         .image-drop-area.mobile-only {
              position: fixed;
@@ -421,6 +425,7 @@ INDEX_HTML = """
              left: 50%; 
              transform: translateX(-50%); 
              z-index: 10;
+             margin-top: 0;
         }
         .image-drop-area.dragover { border-color: var(--text-accent-color); background-color: rgba(217, 244, 122, 0.1); }
         .image-drop-area .drop-placeholder-img { 
@@ -640,6 +645,12 @@ INDEX_HTML = """
             min-width: 30px;
             text-align: right;
         }
+        .token-cost {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
         
         .error-message {
             display: none; margin-top: 10px; font-size: 0.9rem; color: var(--text-accent-color); 
@@ -653,18 +664,20 @@ INDEX_HTML = """
 
         /* --- Desktop Styles --- */
         @media (min-width: 769px) {
-            .app-container-wrapper { background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}"); }
-            .app-container { 
-                padding-left: var(--desktop-spacing-unit);
-                padding-right: var(--desktop-spacing-unit);
+            .app-container {
                 padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit)); 
-                padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit) * 2); 
             }
             .page-header-inner {
                 padding: var(--header-vertical-padding) 0;
             }
+            .header-main-group {
+                position: static;
+                flex-direction: row;
+                align-items: center;
+                gap: 30px;
+            }
             .logo { height: var(--header-logo-height-desk); }
-            .app-main { 
+            .app-main, #upscale-view { 
                 gap: var(--desktop-spacing-unit);
                  padding-bottom: calc(var(--footer-height-desk) + var(--action-buttons-height-desk) + var(--desktop-spacing-unit)); 
             }
@@ -737,7 +750,7 @@ INDEX_HTML = """
     
     <div class="page-header-container">
         <div class="page-header-inner">
-            <div class="header-left-group">
+            <div class="header-main-group">
                 <a href="{{ url_for('index') }}" class="app-logo-link">
                     <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
                 </a>
@@ -832,7 +845,7 @@ INDEX_HTML = """
                         <img src="{{ url_for('static', filename='images/DESK_UPLOAD.png') }}" alt="Upload Icon" class="upload-icon-desktop-img">
                         <img id="image-preview-desktop" src="#" alt="Preview" class="image-preview-img desktop">
                     </label>
-                    <input type="file" id="image-file-common" name="image" accept="image/*">
+                    <input type="file" id="image-file-common" name="image" accept="image/*" style="display: none;">
                     
                     <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE">
                     
@@ -876,9 +889,12 @@ INDEX_HTML = """
             </label>
             <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
 
-            <button type="submit" id="submit-button-upscale" class="submit-button-element" style="margin: 20px auto 0 auto;">
-                <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
-            </button>
+            <div style="width: 100%; text-align: center;">
+                 <button type="submit" id="submit-button-upscale" class="submit-button-element" style="margin: 20px auto 0 auto;">
+                    <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
+                </button>
+                <div class="token-cost">Стоимость: 5 токенов</div>
+            </div>
         </div>
 
         <div id="error-box" class="error-message"></div>
@@ -970,7 +986,7 @@ INDEX_HTML = """
     }
 
 
-    // --- Existing Edit View JS ---
+    // --- Shared Logic and Edit View JS ---
     const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInput = document.getElementById('image-file-common');
     const upscaleImageInput = document.getElementById('image-file-upscale');
@@ -1022,8 +1038,6 @@ INDEX_HTML = """
     function updateView(viewName) {
         currentView = viewName;
         
-        const desktopUploadIcon = inputArea.querySelector('.file-upload-label-desktop');
-
         if(appBgWrapper) appBgWrapper.classList.remove('bg-blur');
         
         if (initialTopGroup) initialTopGroup.style.display = 'none'; 
@@ -1049,6 +1063,9 @@ INDEX_HTML = """
         }
         if(magicButtonIconImg) magicButtonIconImg.style.display = 'block';
         if(submitButtonTextContent) submitButtonTextContent.style.display = 'none';
+        
+        // Hide desktop-specific elements in Edit view
+        const desktopUploadIcon = inputArea.querySelector('.file-upload-label-desktop');
         if(desktopUploadIcon) desktopUploadIcon.style.display = 'none';
 
 
@@ -1127,20 +1144,7 @@ INDEX_HTML = """
         }
     }
 
-    window.addEventListener('resize', () => {
-        const desktopUploadIcon = inputArea.querySelector('.file-upload-label-desktop');
-        if (promptInput) promptInput.style.display = 'block'; 
-        if (submitButton) {
-            submitButton.style.flexGrow = '0'; 
-            submitButton.classList.remove('start-over-btn-mobile');
-        }
-        if (magicButtonIconImg) magicButtonIconImg.style.display = 'block';
-        if (submitButtonTextContent) submitButtonTextContent.style.display = 'none';
-        if(desktopUploadIcon) desktopUploadIcon.style.display = isDesktopView() ? 'flex' : 'none';
-        if (resultImageWrapper) resultImageWrapper.classList.remove('fixed-mobile'); 
-        
-        updateView(currentView); 
-    });
+    window.addEventListener('resize', () => { updateView(currentView); });
     
     function handleFileSelect(file, previewElement, placeholderElement) {
         const reader = new FileReader();
@@ -1157,17 +1161,18 @@ INDEX_HTML = """
     }
 
     function setupDragAndDrop(dropZoneElement, fileInput, previewElement, placeholderElement) {
-        if (!dropZoneElement) return;
+        if (!dropZoneElement || !fileInput) return;
 
         dropZoneElement.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dropZoneElement.classList.add('dragover'); });
-        dropZoneElement.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dropZoneElement.classList.remove('dragover'); });
+        dropZoneElement.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dropZoneElement.classList.remove('dragleave'); });
         dropZoneElement.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
             dropZoneElement.classList.remove('dragover');
             if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                 fileInput.files = e.dataTransfer.files;
-                handleFileSelect(e.dataTransfer.files[0], previewElement, placeholderElement);
+                const changeEvent = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(changeEvent);
             }
         });
         fileInput.addEventListener('change', function() {
@@ -1178,30 +1183,24 @@ INDEX_HTML = """
     }
 
     // Setup for Edit view
-    setupDragAndDrop(mobileDropArea, imageFileInput, mobileImagePreviewImg, mobileDropPlaceholderImg);
-    setupDragAndDrop(desktopUploadLabel, imageFileInput, desktopImagePreviewImg, desktopUploadIconImg);
-    setupDragAndDrop(document.getElementById('edit-form'), imageFileInput, desktopImagePreviewImg, desktopUploadIconImg);
+    setupDragAndDrop(mobileDropArea, imageFileInput, mobileImagePreviewImg, mobileDropArea.querySelector('.drop-placeholder-img'));
+    setupDragAndDrop(desktopUploadLabel, imageFileInput, desktopImagePreviewImg, desktopUploadLabel.querySelector('.upload-icon-desktop-img'));
+    setupDragAndDrop(document.getElementById('edit-form').querySelector('.input-area'), imageFileInput, desktopImagePreviewImg, desktopUploadLabel.querySelector('.upload-icon-desktop-img'));
     
     // Setup for Upscale view
     setupDragAndDrop(upscaleDropArea, upscaleImageInput, upscaleImagePreviewImg, upscaleDropArea.querySelector('.drop-placeholder-img'));
 
-
     function resetImagePreviews() {
-        if (mobileImagePreviewImg && mobileDropPlaceholderImg) {
-            mobileImagePreviewImg.src = '#';
-            mobileImagePreviewImg.style.display = 'none';
-            mobileDropPlaceholderImg.style.display = 'block'; 
-        }
-        if (desktopImagePreviewImg && desktopUploadIconImg) {
-            desktopImagePreviewImg.src = '#';
-            desktopImagePreviewImg.style.display = 'none';
-            desktopUploadIconImg.style.display = 'block';
-        }
-        if (upscaleImagePreviewImg && upscaleDropArea) {
-             upscaleImagePreviewImg.src = '#';
-             upscaleImagePreviewImg.style.display = 'none';
-             upscaleDropArea.querySelector('.drop-placeholder-img').style.display = 'block';
-        }
+        [mobileImagePreviewImg, desktopImagePreviewImg, upscaleImagePreviewImg].forEach(img => {
+            if (img) {
+                img.src = '#';
+                img.style.display = 'none';
+            }
+        });
+        if (mobileDropArea) mobileDropArea.querySelector('.drop-placeholder-img').style.display = 'block';
+        if (desktopUploadLabel) desktopUploadLabel.querySelector('.upload-icon-desktop-img').style.display = 'block';
+        if (upscaleDropArea) upscaleDropArea.querySelector('.drop-placeholder-img').style.display = 'block';
+        
         if (imageFileInput) imageFileInput.value = ''; 
         if (upscaleImageInput) upscaleImageInput.value = '';
     }
@@ -1209,13 +1208,81 @@ INDEX_HTML = """
     if (editForm) {
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            // ... (existing submit logic)
+            
+            if (submitButton.dataset.action === "startover") {
+                updateView('initial');
+                return;
+            }
+
+            if (!imageFileInput || !imageFileInput.files || imageFileInput.files.length === 0) {
+                showError("Пожалуйста, выберите файл для загрузки.");
+                return;
+            }
+            if (!promptInput || !promptInput.value.trim()) {
+                showError("Пожалуйста, введите текстовый промпт.");
+                return;
+            }
+
+            if(submitButton) submitButton.disabled = true;
+            if (errorBox) errorBox.style.display = 'none';
+            updateView('loading');
+
+            const formData = new FormData();
+            formData.append('image', imageFileInput.files[0]);
+            formData.append('prompt', promptInput.value);
+            
+            try {
+                const response = await fetch("{{ url_for('process_image') }}", {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    let errorDetail = data.error || data.detail || 'Неизвестная ошибка сервера';
+                    if (response.status === 403 && (data.error === 'Недостаточно токенов' || data.detail === 'Недостаточно токенов')) { 
+                         errorDetail = 'У вас недостаточно токенов для генерации. Пожалуйста, пополните баланс.';
+                    }
+                    throw new Error(errorDetail);
+                }
+
+
+                if(resultImage) resultImage.src = data.output_url;
+                if(downloadLink) downloadLink.href = data.output_url;
+                if (data.new_token_balance !== undefined) { 
+                    updateTokenBalanceDisplay(data.new_token_balance);
+                }
+                
+                const tempImg = new Image();
+                tempImg.onload = () => {
+                    updateView('result');
+                };
+                tempImg.onerror = () => { 
+                    showError("Не удалось загрузить сгенерированное изображение.");
+                    updateView('initial');
+                };
+                tempImg.src = data.output_url;
+                
+            } catch (error) {
+                console.error('Ошибка при отправке/обработке:', error);
+                showError("Произошла ошибка: " + error.message);
+                updateView('initial'); 
+            } finally {
+                if(submitButton) submitButton.disabled = false;
+            }
         });
     }
     
-    // ... (rest of the existing JS)
-
-    // Initial setup
+    const logoElement = document.querySelector('.logo');
+    if (logoElement) {
+        logoElement.addEventListener('click', () => {
+            if (currentView !== 'loading') { 
+                 updateView('initial');
+            }
+        });
+    }
+    
+    // Initial setup on page load
     document.querySelector('.mode-btn[data-mode="edit"]').click();
     updateView('initial');
     </script>
@@ -1223,7 +1290,6 @@ INDEX_HTML = """
 </html>
 """
 
-# ДОБАВЛЕННЫЙ МАРШРУТ
 @app.route('/')
 def index():
     return render_template_string(INDEX_HTML)
