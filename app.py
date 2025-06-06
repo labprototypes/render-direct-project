@@ -180,14 +180,9 @@ INDEX_HTML = """
             --header-text-color-on-light-bg: #333333;
             --header-border-radius: 22px;
             --coin-color: #D9F47A;
-            --header-vertical-padding: 15px;
+            --header-vertical-padding: 15px; /* Базовый отступ */
             --header-logo-height-mob: 30px;
             --header-logo-height-desk: 35px;
-
-            --footer-height-mob: 70px;
-            --action-buttons-height-mob: 50px;
-            --footer-height-desk: 80px;
-            --action-buttons-height-desk: 60px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -202,7 +197,7 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow: hidden; /* Предотвращаем прокрутку всей страницы */
         }
 
         .app-container-wrapper {
@@ -214,15 +209,20 @@ INDEX_HTML = """
         .app-container-wrapper.bg-blur { filter: blur(var(--blur-intensity)); }
 
         .app-container {
-            width: 100%; max-width: 1200px; margin: 0 auto;
-            padding-left: var(--mob-spacing-unit);
-            padding-right: var(--mob-spacing-unit);
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-left: 25px; /* ПРАВКА: Отступ слева как у хедера */
+            padding-right: 25px;
             padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit));
-            padding-bottom: calc(10vh + var(--footer-height-mob) + var(--action-buttons-height-mob));
-            display: flex; flex-direction: column;
-            /* ПРАВКА: теперь главный контейнер по центру */
-            align-items: center;
-            flex-grow: 1; position: relative; z-index: 1;
+            padding-bottom: 20px;
+            display: flex;
+            /* ПРАВКА: Выравнивание по левому краю, элементы в ряд */
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 25px;
+            height: 100vh;
         }
 
         .page-header-container {
@@ -248,7 +248,7 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 15px;
+            gap: 15px; /* Этот отступ теперь важен для расчета */
         }
 
         .app-logo-link { display: inline-block; line-height: 0; }
@@ -376,16 +376,23 @@ INDEX_HTML = """
 
         .content-wrapper {
             width: 100%;
-            /* ПРАВКА: Ширина уменьшена, высота адаптивная */
             max-width: 420px;
             height: auto;
-            margin-top: 20px;
+            /* ПРАВКА: Отступ сверху = 2 * 15px (gap в хедере) */
+            margin-top: 30px;
             padding: 25px;
             background: var(--controls-bg-color-transparent);
             border-radius: var(--header-border-radius);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
+            transition: opacity 0.3s, filter 0.3s;
         }
+        .content-wrapper.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+            filter: grayscale(50%);
+        }
+
 
         #upscale-view, #edit-view {
             width: 100%;
@@ -393,7 +400,7 @@ INDEX_HTML = """
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            gap: 15px; /* Увеличенный гэп для лучшего вида */
+            gap: 15px;
         }
 
         .image-inputs-container {
@@ -403,6 +410,12 @@ INDEX_HTML = """
             width: 100%;
             margin-top: 15px;
         }
+        /* ПРАВКА: Стили для режима Merge */
+        .image-inputs-container.merge-mode .image-drop-area {
+            flex: 1; /* Распределяем ширину поровну */
+            max-width: none; /* Снимаем ограничение по ширине */
+        }
+
 
         .image-drop-area {
             width: 100%; max-width: 280px; height: 165px; background-color: transparent;
@@ -428,24 +441,40 @@ INDEX_HTML = """
             border-radius: inherit; position: relative; z-index: 1;
         }
 
+        /* ПРАВКА: Новая область для результата */
+        #result-area-right {
+            flex: 1; /* Занимает оставшееся место */
+            height: 100%;
+            display: none; /* Скрыта по-умолчанию */
+            justify-content: center;
+            align-items: center;
+            /* ПРАВКА: Защитные поля */
+            padding-top: 30px; /* Такой же отступ как у контролов */
+            padding-right: var(--header-vertical-padding);
+            padding-bottom: calc(4 * var(--header-vertical-padding));
+        }
+        
         .result-image-wrapper {
              justify-content: center;
-             display: inline-flex;
-             align-items: center; width: auto; max-width: 100%;
+             display: flex; /* Изменено для работы с относительным позиционированием */
+             align-items: center;
+             width: 100%;
+             height: 100%;
              position: relative;
         }
         #result-image {
             max-width: 100%;
-            max-height: 60vh;
+            max-height: 100%;
             object-fit: contain;
-            border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
             display: block;
         }
 
         .download-action-link {
-            display: none;
+            display: flex;
             position: absolute;
-            bottom: calc(-1 * (var(--download-icon-size) + 5px));
+            bottom: -5px; /* Расположение под картинкой */
             right: 0;
             z-index: 10; cursor: pointer;
             padding: 5px; line-height: 0;
@@ -455,8 +484,9 @@ INDEX_HTML = """
         }
 
         .loader-container {
-            justify-content: center; align-items: center; min-height: 200px;
-            z-index: 101; flex-grow: 1; display: flex;
+            width: 100%; height: 100%;
+            justify-content: center; align-items: center;
+            z-index: 101; display: flex;
         }
         .pulsating-dot {
             width: 100px; height: 100px; background-color: var(--text-accent-color);
@@ -479,7 +509,6 @@ INDEX_HTML = """
         
         #prompt {
             flex-grow: 1; border: none; padding: 10px 8px;
-            /* ПРАВКА: Уменьшен шрифт */
             font-size: 0.85rem;
             background-color: transparent; outline: none; color: #333333;
             font-family: 'ChangerFont', sans-serif; line-height: 1.3;
@@ -512,18 +541,16 @@ INDEX_HTML = """
         .control-group {
             width: 100%;
             display: flex;
-            flex-direction: column; /* ПРАВКА: Все контролы теперь колонкой */
+            flex-direction: column;
             gap: 8px;
         }
         .control-group label {
             display: block;
             font-size: 0.9rem;
             color: var(--header-text-color-on-light-bg);
-            /* ПРАВКА: Убираем нижний отступ, управляем через gap */
             margin-bottom: 0;
         }
         
-        /* ПРАВКА: Стили для селекторов режимов и шаблонов */
         .edit-mode-selector, .template-selector, .resolution-selector {
             display: flex;
             gap: 10px;
@@ -531,7 +558,7 @@ INDEX_HTML = """
         }
         
         .template-selector {
-            flex-wrap: wrap; /* Разрешаем перенос кнопок */
+            flex-wrap: wrap;
         }
 
         .edit-mode-btn, .template-btn, .resolution-btn {
@@ -542,7 +569,7 @@ INDEX_HTML = """
             background-color: #fff;
             cursor: pointer;
             font-family: 'ChangerFont', sans-serif;
-            font-size: 0.85rem; /* ПРАВКА: Уменьшен шрифт */
+            font-size: 0.85rem;
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
             text-align: center;
         }
@@ -555,7 +582,6 @@ INDEX_HTML = """
             color: var(--header-text-color-on-light-bg);
         }
         
-        /* ПРАВКА: Стили для описательного текста */
         .mode-description {
             font-size: 0.8rem;
             color: var(--header-text-color-on-light-bg);
@@ -563,10 +589,9 @@ INDEX_HTML = """
             width: 100%;
             padding: 0 10px;
             line-height: 1.4;
-            min-height: 4em; /* Резервируем место */
+            min-height: 4em;
         }
         
-        /* ПРАВКА: Обновленные стили для слайдеров */
         .slider-container {
             width: 100%;
         }
@@ -574,7 +599,7 @@ INDEX_HTML = """
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px; /* Отступ до ползунка */
+            margin-bottom: 8px;
         }
         .slider-container label {
              font-weight: normal;
@@ -588,7 +613,7 @@ INDEX_HTML = """
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
-            height: 6px; /* ПРАВКА: толще */
+            height: 6px;
             background: rgba(0,0,0,0.2);
             border-radius: 5px;
             outline: none;
@@ -596,7 +621,7 @@ INDEX_HTML = """
         .slider-container input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px; /* ПРАВКА: чуть больше */
+            width: 20px;
             height: 20px;
             border-radius: 50%;
             background: var(--text-accent-color);
@@ -633,26 +658,22 @@ INDEX_HTML = """
             max-width: 480px; z-index: 105; text-align: center;
         }
 
-        /* --- Desktop Styles --- */
-        @media (min-width: 769px) {
+        @media (max-width: 768px) {
             .app-container {
-                padding-top: calc(var(--header-logo-height-desk) + var(--header-vertical-padding) * 2 + var(--desktop-spacing-unit));
-            }
-            .page-header-inner {
-                padding: var(--header-vertical-padding) 0;
-            }
-            .header-main-group {
-                position: static;
-                flex-direction: row;
+                flex-direction: column;
                 align-items: center;
-                gap: 30px;
+                height: auto;
+                overflow-y: auto;
             }
-            .logo { height: var(--header-logo-height-desk); }
-            
-            #result-image { max-height: 70vh; }
-            
+            #result-area-right {
+                width: 100%;
+                height: 50vh; /* Задаем высоту на мобильных */
+                flex: none; /* Убираем гибкость */
+            }
+        }
+        
+        @media (min-width: 769px) {
             .submit-button-icon-img { height: 42px; width: 42px;}
-
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
             .token-display { font-size: 1rem; }
             .token-coin { width: 20px; height: 20px; }
@@ -664,7 +685,6 @@ INDEX_HTML = """
 </head>
 <body>
     <div class="app-container-wrapper" id="app-bg-wrapper"></div>
-
     <div class="page-header-container">
         <div class="page-header-inner">
             <div class="header-left-group">
@@ -676,7 +696,6 @@ INDEX_HTML = """
                     <button class="mode-btn" data-mode="upscale">Upscale</button>
                 </div>
             </div>
-
             <div class="top-right-nav">
                 {% if current_user.is_authenticated %}
                     <div class="user-controls-loggedin">
@@ -685,25 +704,15 @@ INDEX_HTML = """
                             <span class="token-coin"></span>
                         </span>
                         <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
-                            <svg class="burger-icon" viewBox="0 0 100 80">
-                                <rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect>
-                                <rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect>
-                                <rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect>
-                            </svg>
-                             <svg class="close-icon" viewBox="0 0 80 80">
-                                <line class="line" x1="20" y1="20" x2="60" y2="60"/>
-                                <line class="line" x1="60" y1="20" x2="20" y2="60"/>
-                            </svg>
+                            <svg class="burger-icon" viewBox="0 0 100 80"><rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect><rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect><rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect></svg>
+                             <svg class="close-icon" viewBox="0 0 80 80"><line class="line" x1="20" y1="20" x2="60" y2="60"/><line class="line" x1="60" y1="20" x2="20" y2="60"/></svg>
                         </button>
                     </div>
                     <div class="dropdown-menu" id="dropdown-menu">
                         <div class="dropdown-header">
                              <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
                             <button class="close-menu-btn" id="close-menu-btn-inner" aria-label="Закрыть меню">
-                                 <svg viewBox="0 0 100 100" width="18" height="18">
-                                    <line x1="10" y1="10" x2="90" y2="90"/>
-                                    <line x1="10" y1="90" x2="90" y2="10"/>
-                                </svg>
+                                 <svg viewBox="0 0 100 100" width="18" height="18"><line x1="10" y1="10" x2="90" y2="90"/><line x1="10" y1="90" x2="90" y2="10"/></svg>
                             </button>
                         </div>
                         <ul>
@@ -722,117 +731,119 @@ INDEX_HTML = """
             </div>
         </div>
     </div>
-
-    <div id="result-container" style="display: none; width:100%; text-align:center; padding: 20px 0;">
-         <div class="result-image-wrapper">
-            <img id="result-image" src="" alt="Generated Image">
-            <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
-                <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Скачать" class="download-button-icon">
-            </a>
-        </div>
-        <div id="loader" class="loader-container">
-            <div class="pulsating-dot"></div>
-        </div>
-    </div>
-
-    <div class="content-wrapper" id="main-content-wrapper">
-        <div id="edit-view">
-            <p id="edit-mode-description" class="mode-description"></p>
-            <div class="control-group">
-                <div class="edit-mode-selector">
-                    <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Use this tool to add or remove objects, and to modify the style or lighting of your image. Feel free to use the templates below or write a custom prompt in any language.">Edit</button>
-                    <button class="edit-mode-btn" data-edit-mode="merge" data-description="Merge two images, integrate new items into your shot, or transfer the style from a reference image. Prompts can be written in any language.">Merge</button>
-                    <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Simply upload your image for automatic artifact removal and quality enhancement.">Auto fix</button>
-                </div>
-            </div>
-
-            <div class="image-inputs-container">
-                <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
-                    <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
-                    <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
-                </label>
-                <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
-                    <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
-                    <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
-                </label>
-            </div>
-            <input type="file" id="image-file-edit-1" name="image1" accept="image/*" style="display: none;">
-            <input type="file" id="image-file-edit-2" name="image2" accept="image/*" style="display: none;">
-            
-            <div id="edit-controls-container" style="width:100%; display:flex; flex-direction:column; gap: 15px;">
+    
+    <div class="app-container">
+        <div class="content-wrapper" id="main-content-wrapper">
+            <div id="edit-view">
+                <p id="edit-mode-description" class="mode-description"></p>
                 <div class="control-group">
-                     <div class="template-selector">
-                        <button class="template-btn" data-prompt="hyperrealistic photo of a modern object">Create</button>
-                        <button class="template-btn" data-prompt="dramatic studio lighting, cinematic relighting">Relight</button>
-                        <button class="template-btn" data-prompt="remove the main object">Remove</button>
-                        <button class="template-btn" data-prompt="change background to a detailed city street">Change</button>
+                    <div class="edit-mode-selector">
+                        <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Use this tool to add or remove objects, and to modify the style or lighting of your image. Feel free to use the templates below or write a custom prompt in any language.">Edit</button>
+                        <button class="edit-mode-btn" data-edit-mode="merge" data-description="Merge two images, integrate new items into your shot, or transfer the style from a reference image. Prompts can be written in any language.">Merge</button>
+                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Simply upload your image for automatic artifact removal and quality enhancement.">Auto fix</button>
                     </div>
                 </div>
 
-                <form id="edit-form" class="input-area">
-                     <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE">
-                </form>
+                <div class="image-inputs-container">
+                    <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
+                        <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                        <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
+                    </label>
+                    <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
+                        <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                        <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
+                    </label>
+                </div>
+                <input type="file" id="image-file-edit-1" name="image1" accept="image/*" style="display: none;">
+                <input type="file" id="image-file-edit-2" name="image2" accept="image/*" style="display: none;">
+                
+                <div id="edit-controls-container" style="width:100%; display:flex; flex-direction:column; gap: 15px;">
+                    <div class="control-group">
+                         <div class="template-selector">
+                            <button class="template-btn" data-prompt="hyperrealistic photo of a modern object">Create</button>
+                            <button class="template-btn" data-prompt="dramatic studio lighting, cinematic relighting">Relight</button>
+                            <button class="template-btn" data-prompt="remove the main object">Remove</button>
+                            <button class="template-btn" data-prompt="change background to a detailed city street">Change</button>
+                        </div>
+                    </div>
+
+                    <form id="edit-form" class="input-area">
+                         <input type="text" id="prompt" name="prompt" placeholder="TYPE WHAT YOU WANT TO CHANGE">
+                    </form>
+                </div>
+
+                <div class="submit-action-group">
+                    <div class="submit-button-wrapper">
+                        <button type="submit" id="submit-button-edit" class="submit-button-element">
+                            <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
+                        </button>
+                    </div>
+                    <div class="token-cost">
+                        <span>1</span>
+                        <span class="token-coin"></span>
+                    </div>
+                </div>
             </div>
 
-            <div class="submit-action-group">
-                <div class="submit-button-wrapper">
-                    <button type="submit" id="submit-button-edit" class="submit-button-element">
-                        <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
-                    </button>
+            <div id="upscale-view" style="display: none;">
+                <div class="control-group">
+                    <label>Resolution</label>
+                    <div class="resolution-selector">
+                        <button class="resolution-btn active" data-value="x2">x2</button>
+                        <button class="resolution-btn" data-value="x4">x4</button>
+                        <button class="resolution-btn" data-value="x8">x8</button>
+                    </div>
                 </div>
-                <div class="token-cost">
-                    <span>1</span>
-                    <span class="token-coin"></span>
+
+                <div class="control-group">
+                     <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="creativity-slider">Creativity</label>
+                            <span class="slider-value" id="creativity-value">70</span>
+                        </div>
+                        <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                     <div class="slider-container">
+                         <div class="slider-header">
+                            <label for="resemblance-slider">Resemblance</label>
+                            <span class="slider-value" id="resemblance-value">80</span>
+                        </div>
+                        <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
+                    </div>
+                </div>
+
+                <label for="image-file-upscale" class="image-drop-area">
+                    <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                    <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
+                </label>
+                <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
+
+                <div class="submit-action-group">
+                    <div class="submit-button-wrapper">
+                        <button type="submit" id="submit-button-upscale" class="submit-button-element">
+                            <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
+                        </button>
+                    </div>
+                    <div class="token-cost">
+                        <span>5</span>
+                        <span class="token-coin"></span>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div id="upscale-view" style="display: none;">
-            <div class="control-group">
-                <label>Resolution</label>
-                <div class="resolution-selector">
-                    <button class="resolution-btn active" data-value="x2">x2</button>
-                    <button class="resolution-btn" data-value="x4">x4</button>
-                    <button class="resolution-btn" data-value="x8">x8</button>
-                </div>
+        
+        <div id="result-area-right">
+             <div class="loader-container">
+                <div class="pulsating-dot"></div>
             </div>
-
-            <div class="control-group">
-                 <div class="slider-container">
-                    <div class="slider-header">
-                        <label for="creativity-slider">Creativity</label>
-                        <span class="slider-value" id="creativity-value">70</span>
-                    </div>
-                    <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
-                </div>
-            </div>
-
-            <div class="control-group">
-                 <div class="slider-container">
-                     <div class="slider-header">
-                        <label for="resemblance-slider">Resemblance</label>
-                        <span class="slider-value" id="resemblance-value">80</span>
-                    </div>
-                    <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
-                </div>
-            </div>
-
-            <label for="image-file-upscale" class="image-drop-area">
-                <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
-                <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
-            </label>
-            <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
-
-            <div class="submit-action-group">
-                <div class="submit-button-wrapper">
-                    <button type="submit" id="submit-button-upscale" class="submit-button-element">
-                        <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
-                    </button>
-                </div>
-                <div class="token-cost">
-                    <span>5</span>
-                    <span class="token-coin"></span>
-                </div>
+            <div class="result-image-wrapper">
+                <img id="result-image" src="" alt="Generated Image">
+                <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
+                    <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Скачать" class="download-button-icon">
+                </a>
             </div>
         </div>
     </div>
@@ -849,7 +860,7 @@ INDEX_HTML = """
     const closeMenuBtnInner = document.getElementById('close-menu-btn-inner');
 
     const mainContentWrapper = document.getElementById('main-content-wrapper');
-    const resultContainer = document.getElementById('result-container');
+    const resultAreaRight = document.getElementById('result-area-right');
 
     const appModeButtons = document.querySelectorAll('.mode-btn');
     const editView = document.getElementById('edit-view');
@@ -892,9 +903,7 @@ INDEX_HTML = """
             editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
             upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
             
-            // Go back to initial state on main mode switch
             showView('main');
-            // Trigger a click on the default edit mode to reset description etc.
             if(currentMode === 'edit') {
                 document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
             }
@@ -904,10 +913,9 @@ INDEX_HTML = """
     // --- Edit View Sub-Mode Logic ---
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');
     const editModeDescription = document.getElementById('edit-mode-description');
+    const imageInputsContainer = document.querySelector('.image-inputs-container');
     const imageDropArea2 = document.getElementById('image-drop-area-edit-2');
     const editControlsContainer = document.getElementById('edit-controls-container');
-    const templateButtonsContainer = document.querySelector('.template-selector');
-    const promptForm = document.getElementById('edit-form');
 
     editModeButtons.forEach(button => {
         button.addEventListener('click', (e) => {
@@ -919,12 +927,10 @@ INDEX_HTML = """
             
             const showSecondImage = (editMode === 'merge');
             const showPrompt = (editMode === 'edit' || editMode === 'merge');
-            const showTemplates = (editMode === 'edit');
             
             imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
+            imageInputsContainer.classList.toggle('merge-mode', showSecondImage);
             editControlsContainer.style.display = showPrompt ? 'flex' : 'none';
-            templateButtonsContainer.style.display = showTemplates ? 'flex' : 'none';
-            promptForm.style.display = showPrompt ? 'flex' : 'none';
         });
     });
 
@@ -937,7 +943,6 @@ INDEX_HTML = """
             promptInput.focus();
         });
     });
-
 
     // --- Upscale UI Logic ---
     document.querySelectorAll('.resolution-btn').forEach(button => {
@@ -965,9 +970,10 @@ INDEX_HTML = """
     const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
     const upscaleImageInput = document.getElementById('image-file-upscale');
 
+    const resultImageWrapper = resultAreaRight.querySelector('.result-image-wrapper');
     const resultImage = document.getElementById('result-image');
     const downloadLink = document.getElementById('download-action');
-    const loader = document.getElementById('loader');
+    const loader = resultAreaRight.querySelector('.loader-container');
     const errorBox = document.getElementById('error-box');
 
     function showError(message) {
@@ -978,24 +984,22 @@ INDEX_HTML = """
     
     function showView(viewName) {
         if (viewName === 'main') {
-            mainContentWrapper.style.display = 'block';
-            resultContainer.style.display = 'none';
+            mainContentWrapper.classList.remove('disabled');
+            resultAreaRight.style.display = 'none';
             appBgWrapper.classList.remove('bg-blur');
             resetImagePreviews();
             promptInput.value = '';
         } else if (viewName === 'loading') {
-            mainContentWrapper.style.display = 'none';
-            resultContainer.style.display = 'block';
-            resultImage.style.display = 'none';
-            downloadLink.style.display = 'none';
+            mainContentWrapper.classList.add('disabled');
+            resultAreaRight.style.display = 'flex';
+            resultImageWrapper.style.display = 'none';
             loader.style.display = 'flex';
             appBgWrapper.classList.add('bg-blur');
         } else if (viewName === 'result') {
-            mainContentWrapper.style.display = 'none';
-            resultContainer.style.display = 'block';
+            mainContentWrapper.classList.remove('disabled');
+            resultAreaRight.style.display = 'flex';
             loader.style.display = 'none';
-            resultImage.style.display = 'block';
-            downloadLink.style.display = 'block';
+            resultImageWrapper.style.display = 'flex';
             appBgWrapper.classList.add('bg-blur');
         }
     }
@@ -1021,7 +1025,7 @@ INDEX_HTML = """
         const previewImgId = dropArea.querySelector('.image-preview-img').id;
 
         dropArea.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dropArea.classList.add('dragover'); });
-        dropArea.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dropArea.classList.remove('dragover'); });
+        dropArea.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dropArea.classList.remove('dragleave'); });
         dropArea.addEventListener('drop', (e) => {
             e.preventDefault(); e.stopPropagation();
             dropArea.classList.remove('dragover');
@@ -1039,7 +1043,8 @@ INDEX_HTML = """
 
     setupDragAndDrop('image-drop-area-edit-1', imageFileInputEdit1);
     setupDragAndDrop('image-drop-area-edit-2', imageFileInputEdit2);
-    setupDragAndDrop('upscale-view', upscaleImageInput); // The drop area for upscale is the whole view
+    // For upscale, the label itself is the drop area
+    setupDragAndDrop(document.querySelector('#upscale-view .image-drop-area').id, upscaleImageInput);
 
     function resetImagePreviews() {
         document.querySelectorAll('.image-preview-img').forEach(img => {
@@ -1060,8 +1065,6 @@ INDEX_HTML = """
             return;
         }
 
-        submitButton.disabled = true;
-        errorBox.style.display = 'none';
         showView('loading');
 
         const formData = new FormData();
@@ -1094,14 +1097,14 @@ INDEX_HTML = """
             tempImg.onerror = () => {
                 showError("Failed to load the generated image.");
                 showView('main');
+                appBgWrapper.classList.remove('bg-blur');
             };
             tempImg.src = data.output_url;
 
         } catch (error) {
             showError("An error occurred: " + error.message);
             showView('main');
-        } finally {
-            submitButton.disabled = false;
+            appBgWrapper.classList.remove('bg-blur');
         }
     }
 
@@ -1110,17 +1113,15 @@ INDEX_HTML = """
         handleImageProcessing(e.currentTarget);
     });
 
-    // Logo click returns to main view
     document.querySelector('.logo').addEventListener('click', (e) => {
         e.preventDefault();
-        if (mainContentWrapper.style.display === 'none') {
-             showView('main');
-        }
+        showView('main');
+        appBgWrapper.classList.remove('bg-blur');
     });
 
     // Initial setup on page load
-    appModeButtons[0].click(); // Click 'Edit'
-    showView('main'); // Show main content initially
+    appModeButtons[0].click();
+    showView('main');
 
     });
     </script>
