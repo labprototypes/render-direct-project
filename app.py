@@ -197,7 +197,7 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow: hidden; /* Предотвращаем прокрутку всей страницы */
+            overflow: hidden;
         }
 
         .app-container-wrapper {
@@ -212,12 +212,11 @@ INDEX_HTML = """
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding-left: 25px; /* ПРАВКА: Отступ слева как у хедера */
+            padding-left: 25px;
             padding-right: 25px;
             padding-top: calc(var(--header-logo-height-mob) + var(--header-vertical-padding) * 2 + var(--mob-spacing-unit));
             padding-bottom: 20px;
             display: flex;
-            /* ПРАВКА: Выравнивание по левому краю, элементы в ряд */
             flex-direction: row;
             align-items: flex-start;
             justify-content: flex-start;
@@ -248,7 +247,7 @@ INDEX_HTML = """
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 15px; /* Этот отступ теперь важен для расчета */
+            gap: 15px;
         }
 
         .app-logo-link { display: inline-block; line-height: 0; }
@@ -393,7 +392,6 @@ INDEX_HTML = """
             filter: grayscale(50%);
         }
 
-
         #upscale-view, #edit-view {
             width: 100%;
             display: flex;
@@ -410,10 +408,9 @@ INDEX_HTML = """
             width: 100%;
             margin-top: 15px;
         }
-        /* ПРАВКА: Стили для режима Merge */
         .image-inputs-container.merge-mode .image-drop-area {
-            flex: 1; /* Распределяем ширину поровну */
-            max-width: none; /* Снимаем ограничение по ширине */
+            flex: 1;
+            max-width: none;
         }
 
 
@@ -441,22 +438,22 @@ INDEX_HTML = """
             border-radius: inherit; position: relative; z-index: 1;
         }
 
-        /* ПРАВКА: Новая область для результата */
         #result-area-right {
-            flex: 1; /* Занимает оставшееся место */
+            flex: 1;
             height: 100%;
-            display: none; /* Скрыта по-умолчанию */
+            display: none;
             justify-content: center;
             align-items: center;
-            /* ПРАВКА: Защитные поля */
-            padding-top: 30px; /* Такой же отступ как у контролов */
-            padding-right: var(--header-vertical-padding);
-            padding-bottom: calc(4 * var(--header-vertical-padding));
+            /* ПРАВКА: Защитное поле сужено на 1 отступ с каждой стороны */
+            padding-top: 45px;                 /* 30px + 15px */
+            padding-left: 15px;
+            padding-right: 30px;                /* 15px + 15px */
+            padding-bottom: 75px;               /* 60px + 15px */
         }
         
         .result-image-wrapper {
              justify-content: center;
-             display: flex; /* Изменено для работы с относительным позиционированием */
+             display: flex;
              align-items: center;
              width: 100%;
              height: 100%;
@@ -474,10 +471,13 @@ INDEX_HTML = """
         .download-action-link {
             display: flex;
             position: absolute;
-            bottom: -5px; /* Расположение под картинкой */
+            /* ПРАВКА: 1 отступ ниже правого края картинки */
+            top: 100%;
             right: 0;
-            z-index: 10; cursor: pointer;
-            padding: 5px; line-height: 0;
+            margin-top: var(--header-vertical-padding);
+            z-index: 10;
+            cursor: pointer;
+            line-height: 0;
         }
         .download-button-icon {
             height: var(--download-icon-size); width: var(--download-icon-size); display: block;
