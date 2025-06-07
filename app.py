@@ -171,7 +171,7 @@ INDEX_HTML = """
         :root {
             --accent-color: #D9F47A;
             --accent-glow: rgba(217, 244, 122, 0.7);
-            --bg-color: #0A0F1A; /* Новый базовый цвет фона */
+            --base-bg-color: #0c0d10;
             --surface-color: #1c1c1f;
             --surface-glass: rgba(35, 35, 38, 0.5);
             --primary-text-color: #EAEAEA;
@@ -192,42 +192,64 @@ INDEX_HTML = """
         body {
             font-family: 'ChangerFont', sans-serif;
             color: var(--primary-text-color);
-            background-color: var(--bg-color); 
+            background-color: var(--base-bg-color); 
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             overflow: hidden;
+            position: relative;
         }
         
-        /* --- НОВЫЙ ФОН "ЦИФРОВОЙ ЧЕРТЕЖ" --- */
-        .background-overlay {
+        /* --- НОВЫЙ ПРЕМИУМ-ФОН --- */
+        
+        /* 1. Глубокий радиальный градиент */
+        body::before {
+            content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            /* Сетка из точек */
-            background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.12) 1px, transparent 0);
-            background-size: 35px 35px;
-            /* Плавная анимация скроллинга */
-            animation: blueprintScroll 20s linear infinite;
-        }
-        
-        @keyframes blueprintScroll {
-            from { background-position: 0 0; }
-            to { background-position: -70px 35px; }
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, #0a0a0a 0%, #0c0d10 60%, #050607 100%);
+            z-index: -3;
         }
 
-        /* Радиальный градиент для виньетирования */
-        .background-overlay::after {
+        /* 2. Слой с шумом */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjEwIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI25vaXNlKSIvPjwvc3ZnPg==');
+            opacity: 0.03;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        /* 3. Слой со световыми ореолами */
+        .halos-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .halos-container::before, .halos-container::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(ellipse at center, transparent 30%, var(--bg-color) 90%);
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.08;
+        }
+        .halos-container::before {
+            width: 500px;
+            height: 500px;
+            background: var(--accent-color);
+            top: -250px;
+            left: -250px;
+        }
+        .halos-container::after {
+            width: 400px;
+            height: 400px;
+            background: #4A90E2; /* Добавим второй цвет для глубины */
+            bottom: -200px;
+            right: -200px;
         }
         /* --- КОНЕЦ СТИЛЕЙ ДЛЯ ФОНА --- */
 
@@ -555,7 +577,7 @@ INDEX_HTML = """
     </style>
 </head>
 <body>
-    <div class="background-overlay"></div>
+    <div class="halos-container"></div>
 
     <div class="page-header-container">
         <div class="page-header-inner">
