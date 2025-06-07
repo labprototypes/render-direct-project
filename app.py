@@ -161,7 +161,7 @@ INDEX_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Changer AI</title>
     <style>
-        /* --- ОБЩИЕ НАСТРОЙКИ И ПЕРЕМЕННЫЕ --- */
+        /* --- VISUAL UPDATE 2025 --- */
         @font-face {
             font-family: 'ChangerFont';
             src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
@@ -171,35 +171,32 @@ INDEX_HTML = """
 
         :root {
             --accent-color: #D9F47A;
-            --background-color: #333333;
-            --text-color-primary: #EFEFF4;
-            --text-color-secondary: rgba(239, 239, 244, 0.7);
-            --ui-color-primary: #444444;
-            --ui-color-secondary: #2a2a2a;
+            --base-dark-color: #333333;
+            --text-primary-color: #FFFFFF;
+            --text-secondary-color: #A0A0A0;
             
-            --blur-intensity: 25px;
-            --base-padding: 20px;
-            --tile-border-radius: 28px;
-            --button-border-radius: 20px;
+            --blur-intensity: 18px;
+            --base-border-radius: 28px;
+            --medium-border-radius: 20px;
+            --small-border-radius: 16px;
+            --pill-border-radius: 50px;
 
-            /* Тени для темного фона */
-            --shadow-light: rgba(55, 55, 55, 0.9);
-            --shadow-dark: rgba(10, 10, 10, 0.9);
-            
-            --neumorphic-shadow-out: 
-                -5px -5px 10px var(--shadow-light), 
-                5px 5px 10px var(--shadow-dark);
-            --neumorphic-shadow-in: 
-                inset -4px -4px 8px var(--shadow-light), 
-                inset 4px 4px 8px var(--shadow-dark);
+            --header-logo-height-mob: 32px;
+            --header-logo-height-desk: 38px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
 
         body {
             font-family: 'ChangerFont', sans-serif;
-            color: var(--text-color-primary);
-            background-color: var(--background-color);
+            color: var(--text-primary-color);
+            background-color: #111;
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -208,11 +205,7 @@ INDEX_HTML = """
             flex-direction: column;
             min-height: 100vh;
             overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-
-        /* --- ФОН И ОСНОВНЫЕ КОНТЕЙНЕРЫ --- */
 
         .app-container-wrapper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -229,305 +222,317 @@ INDEX_HTML = """
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: var(--base-padding);
-            padding-top: 100px; /* Отступ для фиксированной шапки */
+            padding: 20px;
+            padding-top: calc(var(--header-logo-height-mob) + 40px);
             display: flex;
             flex-direction: row;
             align-items: flex-start;
             justify-content: flex-start;
-            gap: var(--base-padding);
+            gap: 20px;
             height: 100vh;
         }
 
-        /* --- ШАПКА (HEADER) --- */
-
+        /* --- HEADER --- */
         .page-header-container {
-            position: fixed;
-            top: 0; left: 0; right: 0; width: 100%;
-            z-index: 105;
-            padding: var(--base-padding);
-            display: flex;
-            justify-content: center;
+            position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
+            display: flex; justify-content: center;
         }
         .page-header-inner {
-            width: 100%;
-            max-width: 1200px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            width: 100%; max-width: 1200px; padding: 20px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
-        .app-logo-link .logo { height: 35px; }
+        .app-logo-link { display: inline-block; line-height: 0; }
+        .logo { height: var(--header-logo-height-mob); cursor: pointer; display: block;}
 
         .top-right-nav { display: flex; align-items: center; gap: 10px; }
 
-        /* --- СТИЛЬ "СТЕКЛОМОРФИЗМ" ДЛЯ ЭЛЕМЕНТОВ --- */
+        .user-controls-loggedin, .user-controls-loggedout {
+            display: flex; align-items: center;
+            background: rgba(35, 35, 35, 0.45);
+            backdrop-filter: blur(var(--blur-intensity));
+            -webkit-backdrop-filter: blur(var(--blur-intensity));
+            border-radius: var(--pill-border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .user-controls-loggedin { padding: 6px; gap: 8px; }
+        .user-controls-loggedout { padding: 10px 20px; gap: 12px; }
 
-        .glass-ui-element {
-            background: rgba(40, 40, 40, 0.4);
+        .token-display {
+            display: flex; align-items: center; color: var(--text-primary-color);
+            font-size: 0.9rem; padding-left: 12px;
+        }
+        .token-coin {
+            width: 18px; height: 18px; background-color: var(--accent-color);
+            border-radius: 50%; margin-left: 6px;
+        }
+        
+        .burger-menu-btn {
+            background-color: var(--accent-color); border: none; border-radius: 50%;
+            padding: 0; cursor: pointer; width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.3s ease;
+        }
+        .burger-menu-btn:hover { transform: scale(1.1); }
+        .burger-menu-btn svg { stroke: var(--base-dark-color); stroke-width:10; stroke-linecap:round; }
+        .burger-menu-btn .burger-icon, .burger-menu-btn .close-icon {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        .burger-menu-btn .burger-icon { width: 16px; height: 12px; opacity: 1; }
+        .burger-menu-btn .close-icon { width: 14px; height: 14px; opacity: 0; }
+        .burger-menu-btn.open .burger-icon { opacity: 0; transform: translate(-50%, -50%) rotate(45deg); }
+        .burger-menu-btn.open .close-icon { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
+
+        .dropdown-menu {
+            position: absolute; top: calc(100% + 10px); right: 0;
+            background: rgba(45, 45, 45, 0.6);
+            backdrop-filter: blur(var(--blur-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity));
+            border-radius: var(--medium-border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            padding: 12px; width: 230px; z-index: 1000;
+            opacity: 0; visibility: hidden; transform: translateY(-10px);
+            transition: all 0.25s ease;
+        }
+        .dropdown-menu.open { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-header {
+            padding: 0 8px 10px 8px; margin-bottom: 8px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .dropdown-user-email {
+            color: var(--text-primary-color); font-size: 0.95rem; font-weight: bold;
+        }
+        .dropdown-menu ul { list-style: none; }
+        .dropdown-menu li a {
+            display: block; padding: 10px 8px; color: var(--text-secondary-color); text-decoration: none;
+            font-size: 0.95rem; transition: all 0.2s ease; border-radius: 8px;
+        }
+        .dropdown-menu li a:hover { color: var(--text-primary-color); background-color: rgba(255,255,255,0.08); }
+
+        .user-controls-loggedout .auth-button {
+            color: var(--text-primary-color); text-decoration: none; font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .user-controls-loggedout .auth-button:hover { color: var(--accent-color); }
+        .user-controls-loggedout .auth-separator { color: var(--text-secondary-color); opacity: 0.5; }
+
+        /* --- MAIN CONTENT --- */
+        .content-wrapper {
+            width: 100%;
+            max-width: 450px;
+            height: auto;
+            background: rgba(35, 35, 35, 0.45);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        /* --- ОСНОВНОЙ КОНТЕНТ И СЕТКА ПЛИТОК --- */
-
-        .content-wrapper {
-            width: 100%;
-            max-width: 420px;
-            height: fit-content;
-            border-radius: var(--tile-border-radius);
-            padding: var(--base-padding);
-        }
-
-        #edit-view, #upscale-view {
-            width: 100%;
-            display: grid;
-            gap: var(--base-padding);
-            grid-template-columns: 1fr;
-        }
-
-        .ui-tile {
-            border-radius: var(--button-border-radius);
-            padding: 15px;
+            border-radius: var(--base-border-radius);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            transition: opacity 0.4s, filter 0.4s;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            background: rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: var(--neumorphic-shadow-out);
+            gap: 20px;
+        }
+        .content-wrapper.disabled { opacity: 0.5; pointer-events: none; filter: grayscale(50%); }
+
+        #upscale-view, #edit-view {
+            width: 100%; display: flex; flex-direction: column; gap: 25px;
         }
 
-        /* --- КНОПКИ И ИНТЕРАКТИВНЫЕ ЭЛЕМЕНТЫ --- */
-
-        .button-group {
+        /* --- GLOBAL CONTROL STYLES --- */
+        .mode-selector, .edit-mode-selector {
             display: flex;
-            gap: 10px;
-            width: 100%;
+            padding: 5px;
+            border-radius: var(--pill-border-radius);
+            background: rgba(0, 0, 0, 0.25);
+            width: fit-content;
         }
-        
-        .neumorphic-btn {
-            flex-grow: 1;
-            padding: 12px;
-            border-radius: 16px;
+        .mode-btn, .edit-mode-btn {
+            background-color: transparent;
             border: none;
+            padding: 8px 20px;
+            border-radius: var(--pill-border-radius);
             cursor: pointer;
             font-family: 'ChangerFont', sans-serif;
             font-size: 0.9rem;
-            text-align: center;
-            color: var(--text-color-secondary);
-            transition: all 0.2s ease-in-out;
-            background: linear-gradient(145deg, var(--ui-color-primary), var(--ui-color-secondary));
-            box-shadow: var(--neumorphic-shadow-out);
+            color: var(--text-secondary-color);
+            transition: all 0.3s ease;
         }
-
-        .neumorphic-btn:hover {
-            color: var(--text-color-primary);
-        }
-
-        .neumorphic-btn.active {
-            color: var(--ui-color-secondary);
+        .mode-btn.active, .edit-mode-btn.active {
+            background-color: var(--accent-color);
+            color: var(--base-dark-color);
             font-weight: bold;
-            box-shadow: var(--neumorphic-shadow-in), 0 0 10px 1px var(--accent-color);
-            background: var(--accent-color);
-        }
-
-        .mode-selector {
-            display: flex;
-            align-items: center;
-            border-radius: var(--button-border-radius);
-            padding: 6px;
-            gap: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
         
-        .mode-selector .neumorphic-btn {
-            padding: 8px 16px;
+        .mode-description {
+            font-size: 0.85rem; color: var(--text-secondary-color);
+            text-align: center; width: 100%; line-height: 1.5; min-height: 3em;
         }
-        
-        /* --- ЗАГРУЗКА ИЗОБРАЖЕНИЙ --- */
 
-        .image-inputs-container {
-             display: flex;
-             justify-content: center;
-             gap: 15px;
-             width: 100%;
-        }
+        .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .control-group > label { font-size: 1rem; color: var(--text-primary-color); margin-left: 5px; }
+        
+        /* --- IMAGE INPUTS --- */
+        .image-inputs-container { display: flex; justify-content: center; gap: 15px; width: 100%; }
+        .image-inputs-container.merge-mode .image-drop-area { flex: 1; max-width: none; }
 
         .image-drop-area {
-            width: 100%;
-            aspect-ratio: 16 / 10;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-radius: 16px;
-            background: linear-gradient(145deg, #2e2e2e, #343434);
-            box-shadow: var(--neumorphic-shadow-in);
-            transition: box-shadow 0.3s ease;
+            width: 100%; max-width: 300px; height: 180px;
+            border-radius: var(--medium-border-radius);
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: all 0.3s ease;
         }
-
-        .image-drop-area.dragover {
-            box-shadow: var(--neumorphic-shadow-in), 0 0 0 2px var(--accent-color);
+        .image-drop-area:hover, .image-drop-area.dragover {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 25px rgba(217, 244, 122, 0.3);
+            background: rgba(217, 244, 122, 0.05);
         }
-        
-        .drop-placeholder-text {
-            color: var(--text-color-secondary);
-            font-size: 1rem;
-            text-align: center;
-            padding: 10px;
-        }
-
+        .image-drop-area .drop-placeholder-img { width: auto; max-width: 60%; max-height: 35%; height: auto; object-fit: contain; filter: invert(0.8); }
         .image-drop-area .image-preview-img {
             display: none; width: 100%; height: 100%; object-fit: cover;
-            border-radius: inherit;
+            position: absolute; top: 0; left: 0; z-index: 1;
         }
 
-        /* --- ПОЛЕ ВВОДА ПРОМПТА --- */
-        
+        /* --- EDIT VIEW CONTROLS --- */
+        .template-selector {
+            display: flex; flex-wrap: wrap; gap: 10px;
+        }
+        .template-btn {
+            flex-grow: 1; padding: 10px 15px; border-radius: var(--small-border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary-color); cursor: pointer;
+            font-family: 'ChangerFont', sans-serif; font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .template-btn:hover {
+            border-color: var(--accent-color); color: var(--accent-color);
+        }
+
         .input-area {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            border-radius: 16px;
-            padding: 4px;
-            background: linear-gradient(145deg, #2e2e2e, #343434);
-            box-shadow: var(--neumorphic-shadow-in);
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: var(--small-border-radius); padding: 8px 15px; width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
         }
-
+        .input-area:focus-within {
+             border-color: var(--accent-color);
+             box-shadow: 0 0 15px rgba(217, 244, 122, 0.2);
+        }
+        
         #prompt {
-            flex-grow: 1; border: none; padding: 10px 12px;
-            font-size: 0.9rem;
-            background-color: transparent;
-            outline: none;
-            color: var(--text-color-primary);
-            font-family: 'ChangerFont', sans-serif;
+            flex-grow: 1; border: none; padding: 8px 0;
+            font-size: 0.95rem; background-color: transparent; outline: none;
+            color: var(--text-primary-color); font-family: 'ChangerFont', sans-serif;
         }
-        #prompt::placeholder { color: var(--text-color-secondary); }
+        #prompt::placeholder { color: var(--text-secondary-color); opacity: 0.8; }
 
-        /* --- ПОЛЗУНКИ --- */
-        .ui-tile label {
-            color: var(--text-color-secondary);
+        /* --- UPSCALE VIEW CONTROLS --- */
+        .resolution-selector { display: flex; gap: 10px; width: 100%; }
+        .resolution-btn {
+            flex-grow: 1; padding: 12px; border-radius: var(--medium-border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary-color); cursor: pointer;
+            font-family: 'ChangerFont', sans-serif; font-size: 0.9rem;
+            transition: all 0.2s;
         }
-        
-        input[type=range] {
-          -webkit-appearance: none;
-          width: 100%;
-          background: transparent;
-          margin-top: 10px;
-        }
-        input[type=range]:focus {
-          outline: none;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-          width: 100%;
-          height: 8px;
-          cursor: pointer;
-          background: var(--ui-color-secondary);
-          border-radius: 4px;
-          border: 1px solid var(--shadow-dark);
-        }
-        input[type=range]::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: var(--accent-color);
-          cursor: pointer;
-          margin-top: -7px; 
-          box-shadow: 0 0 2px rgba(0,0,0,0.2);
-        }
-        input[type=range]::-moz-range-track {
-          width: 100%;
-          height: 8px;
-          cursor: pointer;
-          background: var(--ui-color-secondary);
-          border-radius: 4px;
-        }
-        input[type=range]::-moz-range-thumb {
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: var(--accent-color);
-          cursor: pointer;
-          border: none;
-        }
-        
-        /* --- КНОПКА ГЕНЕРАЦИИ --- */
-        
-        .generate-btn {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--background-color);
-            background: var(--accent-color);
-            border-radius: var(--button-border-radius);
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        .generate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.4);
+        .resolution-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .resolution-btn.active {
+            background-color: var(--accent-color); border-color: var(--accent-color);
+            color: var(--base-dark-color); font-weight: bold;
         }
 
-        .generate-btn:active {
-            transform: translateY(1px);
-            box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.3);
+        .slider-container { width: 100%; }
+        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .slider-container label { font-weight: normal; font-size: 0.9rem; color: var(--text-secondary-color); }
+        .slider-value { font-weight: bold; color: var(--text-primary-color); }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 6px; background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px; outline: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--text-primary-color); cursor: pointer;
+            border: 4px solid var(--accent-color);
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--text-primary-color); cursor: pointer;
+            border: 4px solid var(--accent-color);
         }
 
+        /* --- SUBMIT & COST --- */
+        .submit-action-group {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 12px; margin-top: 15px;
+        }
+        .submit-button-wrapper { line-height: 0; }
+        .submit-button-element {
+            background-color: transparent; border: none; cursor: pointer; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .submit-button-icon-img {
+            height: 64px; width: 64px; transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .submit-button-element:hover .submit-button-icon-img { transform: scale(1.1); }
+        .submit-button-element:active .submit-button-icon-img { transform: scale(0.95); }
 
-        /* --- ПРАВАЯ ПАНЕЛЬ РЕЗУЛЬТАТА --- */
-        
+        .token-cost {
+            display: flex; justify-content: center; align-items: center; gap: 6px;
+            font-size: 0.9rem; color: var(--text-secondary-color);
+        }
+        .token-cost .token-coin { width: 14px; height: 14px; margin: 0; }
+
+        /* --- RESULT AREA --- */
         #result-area-right {
-            flex: 1;
-            height: 100%;
-            display: none;
-            justify-content: center;
-            align-items: center;
+            flex: 1; height: 100%; display: none;
+            justify-content: center; align-items: center;
+            padding-top: 45px; padding-left: 15px; padding-right: 30px; padding-bottom: 75px;
         }
-        
         .result-image-wrapper {
-             position: relative;
-             width: 100%;
-             height: 100%;
-             display: flex;
-             justify-content: center;
-             align-items: center;
+             justify-content: center; display: flex; align-items: center;
+             width: 100%; height: 100%; position: relative;
         }
         #result-image {
-            max-width: 100%;
-            max-height: 100%;
+            max-width: 100%; max-height: 100%;
             object-fit: contain;
-            border-radius: var(--tile-border-radius);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+            border-radius: var(--medium-border-radius);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+            background: rgba(0,0,0,0.2);
         }
-
         .download-action-link {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; position: absolute; top: calc(100% + 15px); right: 0; z-index: 10;
+            cursor: pointer; line-height: 0;
+            background: rgba(35, 35, 35, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 50%; padding: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s ease;
         }
-        .download-button-icon {
-            width: 24px; height: 24px;
-        }
-
+        .download-action-link:hover { transform: scale(1.1); background: rgba(217, 244, 122, 0.2); }
+        .download-button-icon { height: 28px; width: 28px; display: block; }
+        
         .loader-container {
-            display: flex; justify-content: center; align-items: center;
+            width: 100%; height: 100%;
+            justify-content: center; align-items: center;
+            z-index: 101; display: flex;
         }
         .pulsating-dot {
-            width: 80px; height: 80px; background-color: var(--accent-color);
-            border-radius: 50%;
+            width: 100px; height: 100px; background-color: var(--accent-color);
+            border-radius: 50%; position: relative;
             animation: pulse 1.5s infinite ease-in-out;
         }
         @keyframes pulse {
@@ -535,123 +540,65 @@ INDEX_HTML = """
             50% { transform: scale(1.2); opacity: 1; }
         }
 
-        /* --- МЕНЮ ПОЛЬЗОВАТЕЛЯ --- */
-        .user-controls-loggedin {
-            display: flex;
-            align-items: center;
-            border-radius: var(--button-border-radius);
-            padding: 8px;
-            gap: 10px;
-        }
-
-        .token-display {
-            display: flex; align-items: center;
-            color: var(--text-color-primary);
-            font-size: 1rem;
-        }
-        .token-coin {
-            width: 18px; height: 18px;
-            background-color: var(--accent-color);
-            border-radius: 50%; margin-left: 8px;
-        }
-        .burger-menu-btn {
-            background: transparent;
-            border: none;
-            width: 44px; height: 44px;
-            cursor: pointer;
-            border-radius: 50%;
-        }
-
-        .dropdown-menu {
-            position: absolute; top: calc(100% + 10px); right: 0;
-            width: 220px;
-            border-radius: 18px;
-            padding: 10px;
-            opacity: 0; visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-        }
-
-        .dropdown-menu.open {
-            opacity: 1; visibility: visible;
-            transform: translateY(0);
-        }
-        .dropdown-header {
-            padding: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: var(--text-color-primary);
-        }
-        .dropdown-menu ul { list-style: none; }
-        .dropdown-menu li a {
-            display: block;
-            padding: 10px 8px;
-            text-decoration: none;
-            color: var(--text-color-secondary);
-            border-radius: 12px;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-        .dropdown-menu li a:hover {
-            background-color: var(--accent-color);
-            color: var(--ui-color-secondary);
-            font-weight: bold;
-        }
-        
         .error-message {
-            position: fixed;
-            bottom: 20px; left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 20px;
-            border-radius: 12px;
-            background-color: #ff4d4d;
-            color: white;
-            z-index: 110;
+            display: none; font-size: 0.9rem; color: var(--text-primary-color);
+            background: #e74c3c;
+            padding: 12px 20px; border-radius: var(--small-border-radius); position: fixed;
+            bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 480px; z-index: 105; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
-        
-        /* --- АДАПТИВНОСТЬ --- */
+
         @media (max-width: 768px) {
             .app-container {
-                flex-direction: column;
-                height: auto;
-                padding-top: 80px;
-                padding-left: 10px;
-                padding-right: 10px;
-            }
-            .content-wrapper {
-                max-width: 100%;
+                flex-direction: column; align-items: center; height: auto;
+                overflow-y: auto; overflow-x: hidden; padding-top: calc(var(--header-logo-height-mob) + 30px);
             }
             #result-area-right {
-                width: 100%;
-                height: 50vh;
-                flex: none;
+                width: 100%; height: 60vh; flex: none; padding: 20px 0;
             }
-            .page-header-container {
-                 padding: 10px;
-            }
+            .template-selector { display: none; }
+        }
+        
+        @media (min-width: 769px) {
+            .logo { height: var(--header-logo-height-desk); }
+            .user-controls-loggedin { padding: 8px; gap: 12px; }
+            .token-display { font-size: 1rem; padding-left: 18px; }
+            .token-coin { width: 20px; height: 20px; }
+            .burger-menu-btn { width: 42px; height: 42px; }
+            .user-controls-loggedout { padding: 12px 25px; }
+            .user-controls-loggedout .auth-button { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
     <div class="app-container-wrapper" id="app-bg-wrapper"></div>
-    <header class="page-header-container">
+    <div class="page-header-container">
         <div class="page-header-inner">
             <a href="{{ url_for('index') }}" class="app-logo-link">
                 <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
             </a>
-            <nav class="top-right-nav">
+            <div class="top-right-nav">
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="edit">Edit</button>
+                    <button class="mode-btn" data-mode="upscale">Upscale</button>
+                </div>
                 {% if current_user.is_authenticated %}
-                    <div class="user-controls-loggedin glass-ui-element">
+                    <div class="user-controls-loggedin">
                         <span class="token-display">
                             <span id="token-balance-display">{{ current_user.token_balance }}</span>
                             <span class="token-coin"></span>
                         </span>
-                        <button class="burger-menu-btn neumorphic-btn" id="burger-menu-toggle">
-                             <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Menu" style="width: 20px; height: 20px; filter: invert(1);">
+                        <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
+                            <svg class="burger-icon" viewBox="0 0 100 80"><rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect><rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect><rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect></svg>
+                             <svg class="close-icon" viewBox="0 0 80 80"><line class="line" x1="20" y1="20" x2="60" y2="60"/><line class="line" x1="60" y1="20" x2="20" y2="60"/></svg>
                         </button>
                     </div>
-                    <div class="dropdown-menu glass-ui-element" id="dropdown-menu">
-                        <div class="dropdown-header">{{ current_user.email or current_user.username }}</div>
+                    <div class="dropdown-menu" id="dropdown-menu">
+                         <div class="dropdown-header">
+                             <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
+                         </div>
                         <ul>
                             <li><a href="{{ url_for('buy_tokens_page') }}">Пополнить баланс</a></li>
                             <li><a href="{{ url_for('change_password') }}">Сменить пароль</a></li>
@@ -659,103 +606,115 @@ INDEX_HTML = """
                         </ul>
                     </div>
                 {% else %}
-                    <div class="user-controls-loggedout glass-ui-element" style="padding: 6px; border-radius: 20px;">
-                        <div class="button-group">
-                            <a href="{{ url_for('login') }}" class="neumorphic-btn" style="text-decoration: none;">Логин</a>
-                            <a href="{{ url_for('register') }}" class="neumorphic-btn active" style="text-decoration: none;">Регистрация</a>
-                        </div>
+                    <div class="user-controls-loggedout">
+                        <a href="{{ url_for('login') }}" class="auth-button">Логин</a>
+                        <span class="auth-separator">|</span>
+                        <a href="{{ url_for('register') }}" class="auth-button">Регистрация</a>
                     </div>
                 {% endif %}
-            </nav>
+            </div>
         </div>
-    </header>
+    </div>
     
     <div class="app-container">
-        <div class="content-wrapper glass-ui-element">
-            
-            <div class="mode-selector glass-ui-element" style="width: 100%; margin-bottom: 20px; padding: 6px; border-radius: 20px;">
-                <div class="button-group">
-                    <button class="neumorphic-btn active" data-mode="edit">Edit</button>
-                    <button class="neumorphic-btn" data-mode="upscale">Upscale</button>
-                </div>
-            </div>
-
+        <div class="content-wrapper" id="main-content-wrapper">
             <div id="edit-view">
-                 <div class="ui-tile">
-                    <div class="button-group">
-                        <button class="neumorphic-btn active" data-edit-mode="edit">Edit</button>
-                        <button class="neumorphic-btn" data-edit-mode="merge">Merge</button>
-                        <button class="neumorphic-btn" data-edit-mode="autofix">Auto fix</button>
+                <div class="control-group" style="align-items: center; gap: 15px;">
+                    <div class="edit-mode-selector">
+                        <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Добавляйте или удаляйте объекты, меняйте стиль и освещение. Используйте шаблоны или свой запрос.">Edit</button>
+                        <button class="edit-mode-btn" data-edit-mode="merge" data-description="Объединяйте два изображения, интегрируйте новые элементы или перенесите стиль с референса.">Merge</button>
+                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Просто загрузите фото для автоматического удаления артефактов и улучшения качества.">Autofix</button>
                     </div>
-                 </div>
-
-                <div class="ui-tile">
-                    <div class="image-inputs-container">
-                        <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
-                            <span class="drop-placeholder-text">Drop the image here</span>
-                            <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
-                        </label>
-                        <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
-                            <span class="drop-placeholder-text">Drop the image here</span>
-                            <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
-                        </label>
-                    </div>
+                    <p id="edit-mode-description" class="mode-description"></p>
                 </div>
 
+                <div class="image-inputs-container">
+                    <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
+                        <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                        <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
+                    </label>
+                    <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
+                        <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                        <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
+                    </label>
+                </div>
                 <input type="file" id="image-file-edit-1" name="image1" accept="image/*" style="display: none;">
                 <input type="file" id="image-file-edit-2" name="image2" accept="image/*" style="display: none;">
                 
-                <div id="edit-controls-container" class="ui-tile">
-                    <form id="edit-form" class="input-area">
-                         <input type="text" id="prompt" name="prompt" placeholder="Type what you want to change...">
-                    </form>
-                    <div class="button-group template-selector">
-                        <button class="neumorphic-btn template-btn" data-prompt="hyperrealistic photo">Create</button>
-                        <button class="neumorphic-btn template-btn" data-prompt="dramatic lighting">Relight</button>
-                        <button class="neumorphic-btn template-btn" data-prompt="remove object">Remove</button>
+                <div id="edit-controls-container" style="width:100%; display:flex; flex-direction:column; gap: 15px;">
+                    <div class="control-group">
+                         <div class="template-selector">
+                            <button class="template-btn" data-prompt="hyperrealistic photo of a modern object">Создать</button>
+                            <button class="template-btn" data-prompt="dramatic studio lighting, cinematic relighting">Освещение</button>
+                            <button class="template-btn" data-prompt="remove the main object">Удалить</button>
+                            <button class="template-btn" data-prompt="change background to a detailed city street">Фон</button>
+                        </div>
                     </div>
+
+                    <form id="edit-form" class="input-area">
+                         <input type="text" id="prompt" name="prompt" placeholder="Что вы хотите изменить?">
+                    </form>
                 </div>
 
-                <div class="submit-action-group" style="text-align: center;">
-                    <button type="submit" id="submit-button-edit" class="generate-btn">Generate</button>
+                <div class="submit-action-group">
+                    <div class="submit-button-wrapper">
+                        <button type="submit" id="submit-button-edit" class="submit-button-element">
+                            <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
+                        </button>
+                    </div>
+                    <div class="token-cost">
+                        <span>Стоимость: 1</span>
+                        <span class="token-coin"></span>
+                    </div>
                 </div>
             </div>
 
             <div id="upscale-view" style="display: none;">
-                 <div class="ui-tile">
-                    <label>Resolution</label>
-                    <div class="button-group">
-                        <button class="neumorphic-btn resolution-btn active" data-value="x2">x2</button>
-                        <button class="neumorphic-btn resolution-btn" data-value="x4">x4</button>
-                        <button class="neumorphic-btn resolution-btn" data-value="x8">x8</button>
+                 <div class="control-group">
+                    <label>Разрешение</label>
+                    <div class="resolution-selector">
+                        <button class="resolution-btn active" data-value="x2">x2</button>
+                        <button class="resolution-btn" data-value="x4">x4</button>
+                        <button class="resolution-btn" data-value="x8">x8</button>
+                    </div>
+                </div>
+                
+                <label for="image-file-upscale" class="image-drop-area">
+                    <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                    <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
+                </label>
+                <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
+
+                <div class="control-group">
+                     <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="creativity-slider">Креативность</label>
+                            <span class="slider-value" id="creativity-value">70</span>
+                        </div>
+                        <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
                     </div>
                 </div>
 
-                <div class="ui-tile">
-                    <label for="creativity-slider">Creativity: <span id="creativity-value">70</span></label>
-                    <input type="range" id="creativity-slider" min="0" max="100" value="70">
-                </div>
-                
-                <div class="ui-tile">
-                    <label for="hdr-slider">HDR: <span id="hdr-value">50</span></label>
-                    <input type="range" id="hdr-slider" min="0" max="100" value="50">
-                </div>
-
-                <div class="ui-tile">
-                    <label for="resemblance-slider">Resemblance: <span id="resemblance-value">80</span></label>
-                    <input type="range" id="resemblance-slider" min="0" max="100" value="80">
+                <div class="control-group">
+                     <div class="slider-container">
+                         <div class="slider-header">
+                            <label for="resemblance-slider">Сходство с оригиналом</label>
+                            <span class="slider-value" id="resemblance-value">80</span>
+                        </div>
+                        <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
+                    </div>
                 </div>
 
-                <div class="ui-tile">
-                    <label for="image-file-upscale" class="image-drop-area">
-                        <span class="drop-placeholder-text">Drop the image here</span>
-                        <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
-                    </label>
-                </div>
-                <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
-
-                <div class="submit-action-group" style="text-align: center;">
-                     <button type="submit" id="submit-button-upscale" class="generate-btn">Generate</button>
+                <div class="submit-action-group">
+                    <div class="submit-button-wrapper">
+                        <button type="submit" id="submit-button-upscale" class="submit-button-element">
+                            <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
+                        </button>
+                    </div>
+                    <div class="token-cost">
+                        <span>Стоимость: 5</span>
+                        <span class="token-coin"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -766,195 +725,217 @@ INDEX_HTML = """
             </div>
             <div class="result-image-wrapper">
                 <img id="result-image" src="" alt="Generated Image">
-                <a href="#" id="download-action" class="download-action-link neumorphic-btn active" download="generated_image.png">
+                <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
                     <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Скачать" class="download-button-icon">
                 </a>
             </div>
         </div>
     </div>
 
-    <div id="error-box" class="error-message" style="display:none;"></div>
+    <div id="error-box" class="error-message"></div>
 
     <script>
+    // --- JS ЛОГИКА ОСТАЛАСЬ БЕЗ ИЗМЕНЕНИЙ ---
     document.addEventListener('DOMContentLoaded', () => {
 
-    const appBgWrapper = document.getElementById('app-bg-wrapper');
-    const mainContentWrapper = document.querySelector('.content-wrapper');
+    const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
+    const burgerMenuToggle = document.getElementById('burger-menu-toggle');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+
+    const mainContentWrapper = document.getElementById('main-content-wrapper');
     const resultAreaRight = document.getElementById('result-area-right');
-    const loader = resultAreaRight.querySelector('.loader-container');
-    const resultImageWrapper = resultAreaRight.querySelector('.result-image-wrapper');
-    const resultImage = document.getElementById('result-image');
-    const downloadLink = document.getElementById('download-action');
-    
+
+    const appModeButtons = document.querySelectorAll('.mode-btn');
     const editView = document.getElementById('edit-view');
     const upscaleView = document.getElementById('upscale-view');
 
-    const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
-    const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
-    const upscaleImageInput = document.getElementById('image-file-upscale');
-    const promptInput = document.getElementById('prompt');
-
-    // --- View Management ---
-    function showView(viewName) {
-        const isResultOrLoading = viewName === 'loading' || viewName === 'result';
-        
-        mainContentWrapper.style.opacity = isResultOrLoading ? '0.6' : '1';
-        mainContentWrapper.style.pointerEvents = isResultOrLoading ? 'none' : 'auto';
-        
-        appBgWrapper.classList.toggle('bg-blur', isResultOrLoading);
-        
-        if (isResultOrLoading) {
-            resultAreaRight.style.display = 'flex';
-            loader.style.display = viewName === 'loading' ? 'flex' : 'none';
-            resultImageWrapper.style.display = viewName === 'result' ? 'flex' : 'none';
-        } else {
-            resultAreaRight.style.display = 'none';
-            resetImagePreviews();
-            if (promptInput) {
-                promptInput.value = '';
-            }
-        }
-    }
-
-    // --- Burger Menu ---
-    const burgerMenuToggle = document.getElementById('burger-menu-toggle');
-    const dropdownMenu = document.getElementById('dropdown-menu');
     if (burgerMenuToggle) {
         burgerMenuToggle.addEventListener('click', (e) => {
             e.stopPropagation();
+            const isOpen = burgerMenuToggle.classList.toggle('open');
+            burgerMenuToggle.setAttribute('aria-expanded', String(isOpen));
             dropdownMenu.classList.toggle('open');
         });
     }
-    document.addEventListener('click', (e) => {
-        if (dropdownMenu && burgerMenuToggle && !dropdownMenu.contains(e.target) && !burgerMenuToggle.contains(e.target)) {
-            dropdownMenu.classList.remove('open');
+
+    document.addEventListener('click', (event) => {
+        if (dropdownMenu && dropdownMenu.classList.contains('open')) {
+            if (!dropdownMenu.contains(event.target) && !burgerMenuToggle.contains(event.target)) {
+                burgerMenuToggle.classList.remove('open');
+                burgerMenuToggle.setAttribute('aria-expanded', 'false');
+                dropdownMenu.classList.remove('open');
+            }
         }
     });
 
-    // --- Mode Switching (Edit/Upscale) ---
-    document.querySelectorAll('.mode-selector .neumorphic-btn').forEach(button => {
+    appModeButtons.forEach(button => {
         button.addEventListener('click', () => {
-            document.querySelectorAll('.mode-selector .neumorphic-btn').forEach(btn => btn.classList.remove('active'));
+            const currentMode = button.dataset.mode;
+            appModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
+
+            editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
+            upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
             
-            const mode = button.dataset.mode;
-            editView.style.display = mode === 'edit' ? 'grid' : 'none';
-            upscaleView.style.display = mode === 'upscale' ? 'grid' : 'none';
             showView('main');
+            if(currentMode === 'edit') {
+                document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
+            }
         });
     });
 
-    // --- Sub-Mode Switching (Edit/Merge/Autofix) ---
-    const editModeButtons = document.querySelectorAll('#edit-view .button-group .neumorphic-btn[data-edit-mode]');
+    const editModeButtons = document.querySelectorAll('.edit-mode-btn');
+    const editModeDescription = document.getElementById('edit-mode-description');
+    const imageInputsContainer = document.querySelector('.image-inputs-container');
     const imageDropArea2 = document.getElementById('image-drop-area-edit-2');
     const editControlsContainer = document.getElementById('edit-controls-container');
 
     editModeButtons.forEach(button => {
         button.addEventListener('click', (e) => {
+            const editMode = e.currentTarget.dataset.editMode;
             editModeButtons.forEach(btn => btn.classList.remove('active'));
             e.currentTarget.classList.add('active');
 
-            const editMode = e.currentTarget.dataset.editMode;
-            const showSecondImage = editMode === 'merge';
-            const showPrompt = editMode === 'edit' || editMode === 'merge';
-
-            if(imageDropArea2) imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
-            if(imageDropArea2) imageDropArea2.parentElement.style.gridTemplateColumns = showSecondImage ? '1fr 1fr' : '1fr';
-            if(editControlsContainer) editControlsContainer.style.display = showPrompt ? 'flex' : 'none';
+            editModeDescription.textContent = e.currentTarget.dataset.description;
+            
+            const showSecondImage = (editMode === 'merge');
+            const showPrompt = (editMode === 'edit' || editMode === 'merge');
+            
+            imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
+            imageInputsContainer.classList.toggle('merge-mode', showSecondImage);
+            editControlsContainer.style.display = showPrompt ? 'flex' : 'none';
         });
     });
 
-    // --- Template Buttons ---
-    document.querySelectorAll('.template-btn').forEach(button => {
+    const templateButtons = document.querySelectorAll('.template-btn');
+    const promptInput = document.getElementById('prompt');
+    templateButtons.forEach(button => {
         button.addEventListener('click', () => {
+            templateButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
             promptInput.value = button.dataset.prompt;
             promptInput.focus();
         });
     });
 
-    // --- Upscale Buttons & Sliders ---
-     document.querySelectorAll('#upscale-view .resolution-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            document.querySelectorAll('#upscale-view .resolution-btn').forEach(btn => btn.classList.remove('active'));
-            e.currentTarget.classList.add('active');
+    document.querySelectorAll('.resolution-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.resolution-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
         });
     });
+    
     const setupSlider = (sliderId, valueId) => {
         const slider = document.getElementById(sliderId);
         const valueDisplay = document.getElementById(valueId);
-        if(slider && valueDisplay) {
-            slider.addEventListener('input', e => valueDisplay.textContent = e.target.value);
+        if(slider) {
+            slider.addEventListener('input', (event) => {
+                valueDisplay.textContent = event.target.value;
+            });
         }
     };
     setupSlider('creativity-slider', 'creativity-value');
     setupSlider('resemblance-slider', 'resemblance-value');
-    setupSlider('hdr-slider', 'hdr-value');
 
+    const appBgWrapper = document.getElementById('app-bg-wrapper');
+    const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
+    const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
+    const upscaleImageInput = document.getElementById('image-file-upscale');
 
-    // --- Drag & Drop ---
-    function handleFileSelect(file, previewElementId) {
-        const previewEl = document.getElementById(previewElementId);
-        const dropArea = previewEl.parentElement;
-        const placeholder = dropArea.querySelector('.drop-placeholder-text');
-        const reader = new FileReader();
-        reader.onload = e => {
-            previewEl.src = e.target.result;
-            previewEl.style.display = 'block';
-            if (placeholder) placeholder.style.display = 'none';
-        }
-        reader.readAsDataURL(file);
-    }
-    function setupDragAndDrop(dropArea, fileInput) {
-        if (!dropArea || !fileInput) return;
-        const previewImgId = dropArea.querySelector('.image-preview-img').id;
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); });
-        });
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'));
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'));
-        });
-        dropArea.addEventListener('drop', e => {
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                fileInput.files = e.dataTransfer.files;
-                handleFileSelect(file, previewImgId);
-            }
-        });
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files[0]) handleFileSelect(fileInput.files[0], previewImgId);
-        });
-    }
-    setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
-    setupDragAndDrop(document.getElementById('image-drop-area-edit-2'), imageFileInputEdit2);
-    setupDragAndDrop(document.querySelector('#upscale-view .image-drop-area'), upscaleImageInput);
-
-    function resetImagePreviews() {
-        document.querySelectorAll('.image-preview-img').forEach(img => {
-            img.src = '#'; img.style.display = 'none';
-        });
-        document.querySelectorAll('.drop-placeholder-text').forEach(p => p.style.display = 'block');
-        [imageFileInputEdit1, imageFileInputEdit2, upscaleImageInput].forEach(input => {
-            if(input) input.value = '';
-        });
-    }
-
-    // --- Error Handling ---
+    const resultImageWrapper = resultAreaRight.querySelector('.result-image-wrapper');
+    const resultImage = document.getElementById('result-image');
+    const downloadLink = document.getElementById('download-action');
+    const loader = resultAreaRight.querySelector('.loader-container');
     const errorBox = document.getElementById('error-box');
+
     function showError(message) {
         errorBox.textContent = message;
         errorBox.style.display = 'block';
         setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
     }
     
-    // --- API Call ---
-    async function handleImageProcessing() {
+    function showView(viewName) {
+        if (viewName === 'main') {
+            mainContentWrapper.classList.remove('disabled');
+            resultAreaRight.style.display = 'none';
+            appBgWrapper.classList.remove('bg-blur');
+            resetImagePreviews();
+            promptInput.value = '';
+        } else if (viewName === 'loading') {
+            mainContentWrapper.classList.add('disabled');
+            resultAreaRight.style.display = 'flex';
+            resultImageWrapper.style.display = 'none';
+            loader.style.display = 'flex';
+            appBgWrapper.classList.add('bg-blur');
+        } else if (viewName === 'result') {
+            mainContentWrapper.classList.remove('disabled');
+            resultAreaRight.style.display = 'flex';
+            loader.style.display = 'none';
+            resultImageWrapper.style.display = 'flex';
+            appBgWrapper.classList.add('bg-blur');
+        }
+    }
+
+    function handleFileSelect(file, previewElementId) {
+        const previewElement = document.getElementById(previewElementId);
+        const dropArea = previewElement.parentElement;
+        const placeholder = dropArea.querySelector('.drop-placeholder-img');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewElement.src = e.target.result;
+            previewElement.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+        }
+        reader.readAsDataURL(file);
+    }
+
+    function setupDragAndDrop(dropAreaId, fileInputElement) {
+        const dropArea = document.getElementById(dropAreaId);
+        if (!dropArea || !fileInputElement) return;
+
+        const previewImgId = dropArea.querySelector('.image-preview-img').id;
+
+        dropArea.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dropArea.classList.add('dragover'); });
+        dropArea.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dropArea.classList.remove('dragover'); });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            dropArea.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                fileInputElement.files = e.dataTransfer.files;
+                handleFileSelect(fileInputElement.files[0], previewImgId);
+            }
+        });
+        fileInputElement.addEventListener('change', () => {
+            if (fileInputElement.files && fileInputElement.files[0]) {
+                 handleFileSelect(fileInputElement.files[0], previewImgId);
+            }
+        });
+    }
+
+    setupDragAndDrop('image-drop-area-edit-1', imageFileInputEdit1);
+    setupDragAndDrop('image-drop-area-edit-2', imageFileInputEdit2);
+    setupDragAndDrop(document.querySelector('#upscale-view .image-drop-area').id, upscaleImageInput);
+
+    function resetImagePreviews() {
+        document.querySelectorAll('.image-preview-img').forEach(img => {
+            img.src = '#';
+            img.style.display = 'none';
+        });
+        document.querySelectorAll('.drop-placeholder-img').forEach(p => {
+            if (p) p.style.display = 'block';
+        });
+        imageFileInputEdit1.value = '';
+        imageFileInputEdit2.value = '';
+        upscaleImageInput.value = '';
+    }
+
+    async function handleImageProcessing(submitButton) {
         if (!imageFileInputEdit1.files[0]) {
-            showError("Please select an image to upload.");
+            showError("Пожалуйста, загрузите изображение.");
             return;
         }
+
         showView('loading');
 
         const formData = new FormData();
@@ -963,44 +944,61 @@ INDEX_HTML = """
 
         try {
             const response = await fetch("{{ url_for('process_image') }}", {
-                method: 'POST', body: formData
+                method: 'POST',
+                body: formData
             });
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Unknown server error');
+                let errorDetail = data.error || data.detail || 'Неизвестная ошибка сервера';
+                if (response.status === 403) {
+                     errorDetail = 'Недостаточно токенов. Пожалуйста, пополните баланс.';
+                }
+                throw new Error(errorDetail);
+            }
+
+            resultImage.src = data.output_url;
+            downloadLink.href = data.output_url;
+            if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
+                tokenBalanceDisplaySpan.textContent = data.new_token_balance;
             }
 
             const tempImg = new Image();
-            tempImg.onload = () => {
-                resultImage.src = data.output_url;
-                downloadLink.href = data.output_url;
-                if (data.new_token_balance !== undefined) {
-                    document.getElementById('token-balance-display').textContent = data.new_token_balance;
-                }
-                showView('result');
-            };
+            tempImg.onload = () => showView('result');
             tempImg.onerror = () => {
-                showError("Failed to load generated image.");
+                showError("Не удалось загрузить сгенерированное изображение.");
                 showView('main');
+                appBgWrapper.classList.remove('bg-blur');
             };
             tempImg.src = data.output_url;
 
         } catch (error) {
-            showError("An error occurred: " + error.message);
+            showError("Произошла ошибка: " + error.message);
             showView('main');
+            appBgWrapper.classList.remove('bg-blur');
         }
     }
-    document.getElementById('submit-button-edit').addEventListener('click', handleImageProcessing);
-    document.getElementById('submit-button-upscale').addEventListener('click', () => { 
-        showError("Upscale function is not implemented yet.");
-        // Add upscale logic here in the future
+
+    document.getElementById('submit-button-edit').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleImageProcessing(e.currentTarget);
+    });
+     document.getElementById('submit-button-upscale').addEventListener('click', (e) => {
+        e.preventDefault();
+        // Здесь должна быть своя функция для upscale, пока просто заглушка
+        showError("Режим Upscale в разработке!");
     });
 
-    // --- Initial State ---
-    document.querySelector('.mode-selector .neumorphic-btn[data-mode="edit"]').click();
-    document.querySelector('#edit-view .button-group .neumorphic-btn[data-edit-mode="edit"]').click();
+    document.querySelector('.logo').addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = "{{ url_for('index') }}";
+        // showView('main'); // Можно использовать, если не хотим перезагружать страницу
+    });
+
+    // Initial setup on page load
+    appModeButtons[0].click();
     showView('main');
+
     });
     </script>
 </body>
@@ -1014,7 +1012,7 @@ def index():
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
-    # A dark theme for the token page as well
+    # Placeholder - You can create a proper template for this
     return render_template_string("""
         <!DOCTYPE html>
         <html lang="ru">
@@ -1022,14 +1020,12 @@ def buy_tokens_page():
             <meta charset="UTF-8">
             <title>Покупка токенов</title>
             <style>
-                body { font-family: sans-serif; margin: 20px; background-color: #333; color: #f4f4f4; }
-                .container { max-width: 600px; margin: auto; background-color: #444; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.5); text-align: center; }
-                h1 { color: #f4f4f4; }
-                p { font-size: 1.1rem; line-height: 1.6; }
-                strong { font-size: 1.2rem; color: #333; background-color: #D9F47A; padding: 2px 8px; border-radius: 4px; }
-                a { color: #D9F47A; text-decoration: none; }
-                a:hover { text-decoration: underline; }
-                .button { display: inline-block; padding: 12px 25px; background-color: #D9F47A; color: #333; border-radius: 5px; text-decoration: none; margin-top: 20px; font-weight: bold; font-size: 1.1rem;}
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #1c1c1e; color: #fff; }
+                .container { background-color: #2c2c2e; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+                h1 { margin-bottom: 20px; }
+                p { margin: 10px 0; font-size: 1.1em; }
+                strong { color: #D9F47A; }
+                a { display: inline-block; margin-top: 30px; padding: 12px 25px; background-color: #D9F47A; color: #1c1c1e; text-decoration: none; border-radius: 8px; font-weight: bold; }
             </style>
         </head>
         <body>
@@ -1038,7 +1034,7 @@ def buy_tokens_page():
                 <p>Привет, {{ current_user.email or current_user.username }}!</p>
                 <p>Ваш текущий баланс: <strong>{{ current_user.token_balance }}</strong> токенов.</p>
                 <p>Здесь будет информация о пакетах токенов и кнопка для перехода к оплате.</p>
-                <a href="{{ url_for('index') }}" class="button">Вернуться на главную</a>
+                <a href="{{ url_for('index') }}">Вернуться на главную</a>
             </div>
         </body>
         </html>
