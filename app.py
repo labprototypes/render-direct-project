@@ -192,10 +192,6 @@ INDEX_HTML = """
             font-family: 'ChangerFont', sans-serif;
             color: var(--primary-text-color);
             background-color: var(--bg-color);
-            background-size: cover;
-            background-position: center center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -204,30 +200,28 @@ INDEX_HTML = """
 
         .app-container-wrapper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center center; background-repeat: no-repeat;
-            z-index: -1; transition: filter 0.4s ease-in-out;
-            background-image: url("{{ url_for('static', filename='images/MOB_BACK.png') }}");
-            opacity: 0.5;
+            z-index: -1;
+            background: linear-gradient(45deg, #2f213a, #1a1a1a, #2c2c2c, #1f3438, #1a1a1a);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
         }
-        .app-container-wrapper.bg-blur { filter: blur(var(--blur-intensity)); }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
         .app-container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%; max-width: 1200px; margin: 0 auto;
             padding: 100px 25px 25px;
-            display: flex;
-            flex-direction: row;
-            align-items: flex-start;
-            gap: 25px;
-            height: 100vh;
+            display: flex; flex-direction: row; align-items: flex-start;
+            gap: 25px; height: 100vh;
         }
 
         .page-header-container {
-            position: fixed;
-            top: 0; left: 0; right: 0; width: 100%; z-index: 105;
-            display: flex; justify-content: center;
-            padding: 12px 0;
+            position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
+            display: flex; justify-content: center; padding: 12px 0;
             background-color: var(--surface-color-transparent);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
@@ -245,8 +239,7 @@ INDEX_HTML = """
         .top-right-nav { position: relative; display: flex; align-items: center; }
 
         .mode-selector {
-            display: flex; align-items: center;
-            background-color: var(--bg-color);
+            display: flex; align-items: center; background-color: var(--bg-color);
             padding: 6px; border-radius: var(--content-border-radius); gap: 6px;
         }
         .mode-btn {
@@ -257,16 +250,13 @@ INDEX_HTML = """
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         .mode-btn.active {
-            background-color: var(--accent-color);
-            color: var(--accent-text-color);
+            background-color: var(--accent-color); color: var(--accent-text-color);
         }
         .mode-btn:not(.active):hover { color: var(--primary-text-color); }
 
         .user-controls-loggedin {
-            display: flex; align-items: center;
-            background-color: var(--surface-color);
-            padding: 8px 8px 8px 18px;
-            border-radius: var(--content-border-radius); gap: 12px;
+            display: flex; align-items: center; background-color: var(--surface-color);
+            padding: 8px 8px 8px 18px; border-radius: var(--content-border-radius); gap: 12px;
         }
         .token-display {
             display: flex; align-items: center; color: var(--primary-text-color);
@@ -280,13 +270,11 @@ INDEX_HTML = """
             background-color: var(--accent-color); border: none; border-radius: 50%;
             padding: 0; cursor: pointer; width: 38px; height: 38px;
             display: flex; align-items: center; justify-content: center;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            position: relative;
+            transition: background-color 0.3s ease, transform 0.3s ease; position: relative;
         }
         .burger-menu-btn:hover { transform: scale(1.1); }
         .burger-menu-btn svg {
-            display: block; position: absolute;
-            top: 50%; left: 50%;
+            display: block; position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
         }
@@ -304,8 +292,7 @@ INDEX_HTML = """
             background-color: rgba(60, 60, 60, 0.95);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: var(--element-border-radius); box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 12px; width: 240px; z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.1); padding: 12px; width: 240px; z-index: 1000;
             opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95);
             transform-origin: top right;
             transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
@@ -326,7 +313,7 @@ INDEX_HTML = """
             border-radius: 8px;
         }
         .dropdown-menu li a:hover { color: var(--accent-color); background-color: rgba(255,255,255,0.05);}
-        .close-menu-btn { display: none; } /* Burger becomes the close button */
+        .close-menu-btn { display: none; }
 
         .user-controls-loggedout {
             background-color: var(--surface-color);
@@ -340,8 +327,7 @@ INDEX_HTML = """
         .user-controls-loggedout .auth-separator { color: var(--secondary-text-color); margin: 0 10px; }
 
         .content-wrapper {
-            width: 100%; max-width: 420px; height: auto;
-            padding: 25px;
+            width: 100%; max-width: 420px; height: auto; padding: 25px;
             background: var(--surface-color-transparent);
             border-radius: var(--content-border-radius);
             backdrop-filter: blur(var(--blur-intensity));
@@ -365,35 +351,32 @@ INDEX_HTML = """
             width: 100%; max-width: 280px; height: 165px; background-color: rgba(0,0,0,0.2);
             border-radius: var(--element-border-radius); display: flex; flex-direction: column;
             justify-content: center; align-items: center; cursor: pointer;
-            position: relative; overflow: hidden;
-            border: 2px dashed var(--border-color);
+            position: relative; overflow: hidden; border: 2px dashed var(--border-color);
             transition: border-color 0.3s ease, background-color 0.3s ease;
         }
         .image-drop-area:hover, .image-drop-area.dragover {
              border-color: var(--border-hover-color); background-color: rgba(217, 244, 122, 0.05);
         }
-        .image-drop-area .drop-placeholder-img {
-            width: auto; max-width: 80%; max-height: 40%; height: auto; object-fit: contain; opacity: 0.5;
+        .drop-placeholder-text {
+            color: var(--secondary-text-color); font-size: 1.1rem;
         }
         .image-drop-area .image-preview-img {
             display: none; width: 100%; height: 100%; object-fit: cover;
             border-radius: inherit; position: absolute; z-index: 1;
         }
+        .image-drop-area .drop-placeholder-img { display: none; } /* Hide old img placeholder */
 
         #result-area-right {
             flex: 1; height: 100%; display: none;
-            justify-content: center; align-items: center;
-            padding: 20px;
+            justify-content: center; align-items: center; padding: 20px;
         }
         .result-image-wrapper {
              justify-content: center; display: flex; align-items: center;
              width: 100%; height: 100%; position: relative;
         }
         #result-image {
-            max-width: 100%; max-height: 100%;
-            object-fit: contain; border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            display: block;
+            max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: block;
         }
         .download-action-link {
             display: flex; position: absolute; top: calc(100% + 15px); right: 0;
@@ -404,8 +387,7 @@ INDEX_HTML = """
         .download-button-icon { height: var(--download-icon-size); width: var(--download-icon-size); display: block; }
 
         .loader-container {
-            width: 100%; height: 100%;
-            justify-content: center; align-items: center; z-index: 101; display: flex;
+            width: 100%; height: 100%; justify-content: center; align-items: center; z-index: 101; display: flex;
         }
         .pulsating-dot {
             width: 100px; height: 100px; background-color: var(--accent-color);
@@ -415,11 +397,9 @@ INDEX_HTML = """
         @keyframes pulse { 0%, 100% { transform: scale(0.8); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } }
 
         .input-area {
-            display: flex; align-items: center;
-            background-color: var(--bg-color);
+            display: flex; align-items: center; background-color: var(--bg-color);
             border-radius: 50px; padding: 6px 8px; width: 100%;
-            border: 2px solid var(--border-color);
-            transition: border-color 0.3s ease;
+            border: 2px solid var(--border-color); transition: border-color 0.3s ease;
         }
         .input-area:focus-within { border-color: var(--accent-color); }
         #prompt {
@@ -428,19 +408,19 @@ INDEX_HTML = """
             font-family: 'ChangerFont', sans-serif; line-height: 1.4;
         }
         #prompt::placeholder { color: var(--secondary-text-color); opacity: 1; }
-
+        
         .submit-action-group {
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;
         }
         .submit-button-element {
-            background-color: transparent; border: none; cursor: pointer; padding: 0;
-            display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s ease-out;
+            width: 100%; background-color: var(--accent-color); color: var(--accent-text-color);
+            border: none; cursor: pointer; padding: 15px;
+            border-radius: var(--button-border-radius); font-size: 1.1rem;
+            font-family: 'ChangerFont', sans-serif;
+            transition: transform 0.2s ease-out, background-color 0.2s ease;
         }
-        .submit-button-element:hover { transform: scale(1.1); }
-        .submit-button-element:active { transform: scale(0.95); }
-        .submit-button-icon-img { height: 48px; width: 48px; }
-        .submit-button-wrapper { padding: 8px; }
+        .submit-button-element:hover { transform: translateY(-2px); background-color: #e3ff8a; }
+        .submit-button-element:active { transform: translateY(0); }
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 10px; }
         .control-group label {
@@ -454,12 +434,9 @@ INDEX_HTML = """
         .edit-mode-btn, .template-btn, .resolution-btn {
             flex: 1 1 auto; padding: 12px;
             border-radius: var(--button-border-radius);
-            border: 1px solid var(--border-color);
-            background-color: var(--surface-color);
-            color: var(--primary-text-color);
-            cursor: pointer; font-family: 'ChangerFont', sans-serif; font-size: 0.85rem;
-            transition: all 0.25s ease;
-            text-align: center;
+            border: 1px solid var(--border-color); background-color: var(--surface-color);
+            color: var(--primary-text-color); cursor: pointer; font-family: 'ChangerFont', sans-serif;
+            font-size: 0.85rem; transition: all 0.25s ease; text-align: center;
         }
         .edit-mode-btn:hover, .template-btn:hover, .resolution-btn:hover {
             border-color: var(--accent-color); transform: translateY(-2px);
@@ -532,7 +509,6 @@ INDEX_HTML = """
 
         @media (min-width: 769px) {
             .logo { height: 40px; }
-            .submit-button-icon-img { height: 52px; width: 52px;}
             .user-controls-loggedin { gap: 15px; padding: 10px 10px 10px 20px; }
             .token-display { font-size: 1rem; }
             .token-coin { width: 20px; height: 20px; }
@@ -585,7 +561,7 @@ INDEX_HTML = """
             </div>
         </div>
     </div>
-    
+
     <div class="app-container">
         <div class="content-wrapper" id="main-content-wrapper">
             <div id="edit-view">
@@ -600,17 +576,17 @@ INDEX_HTML = """
 
                 <div class="image-inputs-container">
                     <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
-                        <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                        <span class="drop-placeholder-text">just drop the image</span>
                         <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
                     </label>
                     <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
-                        <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                        <span class="drop-placeholder-text">just drop the image</span>
                         <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
                     </label>
                 </div>
                 <input type="file" id="image-file-edit-1" name="image1" accept="image/*" style="display: none;">
                 <input type="file" id="image-file-edit-2" name="image2" accept="image/*" style="display: none;">
-                
+
                 <div id="edit-controls-container" style="width:100%; display:flex; flex-direction:column; gap: 15px;">
                     <div class="control-group">
                          <div class="template-selector">
@@ -627,13 +603,9 @@ INDEX_HTML = """
                 </div>
 
                 <div class="submit-action-group">
-                    <div class="submit-button-wrapper">
-                        <button type="submit" id="submit-button-edit" class="submit-button-element">
-                            <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
-                        </button>
-                    </div>
+                    <button type="submit" id="submit-button-edit" class="submit-button-element">Generate</button>
                     <div class="token-cost">
-                        <span>1</span>
+                        <span>Estimated cost: 1</span>
                         <span class="token-coin"></span>
                     </div>
                 </div>
@@ -641,7 +613,7 @@ INDEX_HTML = """
 
             <div id="upscale-view" style="display: none;">
                 <label for="image-file-upscale" class="image-drop-area">
-                    <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Just drop the image" class="drop-placeholder-img">
+                    <span class="drop-placeholder-text">just drop the image</span>
                     <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
                 </label>
                 <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
@@ -675,20 +647,26 @@ INDEX_HTML = """
                     </div>
                 </div>
 
-                <div class="submit-action-group">
-                    <div class="submit-button-wrapper">
-                        <button type="submit" id="submit-button-upscale" class="submit-button-element">
-                            <img src="{{ url_for('static', filename='images/MAGIC_GREEN.png') }}" alt="Generate" class="submit-button-icon-img">
-                        </button>
+                <div class="control-group">
+                     <div class="slider-container">
+                         <div class="slider-header">
+                            <label for="hdr-slider">HDR</label>
+                            <span class="slider-value" id="hdr-value">50</span>
+                        </div>
+                        <input type="range" id="hdr-slider" min="0" max="100" value="50" class="custom-slider">
                     </div>
+                </div>
+
+                <div class="submit-action-group">
+                    <button type="submit" id="submit-button-upscale" class="submit-button-element">Upscale</button>
                     <div class="token-cost">
-                        <span>5</span>
+                        <span>Estimated cost: 5</span>
                         <span class="token-coin"></span>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <div id="result-area-right">
              <div class="loader-container">
                 <div class="pulsating-dot"></div>
@@ -725,7 +703,7 @@ INDEX_HTML = """
             dropdownMenu.classList.toggle('open');
         });
     }
-    
+
     document.addEventListener('click', (event) => {
         if (dropdownMenu && dropdownMenu.classList.contains('open')) {
             if (!dropdownMenu.contains(event.target) && !burgerMenuToggle.contains(event.target)) {
@@ -745,7 +723,7 @@ INDEX_HTML = """
 
             editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
             upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
-            
+
             showView('main');
             if(currentMode === 'edit') {
                 const activeEditMode = document.querySelector('.edit-mode-btn.active');
@@ -768,10 +746,10 @@ INDEX_HTML = """
             e.currentTarget.classList.add('active');
 
             editModeDescription.textContent = e.currentTarget.dataset.description;
-            
+
             const showSecondImage = (editMode === 'merge');
             const showPrompt = (editMode === 'edit' || editMode === 'merge');
-            
+
             imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
             imageInputsContainer.classList.toggle('merge-mode', showSecondImage);
             editControlsContainer.style.display = showPrompt ? 'flex' : 'none';
@@ -797,11 +775,12 @@ INDEX_HTML = """
             button.classList.add('active');
         });
     });
-    
+
     const setupSlider = (sliderId, valueId) => {
         const slider = document.getElementById(sliderId);
         const valueDisplay = document.getElementById(valueId);
-        if(slider) {
+        if(slider && valueDisplay) {
+            valueDisplay.textContent = slider.value; // Set initial value
             slider.addEventListener('input', (event) => {
                 valueDisplay.textContent = event.target.value;
             });
@@ -809,9 +788,9 @@ INDEX_HTML = """
     };
     setupSlider('creativity-slider', 'creativity-value');
     setupSlider('resemblance-slider', 'resemblance-value');
+    setupSlider('hdr-slider', 'hdr-value');
 
     // --- Shared Logic and View JS ---
-    const appBgWrapper = document.getElementById('app-bg-wrapper');
     const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
     const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
     const upscaleImageInput = document.getElementById('image-file-upscale');
@@ -827,12 +806,11 @@ INDEX_HTML = """
         errorBox.style.display = 'block';
         setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
     }
-    
+
     function showView(viewName) {
         if (viewName === 'main') {
             mainContentWrapper.classList.remove('disabled');
             resultAreaRight.style.display = 'none';
-            appBgWrapper.classList.remove('bg-blur');
             resetImagePreviews();
             promptInput.value = '';
             templateButtons.forEach(btn => btn.classList.remove('active'));
@@ -841,21 +819,19 @@ INDEX_HTML = """
             resultAreaRight.style.display = 'flex';
             resultImageWrapper.style.display = 'none';
             loader.style.display = 'flex';
-            appBgWrapper.classList.add('bg-blur');
         } else if (viewName === 'result') {
             mainContentWrapper.classList.remove('disabled');
             resultAreaRight.style.display = 'flex';
             loader.style.display = 'none';
             resultImageWrapper.style.display = 'flex';
-            appBgWrapper.classList.add('bg-blur');
         }
     }
 
     function handleFileSelect(file, previewElementId) {
         const previewElement = document.getElementById(previewElementId);
         const dropArea = previewElement.parentElement;
-        const placeholder = dropArea.querySelector('.drop-placeholder-img');
-        
+        const placeholder = dropArea.querySelector('.drop-placeholder-text');
+
         const reader = new FileReader();
         reader.onload = (e) => {
             previewElement.src = e.target.result;
@@ -873,7 +849,7 @@ INDEX_HTML = """
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
         });
-        
+
         dropArea.addEventListener('dragenter', () => dropArea.classList.add('dragover'));
         dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
         dropArea.addEventListener('drop', (e) => {
@@ -899,7 +875,7 @@ INDEX_HTML = """
             img.src = '#';
             img.style.display = 'none';
         });
-        document.querySelectorAll('.drop-placeholder-img').forEach(p => {
+        document.querySelectorAll('.drop-placeholder-text').forEach(p => {
             if (p) p.style.display = 'block';
         });
         imageFileInputEdit1.value = '';
@@ -962,7 +938,6 @@ INDEX_HTML = """
     document.querySelector('.logo').addEventListener('click', (e) => {
         e.preventDefault();
         window.location.href = "{{ url_for('index') }}";
-        showView('main');
     });
 
     // Initial setup on page load
