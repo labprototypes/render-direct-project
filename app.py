@@ -193,15 +193,25 @@ INDEX_HTML = """
         body {
             font-family: 'ChangerFont', sans-serif;
             color: var(--primary-text-color);
-            background-color: var(--bg-gradient-start);
+            background-color: #0A0A0A; /* Fallback color */
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             overflow: hidden;
-            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            
+            /* --- НОВЫЙ АНИМИРОВАННЫЙ ГРАДИЕНТ НА ОСНОВЕ РЕФЕРЕНСА --- */
+            background: linear-gradient(320deg, #0a0a0a, #283618, #606c38, #2a3a1f);
+            background-size: 400% 400%;
+            animation: softGradientAnimation 25s ease infinite;
+        }
+
+        @keyframes softGradientAnimation {
+            0%{background-position:0% 50%}
+            50%{background-position:100% 50%}
+            100%{background-position:0% 50%}
         }
         
-        /* --- СТИЛИ ДЛЯ ИНТЕРАКТИВНОГО ФОНА --- */
+        /* --- СТИЛИ ДЛЯ ИНТЕРАКТИВНОГО ФОНА (СОХРАНЕНЫ) --- */
         .background-shapes {
             position: fixed;
             top: 0;
