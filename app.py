@@ -171,25 +171,27 @@ INDEX_HTML = """
 
         :root {
             --accent-color: #D9F47A;
-            /* ПРАВКА: Текст теперь светлый для темного фона */
-            --text-color-primary: #FFFFFF;
-            --text-color-secondary: rgba(255, 255, 255, 0.7);
+            --background-color: #333333;
+            --text-color-primary: #EFEFF4;
+            --text-color-secondary: rgba(239, 239, 244, 0.7);
+            --ui-color-primary: #444444;
+            --ui-color-secondary: #2a2a2a;
             
             --blur-intensity: 25px;
             --base-padding: 20px;
             --tile-border-radius: 28px;
             --button-border-radius: 20px;
-            
-            /* ПРАВКА: Тени адаптированы для темного фона */
-            --shadow-light: rgba(255, 255, 255, 0.08);
-            --shadow-dark: rgba(0, 0, 0, 0.5);
+
+            /* Тени для темного фона */
+            --shadow-light: rgba(55, 55, 55, 0.9);
+            --shadow-dark: rgba(10, 10, 10, 0.9);
             
             --neumorphic-shadow-out: 
                 -5px -5px 10px var(--shadow-light), 
                 5px 5px 10px var(--shadow-dark);
             --neumorphic-shadow-in: 
-                inset -5px -5px 10px var(--shadow-light), 
-                inset 5px 5px 10px var(--shadow-dark);
+                inset -4px -4px 8px var(--shadow-light), 
+                inset 4px 4px 8px var(--shadow-dark);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -197,7 +199,7 @@ INDEX_HTML = """
         body {
             font-family: 'ChangerFont', sans-serif;
             color: var(--text-color-primary);
-            background-color: #1c1c1c; /* Темный фон для контраста */
+            background-color: var(--background-color);
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -211,6 +213,7 @@ INDEX_HTML = """
         }
 
         /* --- ФОН И ОСНОВНЫЕ КОНТЕЙНЕРЫ --- */
+
         .app-container-wrapper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover; background-position: center center; background-repeat: no-repeat;
@@ -223,244 +226,477 @@ INDEX_HTML = """
         }
 
         .app-container {
-            width: 100%; max-width: 1200px; margin: 0 auto;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
             padding: var(--base-padding);
-            padding-top: 100px; /* Отступ для шапки */
-            display: flex; flex-direction: row; align-items: flex-start;
-            justify-content: flex-start; gap: var(--base-padding); height: 100vh;
+            padding-top: 100px; /* Отступ для фиксированной шапки */
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: var(--base-padding);
+            height: 100vh;
         }
 
         /* --- ШАПКА (HEADER) --- */
+
         .page-header-container {
-            position: fixed; top: 0; left: 0; right: 0; width: 100%;
-            z-index: 105; padding: var(--base-padding);
-            display: flex; justify-content: center;
+            position: fixed;
+            top: 0; left: 0; right: 0; width: 100%;
+            z-index: 105;
+            padding: var(--base-padding);
+            display: flex;
+            justify-content: center;
         }
         .page-header-inner {
-            width: 100%; max-width: 1200px;
-            display: flex; justify-content: space-between; align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
         .app-logo-link .logo { height: 35px; }
+
         .top-right-nav { display: flex; align-items: center; gap: 10px; }
 
-        /* --- СТИЛЬ "СТЕКЛОМОРФИЗМ" --- */
+        /* --- СТИЛЬ "СТЕКЛОМОРФИЗМ" ДЛЯ ЭЛЕМЕНТОВ --- */
+
         .glass-ui-element {
-            /* ПРАВКА: Подложка теперь темная */
-            background: rgba(51, 51, 51, 0.45);
+            background: rgba(40, 40, 40, 0.4);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
             transition: background 0.3s ease, box-shadow 0.3s ease;
         }
 
         /* --- ОСНОВНОЙ КОНТЕНТ И СЕТКА ПЛИТОК --- */
+
         .content-wrapper {
-            width: 100%; max-width: 420px; height: fit-content;
+            width: 100%;
+            max-width: 420px;
+            height: fit-content;
             border-radius: var(--tile-border-radius);
             padding: var(--base-padding);
         }
 
         #edit-view, #upscale-view {
-            width: 100%; display: grid;
-            gap: var(--base-padding); grid-template-columns: 1fr;
+            width: 100%;
+            display: grid;
+            gap: var(--base-padding);
+            grid-template-columns: 1fr;
         }
 
         .ui-tile {
-            border-radius: var(--button-border-radius); padding: 15px;
-            display: flex; flex-direction: column; gap: 15px;
-            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--button-border-radius);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.05);
             box-shadow: var(--neumorphic-shadow-out);
         }
 
         /* --- КНОПКИ И ИНТЕРАКТИВНЫЕ ЭЛЕМЕНТЫ --- */
-        .button-group { display: flex; gap: 10px; width: 100%; }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
         
         .neumorphic-btn {
-            flex-grow: 1; padding: 12px; border-radius: 16px;
-            border: none; cursor: pointer;
-            font-family: 'ChangerFont', sans-serif; font-size: 0.9rem;
-            text-align: center; color: var(--text-color-secondary);
+            flex-grow: 1;
+            padding: 12px;
+            border-radius: 16px;
+            border: none;
+            cursor: pointer;
+            font-family: 'ChangerFont', sans-serif;
+            font-size: 0.9rem;
+            text-align: center;
+            color: var(--text-color-secondary);
             transition: all 0.2s ease-in-out;
-            background: linear-gradient(145deg, #3a3a3a, #2c2c2c);
+            background: linear-gradient(145deg, var(--ui-color-primary), var(--ui-color-secondary));
             box-shadow: var(--neumorphic-shadow-out);
         }
+
         .neumorphic-btn:hover {
             color: var(--text-color-primary);
-            /* ПРАВКА: Свечение при наведении */
-            box-shadow: var(--neumorphic-shadow-out), 0 0 15px 2px rgba(217, 244, 122, 0.3);
         }
+
         .neumorphic-btn.active {
-            color: #1c1c1c; /* Темный текст на светлом активном фоне */
-            box-shadow: var(--neumorphic-shadow-in);
+            color: var(--ui-color-secondary);
+            font-weight: bold;
+            box-shadow: var(--neumorphic-shadow-in), 0 0 10px 1px var(--accent-color);
             background: var(--accent-color);
         }
 
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            border-radius: var(--button-border-radius);
+            padding: 6px;
+            gap: 6px;
+        }
+        
+        .mode-selector .neumorphic-btn {
+            padding: 8px 16px;
+        }
+        
         /* --- ЗАГРУЗКА ИЗОБРАЖЕНИЙ --- */
+
+        .image-inputs-container {
+             display: flex;
+             justify-content: center;
+             gap: 15px;
+             width: 100%;
+        }
+
         .image-drop-area {
-            width: 100%; aspect-ratio: 16 / 10; cursor: pointer;
-            position: relative; overflow: hidden;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             border-radius: 16px;
-            background: linear-gradient(145deg, #2a2a2a, #333333);
+            background: linear-gradient(145deg, #2e2e2e, #343434);
             box-shadow: var(--neumorphic-shadow-in);
             transition: box-shadow 0.3s ease;
         }
+
         .image-drop-area.dragover {
             box-shadow: var(--neumorphic-shadow-in), 0 0 0 2px var(--accent-color);
         }
-        /* ПРАВКА: Текстовый плейсхолдер вместо картинки */
+        
         .drop-placeholder-text {
-            font-size: 1rem;
             color: var(--text-color-secondary);
+            font-size: 1rem;
+            text-align: center;
+            padding: 10px;
         }
+
         .image-drop-area .image-preview-img {
             display: none; width: 100%; height: 100%; object-fit: cover;
             border-radius: inherit;
         }
 
         /* --- ПОЛЕ ВВОДА ПРОМПТА --- */
+        
         .input-area {
-            display: flex; align-items: center; width: 100%;
-            border-radius: 16px; padding: 4px;
-            background: linear-gradient(145deg, #2a2a2a, #333333);
+            display: flex;
+            align-items: center;
+            width: 100%;
+            border-radius: 16px;
+            padding: 4px;
+            background: linear-gradient(145deg, #2e2e2e, #343434);
             box-shadow: var(--neumorphic-shadow-in);
         }
+
         #prompt {
             flex-grow: 1; border: none; padding: 10px 12px;
-            font-size: 0.9rem; background-color: transparent; outline: none;
+            font-size: 0.9rem;
+            background-color: transparent;
+            outline: none;
             color: var(--text-color-primary);
             font-family: 'ChangerFont', sans-serif;
         }
         #prompt::placeholder { color: var(--text-color-secondary); }
 
-        /* ПРАВКА: Кнопка генерации */
-        .submit-button {
-            width: 100%;
-            padding: 16px;
-            font-size: 1.1rem;
-            color: #1c1c1c;
-            background: var(--accent-color);
-            border-radius: 16px;
-            border: none;
-            cursor: pointer;
-            font-family: 'ChangerFont', sans-serif;
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0 4px 15px rgba(217, 244, 122, 0.2);
-        }
-        .submit-button:hover {
-            box-shadow: 0 6px 20px rgba(217, 244, 122, 0.4);
-            transform: translateY(-2px);
-        }
-
-        /* ПРАВКА: Слайдеры */
-        .slider-tile label {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
+        /* --- ПОЛЗУНКИ --- */
+        .ui-tile label {
             color: var(--text-color-secondary);
         }
-        input[type="range"] {
-            -webkit-appearance: none; appearance: none;
-            width: 100%; height: 8px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 5px; outline: none;
-            transition: opacity 0.2s;
+        
+        input[type=range] {
+          -webkit-appearance: none;
+          width: 100%;
+          background: transparent;
+          margin-top: 10px;
         }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none;
-            width: 22px; height: 22px;
-            border-radius: 50%;
+        input[type=range]:focus {
+          outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 8px;
+          cursor: pointer;
+          background: var(--ui-color-secondary);
+          border-radius: 4px;
+          border: 1px solid var(--shadow-dark);
+        }
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: var(--accent-color);
+          cursor: pointer;
+          margin-top: -7px; 
+          box-shadow: 0 0 2px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-moz-range-track {
+          width: 100%;
+          height: 8px;
+          cursor: pointer;
+          background: var(--ui-color-secondary);
+          border-radius: 4px;
+        }
+        input[type=range]::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: var(--accent-color);
+          cursor: pointer;
+          border: none;
+        }
+        
+        /* --- КНОПКА ГЕНЕРАЦИИ --- */
+        
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--background-color);
             background: var(--accent-color);
+            border-radius: var(--button-border-radius);
+            border: none;
             cursor: pointer;
-            border: 4px solid #333;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
         }
-        input[type="range"]::-moz-range-thumb {
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            cursor: pointer;
-            border: 4px solid #333;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.4);
         }
+
+        .generate-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
 
         /* --- ПРАВАЯ ПАНЕЛЬ РЕЗУЛЬТАТА --- */
+        
         #result-area-right {
-            flex: 1; height: 100%;
-            display: none; justify-content: center; align-items: center;
+            flex: 1;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
         }
+        
         .result-image-wrapper {
-             position: relative; width: 100%; height: 100%;
-             display: flex; justify-content: center; align-items: center;
+             position: relative;
+             width: 100%;
+             height: 100%;
+             display: flex;
+             justify-content: center;
+             align-items: center;
         }
         #result-image {
-            max-width: 100%; max-height: 100%;
-            object-fit: contain; border-radius: var(--tile-border-radius);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: var(--tile-border-radius);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.3);
         }
 
-        /* --- ПРОЧЕЕ --- */
-        .loader-container { display: flex; justify-content: center; align-items: center; }
+        .download-action-link {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .download-button-icon {
+            width: 24px; height: 24px;
+        }
+
+        .loader-container {
+            display: flex; justify-content: center; align-items: center;
+        }
         .pulsating-dot {
             width: 80px; height: 80px; background-color: var(--accent-color);
-            border-radius: 50%; animation: pulse 1.5s infinite ease-in-out;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite ease-in-out;
         }
         @keyframes pulse {
             0%, 100% { transform: scale(0.8); opacity: 0.7; }
             50% { transform: scale(1.2); opacity: 1; }
         }
+
+        /* --- МЕНЮ ПОЛЬЗОВАТЕЛЯ --- */
+        .user-controls-loggedin {
+            display: flex;
+            align-items: center;
+            border-radius: var(--button-border-radius);
+            padding: 8px;
+            gap: 10px;
+        }
+
+        .token-display {
+            display: flex; align-items: center;
+            color: var(--text-color-primary);
+            font-size: 1rem;
+        }
+        .token-coin {
+            width: 18px; height: 18px;
+            background-color: var(--accent-color);
+            border-radius: 50%; margin-left: 8px;
+        }
+        .burger-menu-btn {
+            background: transparent;
+            border: none;
+            width: 44px; height: 44px;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .dropdown-menu {
+            position: absolute; top: calc(100% + 10px); right: 0;
+            width: 220px;
+            border-radius: 18px;
+            padding: 10px;
+            opacity: 0; visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-menu.open {
+            opacity: 1; visibility: visible;
+            transform: translateY(0);
+        }
+        .dropdown-header {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--text-color-primary);
+        }
+        .dropdown-menu ul { list-style: none; }
+        .dropdown-menu li a {
+            display: block;
+            padding: 10px 8px;
+            text-decoration: none;
+            color: var(--text-color-secondary);
+            border-radius: 12px;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .dropdown-menu li a:hover {
+            background-color: var(--accent-color);
+            color: var(--ui-color-secondary);
+            font-weight: bold;
+        }
+        
         .error-message {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            padding: 12px 20px; border-radius: 12px;
-            background-color: #ff3b30; color: white; z-index: 110;
+            position: fixed;
+            bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 12px;
+            background-color: #ff4d4d;
+            color: white;
+            z-index: 110;
         }
         
         /* --- АДАПТИВНОСТЬ --- */
         @media (max-width: 768px) {
             .app-container {
-                flex-direction: column; height: auto; padding-top: 80px;
-                padding-left: 10px; padding-right: 10px;
+                flex-direction: column;
+                height: auto;
+                padding-top: 80px;
+                padding-left: 10px;
+                padding-right: 10px;
             }
-            .content-wrapper { max-width: 100%; }
-            #result-area-right { width: 100%; height: 50vh; flex: none; }
-            .page-header-container { padding: 10px; }
+            .content-wrapper {
+                max-width: 100%;
+            }
+            #result-area-right {
+                width: 100%;
+                height: 50vh;
+                flex: none;
+            }
+            .page-header-container {
+                 padding: 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="app-container-wrapper" id="app-bg-wrapper"></div>
     <header class="page-header-container">
-        </header>
+        <div class="page-header-inner">
+            <a href="{{ url_for('index') }}" class="app-logo-link">
+                <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
+            </a>
+            <nav class="top-right-nav">
+                {% if current_user.is_authenticated %}
+                    <div class="user-controls-loggedin glass-ui-element">
+                        <span class="token-display">
+                            <span id="token-balance-display">{{ current_user.token_balance }}</span>
+                            <span class="token-coin"></span>
+                        </span>
+                        <button class="burger-menu-btn neumorphic-btn" id="burger-menu-toggle">
+                             <img src="{{ url_for('static', filename='images/JDTI.png') }}" alt="Menu" style="width: 20px; height: 20px; filter: invert(1);">
+                        </button>
+                    </div>
+                    <div class="dropdown-menu glass-ui-element" id="dropdown-menu">
+                        <div class="dropdown-header">{{ current_user.email or current_user.username }}</div>
+                        <ul>
+                            <li><a href="{{ url_for('buy_tokens_page') }}">Пополнить баланс</a></li>
+                            <li><a href="{{ url_for('change_password') }}">Сменить пароль</a></li>
+                            <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="user-controls-loggedout glass-ui-element" style="padding: 6px; border-radius: 20px;">
+                        <div class="button-group">
+                            <a href="{{ url_for('login') }}" class="neumorphic-btn" style="text-decoration: none;">Логин</a>
+                            <a href="{{ url_for('register') }}" class="neumorphic-btn active" style="text-decoration: none;">Регистрация</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
     
     <div class="app-container">
         <div class="content-wrapper glass-ui-element">
             
             <div class="mode-selector glass-ui-element" style="width: 100%; margin-bottom: 20px; padding: 6px; border-radius: 20px;">
                 <div class="button-group">
-                    <button type="button" class="neumorphic-btn active" data-mode="edit">Edit</button>
-                    <button type="button" class="neumorphic-btn" data-mode="upscale">Upscale</button>
+                    <button class="neumorphic-btn active" data-mode="edit">Edit</button>
+                    <button class="neumorphic-btn" data-mode="upscale">Upscale</button>
                 </div>
             </div>
 
             <div id="edit-view">
                  <div class="ui-tile">
                     <div class="button-group">
-                        <button type="button" class="neumorphic-btn active" data-edit-mode="edit">Edit</button>
-                        <button type="button" class="neumorphic-btn" data-edit-mode="merge">Merge</button>
-                        <button type="button" class="neumorphic-btn" data-edit-mode="autofix">Auto fix</button>
+                        <button class="neumorphic-btn active" data-edit-mode="edit">Edit</button>
+                        <button class="neumorphic-btn" data-edit-mode="merge">Merge</button>
+                        <button class="neumorphic-btn" data-edit-mode="autofix">Auto fix</button>
                     </div>
                  </div>
 
                 <div class="ui-tile">
                     <div class="image-inputs-container">
                         <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
-                            <span class="drop-placeholder-text">Drop The Image Here</span>
+                            <span class="drop-placeholder-text">Drop the image here</span>
                             <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
                         </label>
                         <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
-                            <span class="drop-placeholder-text">Drop The Image Here</span>
+                            <span class="drop-placeholder-text">Drop the image here</span>
                             <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
                         </label>
                     </div>
@@ -474,66 +710,67 @@ INDEX_HTML = """
                          <input type="text" id="prompt" name="prompt" placeholder="Type what you want to change...">
                     </form>
                     <div class="button-group template-selector">
-                        <button type="button" class="neumorphic-btn template-btn" data-prompt="hyperrealistic photo">Create</button>
-                        <button type="button" class="neumorphic-btn template-btn" data-prompt="dramatic lighting">Relight</button>
-                        <button type="button" class="neumorphic-btn template-btn" data-prompt="remove object">Remove</button>
+                        <button class="neumorphic-btn template-btn" data-prompt="hyperrealistic photo">Create</button>
+                        <button class="neumorphic-btn template-btn" data-prompt="dramatic lighting">Relight</button>
+                        <button class="neumorphic-btn template-btn" data-prompt="remove object">Remove</button>
                     </div>
                 </div>
 
-                <div class="submit-action-group">
-                    <button id="submit-button-edit" class="submit-button">Generate</button>
+                <div class="submit-action-group" style="text-align: center;">
+                    <button type="submit" id="submit-button-edit" class="generate-btn">Generate</button>
                 </div>
             </div>
 
             <div id="upscale-view" style="display: none;">
                  <div class="ui-tile">
+                    <label>Resolution</label>
                     <div class="button-group">
-                        <button type="button" class="neumorphic-btn resolution-btn active" data-value="x2">x2</button>
-                        <button type="button" class="neumorphic-btn resolution-btn" data-value="x4">x4</button>
-                        <button type="button" class="neumorphic-btn resolution-btn" data-value="x8">x8</button>
+                        <button class="neumorphic-btn resolution-btn active" data-value="x2">x2</button>
+                        <button class="neumorphic-btn resolution-btn" data-value="x4">x4</button>
+                        <button class="neumorphic-btn resolution-btn" data-value="x8">x8</button>
                     </div>
                 </div>
 
-                 <div class="ui-tile slider-tile">
-                    <label for="creativity-slider">
-                        <span>Creativity</span>
-                        <span id="creativity-value">70</span>
-                    </label>
+                <div class="ui-tile">
+                    <label for="creativity-slider">Creativity: <span id="creativity-value">70</span></label>
                     <input type="range" id="creativity-slider" min="0" max="100" value="70">
                 </div>
-
-                <div class="ui-tile slider-tile">
-                    <label for="resemblance-slider">
-                        <span>Resemblance</span>
-                        <span id="resemblance-value">80</span>
-                    </label>
-                    <input type="range" id="resemblance-slider" min="0" max="100" value="80">
-                </div>
-
-                <div class="ui-tile slider-tile">
-                    <label for="hdr-slider">
-                        <span>HDR</span>
-                        <span id="hdr-value">50</span>
-                    </label>
+                
+                <div class="ui-tile">
+                    <label for="hdr-slider">HDR: <span id="hdr-value">50</span></label>
                     <input type="range" id="hdr-slider" min="0" max="100" value="50">
                 </div>
 
                 <div class="ui-tile">
+                    <label for="resemblance-slider">Resemblance: <span id="resemblance-value">80</span></label>
+                    <input type="range" id="resemblance-slider" min="0" max="100" value="80">
+                </div>
+
+                <div class="ui-tile">
                     <label for="image-file-upscale" class="image-drop-area">
-                        <span class="drop-placeholder-text">Drop The Image Here</span>
+                        <span class="drop-placeholder-text">Drop the image here</span>
                         <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
                     </label>
                 </div>
                 <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
 
-                <div class="submit-action-group">
-                    <button id="submit-button-upscale" class="submit-button">Generate</button>
+                <div class="submit-action-group" style="text-align: center;">
+                     <button type="submit" id="submit-button-upscale" class="generate-btn">Generate</button>
                 </div>
             </div>
         </div>
         
         <div id="result-area-right">
-             </div>
+             <div class="loader-container">
+                <div class="pulsating-dot"></div>
+            </div>
+            <div class="result-image-wrapper">
+                <img id="result-image" src="" alt="Generated Image">
+                <a href="#" id="download-action" class="download-action-link neumorphic-btn active" download="generated_image.png">
+                    <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Скачать" class="download-button-icon">
+                </a>
+            </div>
+        </div>
     </div>
 
     <div id="error-box" class="error-message" style="display:none;"></div>
@@ -541,184 +778,229 @@ INDEX_HTML = """
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        const appBgWrapper = document.getElementById('app-bg-wrapper');
-        const mainContentWrapper = document.querySelector('.content-wrapper');
-        const resultAreaRight = document.getElementById('result-area-right');
-        const loader = resultAreaRight.querySelector('.loader-container');
-        const resultImageWrapper = resultAreaRight.querySelector('.result-image-wrapper');
-        const resultImage = document.getElementById('result-image');
-        const downloadLink = document.getElementById('download-action');
+    const appBgWrapper = document.getElementById('app-bg-wrapper');
+    const mainContentWrapper = document.querySelector('.content-wrapper');
+    const resultAreaRight = document.getElementById('result-area-right');
+    const loader = resultAreaRight.querySelector('.loader-container');
+    const resultImageWrapper = resultAreaRight.querySelector('.result-image-wrapper');
+    const resultImage = document.getElementById('result-image');
+    const downloadLink = document.getElementById('download-action');
+    
+    const editView = document.getElementById('edit-view');
+    const upscaleView = document.getElementById('upscale-view');
+
+    const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
+    const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
+    const upscaleImageInput = document.getElementById('image-file-upscale');
+    const promptInput = document.getElementById('prompt');
+
+    // --- View Management ---
+    function showView(viewName) {
+        const isResultOrLoading = viewName === 'loading' || viewName === 'result';
         
-        const editView = document.getElementById('edit-view');
-        const upscaleView = document.getElementById('upscale-view');
-
-        const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
-        const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
-        const upscaleImageInput = document.getElementById('image-file-upscale');
-        const promptInput = document.getElementById('prompt');
-
-        function showView(viewName) {
-            const isResultOrLoading = viewName === 'loading' || viewName === 'result';
-            mainContentWrapper.style.opacity = isResultOrLoading ? '0.6' : '1';
-            mainContentWrapper.style.pointerEvents = isResultOrLoading ? 'none' : 'auto';
-            appBgWrapper.classList.toggle('bg-blur', isResultOrLoading);
-            if (isResultOrLoading) {
-                resultAreaRight.style.display = 'flex';
-                loader.style.display = viewName === 'loading' ? 'flex' : 'none';
-                resultImageWrapper.style.display = viewName === 'result' ? 'flex' : 'none';
-            } else {
-                resultAreaRight.style.display = 'none';
-                resetImagePreviews();
+        mainContentWrapper.style.opacity = isResultOrLoading ? '0.6' : '1';
+        mainContentWrapper.style.pointerEvents = isResultOrLoading ? 'none' : 'auto';
+        
+        appBgWrapper.classList.toggle('bg-blur', isResultOrLoading);
+        
+        if (isResultOrLoading) {
+            resultAreaRight.style.display = 'flex';
+            loader.style.display = viewName === 'loading' ? 'flex' : 'none';
+            resultImageWrapper.style.display = viewName === 'result' ? 'flex' : 'none';
+        } else {
+            resultAreaRight.style.display = 'none';
+            resetImagePreviews();
+            if (promptInput) {
                 promptInput.value = '';
             }
         }
+    }
 
-        document.querySelectorAll('.mode-selector .neumorphic-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.mode-selector .neumorphic-btn').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                const mode = button.dataset.mode;
-                editView.style.display = mode === 'edit' ? 'grid' : 'none';
-                upscaleView.style.display = mode === 'upscale' ? 'grid' : 'none';
-                showView('main');
-            });
+    // --- Burger Menu ---
+    const burgerMenuToggle = document.getElementById('burger-menu-toggle');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+    if (burgerMenuToggle) {
+        burgerMenuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('open');
         });
-
-        const editModeButtons = document.querySelectorAll('#edit-view .ui-tile .neumorphic-btn');
-        const imageDropArea2 = document.getElementById('image-drop-area-edit-2');
-        editModeButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                editModeButtons.forEach(btn => btn.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-            });
-        });
-
-        document.querySelectorAll('.template-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                promptInput.value = button.dataset.prompt;
-                promptInput.focus();
-            });
-        });
-
-        document.querySelectorAll('#upscale-view .resolution-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                document.querySelectorAll('#upscale-view .resolution-btn').forEach(btn => btn.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-            });
-        });
-        
-        const setupSlider = (sliderId, valueId) => {
-            const slider = document.getElementById(sliderId);
-            const valueDisplay = document.getElementById(valueId);
-            if(slider) slider.addEventListener('input', e => valueDisplay.textContent = e.target.value);
-        };
-        setupSlider('creativity-slider', 'creativity-value');
-        setupSlider('resemblance-slider', 'resemblance-value');
-        setupSlider('hdr-slider', 'hdr-value'); // ПРАВКА: Инициализация нового слайдера
-
-        function handleFileSelect(file, previewElementId) {
-            const previewEl = document.getElementById(previewElementId);
-            const dropArea = previewEl.parentElement;
-            const placeholder = dropArea.querySelector('.drop-placeholder-text');
-            const reader = new FileReader();
-            reader.onload = e => {
-                previewEl.src = e.target.result;
-                previewEl.style.display = 'block';
-                if (placeholder) placeholder.style.display = 'none';
-            }
-            reader.readAsDataURL(file);
+    }
+    document.addEventListener('click', (e) => {
+        if (dropdownMenu && burgerMenuToggle && !dropdownMenu.contains(e.target) && !burgerMenuToggle.contains(e.target)) {
+            dropdownMenu.classList.remove('open');
         }
+    });
 
-        function setupDragAndDrop(dropArea, fileInput) {
-            if (!dropArea || !fileInput) return;
-            const previewImgId = dropArea.querySelector('.image-preview-img').id;
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); });
+    // --- Mode Switching (Edit/Upscale) ---
+    document.querySelectorAll('.mode-selector .neumorphic-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.mode-selector .neumorphic-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            const mode = button.dataset.mode;
+            editView.style.display = mode === 'edit' ? 'grid' : 'none';
+            upscaleView.style.display = mode === 'upscale' ? 'grid' : 'none';
+            showView('main');
+        });
+    });
+
+    // --- Sub-Mode Switching (Edit/Merge/Autofix) ---
+    const editModeButtons = document.querySelectorAll('#edit-view .button-group .neumorphic-btn[data-edit-mode]');
+    const imageDropArea2 = document.getElementById('image-drop-area-edit-2');
+    const editControlsContainer = document.getElementById('edit-controls-container');
+
+    editModeButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            editModeButtons.forEach(btn => btn.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+
+            const editMode = e.currentTarget.dataset.editMode;
+            const showSecondImage = editMode === 'merge';
+            const showPrompt = editMode === 'edit' || editMode === 'merge';
+
+            if(imageDropArea2) imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
+            if(imageDropArea2) imageDropArea2.parentElement.style.gridTemplateColumns = showSecondImage ? '1fr 1fr' : '1fr';
+            if(editControlsContainer) editControlsContainer.style.display = showPrompt ? 'flex' : 'none';
+        });
+    });
+
+    // --- Template Buttons ---
+    document.querySelectorAll('.template-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            promptInput.value = button.dataset.prompt;
+            promptInput.focus();
+        });
+    });
+
+    // --- Upscale Buttons & Sliders ---
+     document.querySelectorAll('#upscale-view .resolution-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            document.querySelectorAll('#upscale-view .resolution-btn').forEach(btn => btn.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+        });
+    });
+    const setupSlider = (sliderId, valueId) => {
+        const slider = document.getElementById(sliderId);
+        const valueDisplay = document.getElementById(valueId);
+        if(slider && valueDisplay) {
+            slider.addEventListener('input', e => valueDisplay.textContent = e.target.value);
+        }
+    };
+    setupSlider('creativity-slider', 'creativity-value');
+    setupSlider('resemblance-slider', 'resemblance-value');
+    setupSlider('hdr-slider', 'hdr-value');
+
+
+    // --- Drag & Drop ---
+    function handleFileSelect(file, previewElementId) {
+        const previewEl = document.getElementById(previewElementId);
+        const dropArea = previewEl.parentElement;
+        const placeholder = dropArea.querySelector('.drop-placeholder-text');
+        const reader = new FileReader();
+        reader.onload = e => {
+            previewEl.src = e.target.result;
+            previewEl.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+        }
+        reader.readAsDataURL(file);
+    }
+    function setupDragAndDrop(dropArea, fileInput) {
+        if (!dropArea || !fileInput) return;
+        const previewImgId = dropArea.querySelector('.image-preview-img').id;
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); });
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'));
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'));
+        });
+        dropArea.addEventListener('drop', e => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(file, previewImgId);
+            }
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files[0]) handleFileSelect(fileInput.files[0], previewImgId);
+        });
+    }
+    setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
+    setupDragAndDrop(document.getElementById('image-drop-area-edit-2'), imageFileInputEdit2);
+    setupDragAndDrop(document.querySelector('#upscale-view .image-drop-area'), upscaleImageInput);
+
+    function resetImagePreviews() {
+        document.querySelectorAll('.image-preview-img').forEach(img => {
+            img.src = '#'; img.style.display = 'none';
+        });
+        document.querySelectorAll('.drop-placeholder-text').forEach(p => p.style.display = 'block');
+        [imageFileInputEdit1, imageFileInputEdit2, upscaleImageInput].forEach(input => {
+            if(input) input.value = '';
+        });
+    }
+
+    // --- Error Handling ---
+    const errorBox = document.getElementById('error-box');
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.style.display = 'block';
+        setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
+    }
+    
+    // --- API Call ---
+    async function handleImageProcessing() {
+        if (!imageFileInputEdit1.files[0]) {
+            showError("Please select an image to upload.");
+            return;
+        }
+        showView('loading');
+
+        const formData = new FormData();
+        formData.append('image', imageFileInputEdit1.files[0]);
+        formData.append('prompt', promptInput.value);
+
+        try {
+            const response = await fetch("{{ url_for('process_image') }}", {
+                method: 'POST', body: formData
             });
-            dropArea.addEventListener('dragover', () => dropArea.classList.add('dragover'));
-            dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-            dropArea.addEventListener('drop', e => {
-                dropArea.classList.remove('dragover');
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                    fileInput.files = e.dataTransfer.files;
-                    handleFileSelect(file, previewImgId);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Unknown server error');
+            }
+
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                resultImage.src = data.output_url;
+                downloadLink.href = data.output_url;
+                if (data.new_token_balance !== undefined) {
+                    document.getElementById('token-balance-display').textContent = data.new_token_balance;
                 }
-            });
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files[0]) handleFileSelect(fileInput.files[0], previewImgId);
-            });
-        }
-        setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
-        setupDragAndDrop(document.getElementById('image-drop-area-edit-2'), imageFileInputEdit2);
-        setupDragAndDrop(document.querySelector('#upscale-view .image-drop-area'), upscaleImageInput);
-
-        function resetImagePreviews() {
-            document.querySelectorAll('.image-preview-img').forEach(img => {
-                img.src = '#'; img.style.display = 'none';
-            });
-            document.querySelectorAll('.drop-placeholder-text').forEach(p => p.style.display = 'block');
-            [imageFileInputEdit1, imageFileInputEdit2, upscaleImageInput].forEach(input => input.value = '');
-        }
-
-        const errorBox = document.getElementById('error-box');
-        function showError(message) {
-            errorBox.textContent = message;
-            errorBox.style.display = 'block';
-            setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
-        }
-        
-        // ПРАВКА: Добавлен event.preventDefault()
-        async function handleImageProcessing(event) {
-            event.preventDefault();
-            if (!imageFileInputEdit1.files[0]) {
-                showError("Please select an image to upload.");
-                return;
-            }
-            showView('loading');
-
-            const formData = new FormData();
-            formData.append('image', imageFileInputEdit1.files[0]);
-            formData.append('prompt', promptInput.value);
-
-            try {
-                const response = await fetch("{{ url_for('process_image') }}", {
-                    method: 'POST', body: formData
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Unknown server error');
-
-                const tempImg = new Image();
-                tempImg.onload = () => {
-                    resultImage.src = data.output_url;
-                    downloadLink.href = data.output_url;
-                    if (data.new_token_balance !== undefined) {
-                        const tokenDisplay = document.getElementById('token-balance-display');
-                        if(tokenDisplay) tokenDisplay.textContent = data.new_token_balance;
-                    }
-                    showView('result');
-                };
-                tempImg.onerror = () => {
-                    showError("Failed to load generated image.");
-                    showView('main');
-                };
-                tempImg.src = data.output_url;
-
-            } catch (error) {
-                showError("An error occurred: " + error.message);
+                showView('result');
+            };
+            tempImg.onerror = () => {
+                showError("Failed to load generated image.");
                 showView('main');
-            }
+            };
+            tempImg.src = data.output_url;
+
+        } catch (error) {
+            showError("An error occurred: " + error.message);
+            showView('main');
         }
+    }
+    document.getElementById('submit-button-edit').addEventListener('click', handleImageProcessing);
+    document.getElementById('submit-button-upscale').addEventListener('click', () => { 
+        showError("Upscale function is not implemented yet.");
+        // Add upscale logic here in the future
+    });
 
-        // ПРАВКА: Обработчик передает event
-        document.getElementById('submit-button-edit').addEventListener('click', handleImageProcessing);
-        document.getElementById('submit-button-upscale').addEventListener('click', (e) => { 
-            e.preventDefault();
-            showError("Upscale logic not implemented yet.");
-        });
-
-        document.querySelector('.mode-selector .neumorphic-btn[data-mode="edit"]').click();
-        showView('main');
+    // --- Initial State ---
+    document.querySelector('.mode-selector .neumorphic-btn[data-mode="edit"]').click();
+    document.querySelector('#edit-view .button-group .neumorphic-btn[data-edit-mode="edit"]').click();
+    showView('main');
     });
     </script>
 </body>
@@ -727,24 +1009,66 @@ INDEX_HTML = """
 
 @app.route('/')
 def index():
-    # ... остальной код Python без изменений
     return render_template_string(INDEX_HTML)
 
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
-    # ... остальной код Python без изменений
-    return render_template_string("""...""")
+    # A dark theme for the token page as well
+    return render_template_string("""
+        <!DOCTYPE html>
+        <html lang="ru">
+        <head>
+            <meta charset="UTF-8">
+            <title>Покупка токенов</title>
+            <style>
+                body { font-family: sans-serif; margin: 20px; background-color: #333; color: #f4f4f4; }
+                .container { max-width: 600px; margin: auto; background-color: #444; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.5); text-align: center; }
+                h1 { color: #f4f4f4; }
+                p { font-size: 1.1rem; line-height: 1.6; }
+                strong { font-size: 1.2rem; color: #333; background-color: #D9F47A; padding: 2px 8px; border-radius: 4px; }
+                a { color: #D9F47A; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+                .button { display: inline-block; padding: 12px 25px; background-color: #D9F47A; color: #333; border-radius: 5px; text-decoration: none; margin-top: 20px; font-weight: bold; font-size: 1.1rem;}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Купить токены</h1>
+                <p>Привет, {{ current_user.email or current_user.username }}!</p>
+                <p>Ваш текущий баланс: <strong>{{ current_user.token_balance }}</strong> токенов.</p>
+                <p>Здесь будет информация о пакетах токенов и кнопка для перехода к оплате.</p>
+                <a href="{{ url_for('index') }}" class="button">Вернуться на главную</a>
+            </div>
+        </body>
+        </html>
+    """, current_user=current_user)
 
 
 def improve_prompt_with_openai(user_prompt):
-    # ... остальной код Python без изменений
-    return user_prompt
+    if not OPENAI_API_KEY:
+        print("OpenAI API ключ не настроен, возвращаем оригинальный промпт.")
+        return user_prompt
+    try:
+        completion = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.5, max_tokens=100
+        )
+        improved_prompt = completion.choices[0].message.content.strip()
+        print(f"!!! Оригинальный промпт: {user_prompt}")
+        print(f"!!! Улучшенный промпт: {improved_prompt}")
+        return improved_prompt
+    except Exception as e:
+        print(f"Ошибка при обращении к OpenAI: {e}")
+        return user_prompt
 
 @app.route('/process-image', methods=['POST'])
 @login_required
 def process_image():
-    # ... остальной код Python без изменений
     if current_user.token_balance < 1:
         return jsonify({'error': 'Недостаточно токенов'}), 403
 
@@ -754,11 +1078,87 @@ def process_image():
     image_file = request.files['image']
     original_prompt_text = request.form['prompt']
     final_prompt_text = improve_prompt_with_openai(original_prompt_text)
-    
-    # ... остальной код Python без изменений ...
 
-    return jsonify({'output_url': 'some_url', 'new_token_balance': current_user.token_balance})
+    model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
 
+    try:
+        if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
+            print("!!! ОШИБКА: Не все переменные AWS S3 настроены.")
+            return jsonify({'error': 'Ошибка конфигурации сервера для загрузки изображений.'}), 500
+
+        s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+        _, f_ext = os.path.splitext(image_file.filename)
+        object_name = f"uploads/{uuid.uuid4()}{f_ext}"
+
+        s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': image_file.content_type})
+
+        hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
+        print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
+
+        if not REPLICATE_API_TOKEN:
+            print("!!! ОШИБКА: REPLICATE_API_TOKEN не найден.")
+            return jsonify({'error': 'Ошибка конфигурации сервера для генерации изображений.'}), 500
+
+        headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+        post_payload = {
+            "version": model_version_id,
+            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text}
+        }
+
+        start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
+
+        if start_response.status_code >= 400:
+            print(f"!!! Ошибка от Replicate при запуске предсказания: {start_response.status_code} - {start_response.text}")
+            try:
+                error_data = start_response.json()
+                detail = error_data.get("detail", start_response.text)
+                return jsonify({'error': f'Ошибка API Replicate: {detail}'}), start_response.status_code
+            except ValueError:
+                 return jsonify({'error': f'Ошибка API Replicate: {start_response.text}'}), start_response.status_code
+
+        prediction_data = start_response.json()
+        get_url = prediction_data["urls"]["get"]
+
+        output_url = None
+        max_retries = 60
+        retries = 0
+        while retries < max_retries:
+            time.sleep(2)
+            get_response = requests.get(get_url, headers=headers)
+            if get_response.status_code >= 400:
+                print(f"!!! Ошибка от Replicate при получении статуса: {get_response.status_code} - {get_response.text}")
+                try:
+                    error_data = get_response.json()
+                    detail = error_data.get("detail", get_response.text)
+                    raise Exception(f"Ошибка API Replicate при проверке статуса: {detail}")
+                except ValueError:
+                    raise Exception(f"Ошибка API Replicate при проверке статуса: {get_response.text}")
+
+            status_data = get_response.json()
+            print(f"Статус генерации Replicate: {status_data['status']}")
+
+            if status_data["status"] == "succeeded":
+                if isinstance(status_data["output"], list):
+                    output_url = status_data["output"][0]
+                else:
+                    output_url = str(status_data["output"])
+
+                current_user.token_balance -= 1
+                db.session.commit()
+                break
+            elif status_data["status"] in ["failed", "canceled"]:
+                error_detail = status_data.get('error', 'неизвестная ошибка Replicate')
+                raise Exception(f"Генерация Replicate не удалась: {error_detail}")
+            retries += 1
+
+        if not output_url:
+            return jsonify({'error': 'Генерация Replicate заняла слишком много времени или не вернула результат.'}), 500
+
+        return jsonify({'output_url': output_url, 'new_token_balance': current_user.token_balance})
+
+    except Exception as e:
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
 with app.app_context():
     db.create_all()
