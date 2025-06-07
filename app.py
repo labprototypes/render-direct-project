@@ -200,22 +200,42 @@ INDEX_HTML = """
             overflow: hidden;
             background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
         }
-
-        body::after {
-            content: '';
+        
+        /* --- СТИЛИ ДЛЯ ИНТЕРАКТИВНОГО ФОНА --- */
+        .background-shapes {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiGAAABklBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+25GStAAAAh3RSTlMAAQIDBAUGCAkKCwwNDxAREhQVFhgZGxweHyEjJCUnKCstLzEyMzU2Nzg5Ojs8PT5AQUJERkdISUpLTE5PUFNUVldZWl1eYGFiZGVmaGprbG5zdHV2d3h5ent8fX5/gIKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqqusra6vsbKztLW2t7i5uru8vb7AweHi4+Xm5/H09fn6+/z9/v6T3k5hAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+cGEQEjIx/3h4MAAAG6SURBVEjH7ZfrdoMwEITHs0i7CIjI4idVpLZbVBc3q9R2m56kpLdHSdv2/i/G3SWJ+eJ9P5KEnHEg9f3p6mu2FY7hSZb0k2JV5ZJZXuVlVf0+Q5ZJjCSdZJ2lU67+xTjLk2SjJJ+lW67+xTjLBAq5S1o3dchvM7IBbTfCFfRP2LMoYp4B0s24lV4F6TqNeA+k6lXwHpOoF8B6TqRfAes6iXwHpKpH8B6SqZfAekqmXwHpKpl8B6SqZfAelqmXwPpKpV8B6SqVfAemqmWwHpqpl8B6aqZfAempWnwHpqpV8B6a6ZfAemoGXwHp6Bl8B6a+ZfAenrWXwHp6Vl8B6etZfAevrWXwHr6Fl8B6+hZfAevrGXwHr6Bl8B6+sZfAevpWnwHr6FV8B6+tZfAevtWXwHr7Vl8B6+5ZfAevvWXwHrvVl8B6/VZfAev9WXwHr/Fl8B7A5ZfAewOWXwHsDll8B7A5ZfAewOWXwHsDlV8B7A51fAewOdXwHsDnF8B7A5xfAewOcfAewOc/AewOb/z2gdn6yH8PeAzw/iP1A+o/UF6h/Q3qH9A+of0H6h/QfqH9A+o/0H6h/QfqH9Des/0P6D9AdoP0B2g/QHaD9AdoP0B2g/QH6D9BfYP0F9g/QX2D9BfYP0F9g/QX2D9BfYP0F9g/QX2D9BfYP0F9g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEH932RBL/nQGy+gNsBpf4D2g1v8A2g1t8A2g1d8A2g198A2g2N8A2g2d8A2g3N8A2g3d8A2g398A2g4d8A2g498A2g5N8A2g5d8A2g598A2g6N8A2g6d8A2g7N8A2g7d8A2g798A2g8N8A2g8d8A2g9N8A2g9d8A2g998A2g+d8A2g+98A2g/N8A2g/d8A2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHa-');
-            opacity: 0.1;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: -1;
             pointer-events: none;
         }
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(217, 244, 122, 0.05), rgba(217, 244, 122, 0));
+            transition: transform 0.4s ease-out;
+        }
+        .shape.s1 { width: 400px; height: 400px; top: 10vh; left: 10vw; animation: drift 25s ease-in-out infinite alternate; }
+        .shape.s2 { width: 500px; height: 500px; top: 50vh; left: 70vw; animation: drift 35s ease-in-out infinite alternate; }
+        .shape.s3 { width: 300px; height: 300px; top: 70vh; left: 20vw; animation: drift 30s ease-in-out infinite alternate; }
+        .shape.s4 { width: 200px; height: 200px; top: 20vh; left: 80vw; animation: drift 20s ease-in-out infinite alternate; }
+
+        @keyframes drift {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to { transform: translate(40px, 60px) rotate(90deg); }
+        }
+        /* --- КОНЕЦ СТИЛЕЙ ДЛЯ ФОНА --- */
+
 
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
             padding: 100px 25px 25px;
             display: flex; flex-direction: row; align-items: flex-start;
             gap: 25px; height: 100vh;
+            position: relative;
+            z-index: 2;
         }
 
         .page-header-container {
@@ -532,6 +552,13 @@ INDEX_HTML = """
     </style>
 </head>
 <body>
+    <div class="background-shapes">
+        <div class="shape s1"></div>
+        <div class="shape s2"></div>
+        <div class="shape s3"></div>
+        <div class="shape s4"></div>
+    </div>
+
     <div class="page-header-container">
         <div class="page-header-inner">
             <div class="header-left-group">
@@ -723,6 +750,48 @@ INDEX_HTML = """
     const appModeButtons = document.querySelectorAll('.mode-btn');
     const editView = document.getElementById('edit-view');
     const upscaleView = document.getElementById('upscale-view');
+    
+    // --- НОВЫЙ КОД ДЛЯ ИНТЕРАКТИВНОГО ФОНА ---
+    const shapes = document.querySelectorAll('.shape');
+    window.addEventListener('mousemove', (e) => {
+        const { clientX, clientY } = e;
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        shapes.forEach(shape => {
+            const rect = shape.getBoundingClientRect();
+            const shapeCenterX = rect.left + rect.width / 2;
+            const shapeCenterY = rect.top + rect.height / 2;
+
+            // Расстояние от курсора до центра фигуры
+            const distance = Math.sqrt(Math.pow(clientX - shapeCenterX, 2) + Math.pow(clientY - shapeCenterY, 2));
+
+            // Сила отталкивания. Чем ближе курсор, тем сильнее
+            const maxDistance = 400; // Максимальная дистанция влияния
+            const force = Math.max(0, (maxDistance - distance) / maxDistance);
+            
+            // Вектор от курсора к фигуре
+            const deltaX = shapeCenterX - clientX;
+            const deltaY = shapeCenterY - clientY;
+
+            // Нормализуем вектор
+            const vectorLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const normX = deltaX / vectorLength;
+            const normY = deltaY / vectorLength;
+
+            // Применяем силу отталкивания
+            const pushStrength = 50; // Насколько сильно отталкивать
+            const pushX = normX * force * pushStrength;
+            const pushY = normY * force * pushStrength;
+            
+            // Применяем transform. Мы не перезаписываем базовую анимацию,
+            // а добавляем к ней смещение от курсора.
+            // CSS transition сделает движение плавным.
+            shape.style.transform = `translate(${pushX}px, ${pushY}px)`;
+        });
+    });
+    // --- КОНЕЦ КОДА ДЛЯ ИНТЕРАКТИВНОГО ФОНА ---
+
 
     // --- Burger Menu Logic ---
     if (burgerMenuToggle) {
@@ -920,7 +989,6 @@ INDEX_HTML = """
     }
 
     async function handleImageProcessing(submitButton) {
-        // This function determines which API endpoint to call based on the active view
         const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
 
         showView('loading');
@@ -936,15 +1004,12 @@ INDEX_HTML = """
             url = "{{ url_for('process_image') }}";
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
-            // Add second image if in merge mode and it exists
             const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
             if (editMode === 'merge' && imageFileInputEdit2.files[0]) {
                 formData.append('image2', imageFileInputEdit2.files[0]);
             }
 
         } else if (currentMode === 'upscale') {
-            // NOTE: Upscale logic will need a new route, e.g., /process-upscale
-            // For now, this is a placeholder.
             showError("Upscale functionality is not yet connected.");
             showView('main');
             return;
@@ -992,8 +1057,6 @@ INDEX_HTML = """
     
     document.getElementById('submit-button-upscale').addEventListener('click', (e) => {
         e.preventDefault();
-        // This will call the same handler, which currently shows an error for upscale.
-        // To implement, create a new backend route and update the handler.
         handleImageProcessing(e.currentTarget);
     });
 
