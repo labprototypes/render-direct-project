@@ -170,14 +170,16 @@ INDEX_HTML = """
 
         :root {
             --text-accent-color: #D9F47A;
-            --controls-bg-color: #F8F8F8;
-            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8);
+            /* ПРАВКА: Цвет подложек изменен на темный */
+            --controls-bg-color: #333333;
+            --controls-bg-color-transparent: rgba(51, 51, 51, 0.8);
             --blur-intensity: 8px;
             --mob-spacing-unit: 5px;
             --desktop-spacing-unit: 8px;
             --download-icon-size: 28px;
 
-            --header-text-color-on-light-bg: #333333;
+            /* ПРАВКА: Цвет текста на подложках изменен на белый */
+            --header-text-color-on-light-bg: #FFFFFF;
             --header-border-radius: 22px;
             --coin-color: #D9F47A;
             --header-vertical-padding: 15px; /* Базовый отступ */
@@ -278,9 +280,12 @@ INDEX_HTML = """
         }
         .mode-btn.active {
             background-color: var(--text-accent-color);
+            /* ПРАВКА: Цвет текста на активной кнопке для контраста */
+            color: #333333;
         }
         .mode-btn:not(.active):hover {
-            background-color: rgba(0,0,0,0.05);
+             /* ПРАВКА: Цвет ховера для темного фона */
+            background-color: rgba(255,255,255,0.1);
         }
 
         .user-controls-loggedin {
@@ -330,7 +335,8 @@ INDEX_HTML = """
 
         .dropdown-menu {
             position: absolute; top: calc(100% + 8px); right: 0;
-            background-color: rgba(248, 248, 248, 0.9);
+            /* ПРАВКА: Цвет меню изменен на темный */
+            background-color: rgba(51, 51, 51, 0.9);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             padding: 12px; width: 220px; z-index: 1000;
@@ -344,18 +350,18 @@ INDEX_HTML = """
         }
         .dropdown-header {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.08);
+            margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.15);
         }
         .dropdown-user-email {
-            color: #333; font-size: 0.9rem; font-weight: bold;
+            color: var(--header-text-color-on-light-bg); font-size: 0.9rem; font-weight: bold;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
             flex-grow: 1;
         }
         .close-menu-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width:20px; height:20px;}
-        .close-menu-btn svg { stroke: #555; stroke-width:10; stroke-linecap:round; }
+        .close-menu-btn svg { stroke: #DDD; stroke-width:10; stroke-linecap:round; }
         .dropdown-menu ul { list-style: none; padding: 0; margin: 0; }
         .dropdown-menu li a {
-            display: block; padding: 8px 0; color: #333; text-decoration: none;
+            display: block; padding: 8px 0; color: var(--header-text-color-on-light-bg); text-decoration: none;
             font-size: 0.9rem; transition: color 0.2s ease;
         }
         .dropdown-menu li a:hover { color: var(--text-accent-color); }
@@ -377,8 +383,8 @@ INDEX_HTML = """
             width: 100%;
             max-width: 420px;
             height: auto;
-            /* ПРАВКА: Отступ сверху = 2 * 15px (gap в хедере) */
-            margin-top: 30px;
+            /* ПРАВКА (Десктоп): Отступ сверху изменен на 25px */
+            margin-top: 25px;
             padding: 25px;
             background: var(--controls-bg-color-transparent);
             border-radius: var(--header-border-radius);
@@ -444,11 +450,10 @@ INDEX_HTML = """
             display: none;
             justify-content: center;
             align-items: center;
-            /* ПРАВКА: Защитное поле сужено на 1 отступ с каждой стороны */
-            padding-top: 45px;                 /* 30px + 15px */
+            padding-top: 45px;
             padding-left: 15px;
-            padding-right: 30px;                /* 15px + 15px */
-            padding-bottom: 75px;               /* 60px + 15px */
+            padding-right: 30px;
+            padding-bottom: 75px;
         }
         
         .result-image-wrapper {
@@ -471,7 +476,6 @@ INDEX_HTML = """
         .download-action-link {
             display: flex;
             position: absolute;
-            /* ПРАВКА: 1 отступ ниже правого края картинки */
             top: 100%;
             right: 0;
             margin-top: var(--header-vertical-padding);
@@ -510,10 +514,13 @@ INDEX_HTML = """
         #prompt {
             flex-grow: 1; border: none; padding: 10px 8px;
             font-size: 0.85rem;
-            background-color: transparent; outline: none; color: #333333;
+            background-color: transparent; outline: none;
+            /* ПРАВКА: Цвет текста в поле ввода */
+            color: #FFFFFF;
             font-family: 'ChangerFont', sans-serif; line-height: 1.3;
         }
-        #prompt::placeholder { color: #888888; opacity: 1; }
+        /* ПРАВКА: Цвет плейсхолдера в поле ввода */
+        #prompt::placeholder { color: #AAAAAA; opacity: 1; }
 
         .submit-action-group {
             display: flex;
@@ -565,8 +572,10 @@ INDEX_HTML = """
             flex-grow: 1;
             padding: 10px;
             border-radius: 8px;
-            border: 1px solid rgba(0,0,0,0.1);
-            background-color: #fff;
+            /* ПРАВКА: Стили кнопок для темной темы */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: transparent;
+            color: #FFFFFF;
             cursor: pointer;
             font-family: 'ChangerFont', sans-serif;
             font-size: 0.85rem;
@@ -574,12 +583,15 @@ INDEX_HTML = """
             text-align: center;
         }
         .edit-mode-btn:hover, .template-btn:hover, .resolution-btn:hover {
-            border-color: rgba(0,0,0,0.2);
+            /* ПРАВКА: Стили ховера для кнопок */
+            border-color: rgba(255, 255, 255, 0.4);
+            background-color: rgba(255, 255, 255, 0.05);
         }
         .edit-mode-btn.active, .template-btn.active, .resolution-btn.active {
             background-color: var(--text-accent-color);
             border-color: var(--text-accent-color);
-            color: var(--header-text-color-on-light-bg);
+            /* ПРАВКА: Цвет текста на активной кнопке для контраста */
+            color: #333333;
         }
         
         .mode-description {
@@ -614,7 +626,8 @@ INDEX_HTML = """
             appearance: none;
             width: 100%;
             height: 6px;
-            background: rgba(0,0,0,0.2);
+            /* ПРАВКА: Цвет трека слайдера для темной темы */
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 5px;
             outline: none;
         }
@@ -626,7 +639,7 @@ INDEX_HTML = """
             border-radius: 50%;
             background: var(--text-accent-color);
             cursor: pointer;
-            border: 3px solid #fff;
+            border: 3px solid var(--controls-bg-color);
             box-shadow: 0 0 5px rgba(0,0,0,0.2);
         }
         .slider-container input[type="range"]::-moz-range-thumb {
@@ -635,7 +648,7 @@ INDEX_HTML = """
             border-radius: 50%;
             background: var(--text-accent-color);
             cursor: pointer;
-            border: 3px solid #fff;
+            border: 3px solid var(--controls-bg-color);
             box-shadow: 0 0 5px rgba(0,0,0,0.2);
         }
         
@@ -645,7 +658,8 @@ INDEX_HTML = """
             align-items: center;
             gap: 5px;
             font-size: 0.9rem;
-            color: #6c757d;
+            /* ПРАВКА: Цвет стоимости для темной темы */
+            color: #AAAAAA;
         }
 
         .error-message {
@@ -669,6 +683,10 @@ INDEX_HTML = """
                 width: 100%;
                 height: 50vh; /* Задаем высоту на мобильных */
                 flex: none; /* Убираем гибкость */
+            }
+            /* ПРАВКА (Мобайл): Скрываем кнопки-шаблоны */
+            .template-selector {
+                display: none;
             }
         }
         
