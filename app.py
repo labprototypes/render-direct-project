@@ -170,19 +170,22 @@ INDEX_HTML = """
 
         :root {
             --accent-color: #D9F47A;
-            --bg-color: #1A1A1A;
-            --surface-color: #2C2C2C;
-            --surface-color-glass: rgba(44, 44, 44, 0.7);
-            --primary-text-color: #F0F0F0;
-            --secondary-text-color: #A0A0A0;
-            --accent-text-color: #2C2C2C;
-            --border-color: rgba(255, 255, 255, 0.15);
-            --border-hover-color: rgba(217, 244, 122, 0.7);
+            --accent-glow: rgba(217, 244, 122, 0.7);
+            --bg-gradient-start: #0b0c0e;
+            --bg-gradient-end: #1a1b1e;
+            --surface-color: #1c1c1f;
+            --surface-glass: rgba(35, 35, 38, 0.5);
+            --primary-text-color: #EAEAEA;
+            --secondary-text-color: #888888;
+            --accent-text-color: #1A1A1A;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.5);
 
             --blur-intensity: 20px;
             --content-border-radius: 24px;
             --element-border-radius: 16px;
             --button-border-radius: 14px;
+            --transition-speed: 0.3s;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -190,22 +193,22 @@ INDEX_HTML = """
         body {
             font-family: 'ChangerFont', sans-serif;
             color: var(--primary-text-color);
-            background-color: var(--bg-color);
-            display: flex; flex-direction: column;
-            min-height: 100vh; overflow: hidden;
+            background-color: var(--bg-gradient-start);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
         }
 
-        .app-container-wrapper {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: linear-gradient(45deg, #2f213a, #1a1a1a, #2c2c2c, #1f3438, #1a1a1a);
-            background-size: 400% 400%;
-            animation: gradientBG 20s ease infinite;
-        }
-
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiGAAABklBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+25GStAAAAh3RSTlMAAQIDBAUGCAkKCwwNDxAREhQVFhgZGxweHyEjJCUnKCstLzEyMzU2Nzg5Ojs8PT5AQUJERkdISUpLTE5PUFNUVldZWl1eYGFiZGVmaGprbG5zdHV2d3h5ent8fX5/gIKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqqusra6vsbKztLW2t7i5uru8vb7AweHi4+Xm5/H09fn6+/z9/v6T3k5hAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+cGEQEjIx/3h4MAAAG6SURBVEjH7ZfrdoMwEITHs0i7CIjI4idVpLZbVBc3q9R2m56kpLdHSdv2/i/G3SWJ+eJ9P5KEnHEg9f3p6mu2FY7hSZb0k2JV5ZJZXuVlVf0+Q5ZJjCSdZJ2lU67+xTjLk2SjJJ+lW67+xTjLBAq5S1o3dchvM7IBbTfCFfRP2LMoYp4B0s24lV4F6TqNeA+k6lXwHpOoF8B6TqRfAes6iXwHpKpH8B6SqZfAekqmXwHpKpl8B6SqZfAelqmXwPpKpV8B6SqVfAemqmWwHpqpl8B6aqZfAempWnwHpqpV8B6a6ZfAemoGXwHp6Bl8B6a+ZfAenrWXwHp6Vl8B6etZfAevrWXwHr6Fl8B6+hZfAevrGXwHr6Bl8B6+sZfAevpWnwHr6FV8B6+tZfAevtWXwHr7Vl8B6+5ZfAevvWXwHrvVl8B6/VZfAev9WXwHr/Fl8B7A5ZfAewOWXwHsDll8B7A5ZfAewOWXwHsDlV8B7A51fAewOdXwHsDnF8B7A5xfAewOcfAewOc/AewOb/z2gdn6yH8PeAzw/iP1A+o/UF6h/Q3qH9A+of0H6h/QfqH9A+o/0H6h/QfqH9Des/0P6D9AdoP0B2g/QHaD9AdoP0B2g/QH6D9BfYP0F9g/QX2D9BfYP0F9g/QX2D9BfYP0F9g/QX2D9BfYP0F9g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9BfoP0F+g/QX6D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9Bf4P0F/g/QX+D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A/oP0D+g/QP6D9A8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Yf0DxA8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEHtB8Qe0HxB7QfEH932RBL/nQGy+gNsBpf4D2g1v8A2g1t8A2g1d8A2g198A2g2N8A2g2d8A2g3N8A2g3d8A2g398A2g4d8A2g498A2g5N8A2g5d8A2g598A2g6N8A2g6d8A2g7N8A2g7d8A2g798A2g8N8A2g8d8A2g9N8A2g9d8A2g998A2g+d8A2g+98A2g/N8A2g/d8A2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHaECfAdoQJ8B2hAnwHa-');
+            opacity: 0.1;
+            z-index: -1;
+            pointer-events: none;
         }
 
         .app-container {
@@ -218,214 +221,317 @@ INDEX_HTML = """
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            background: rgba(26, 26, 26, 0.5);
+            background-color: var(--surface-glass);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
+            border-bottom: 1px solid var(--border-color);
         }
         .page-header-inner {
             width: 100%; max-width: 1200px; padding: 0 25px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .header-left-group { display: flex; align-items: center; gap: 20px; }
-        .logo { height: 35px; }
 
-        .top-right-nav { position: relative; display: flex; align-items: center; }
-
+        .header-left-group { display: flex; align-items: center; gap: 25px; }
+        .app-logo-link { display: inline-block; transition: transform var(--transition-speed) ease; }
+        .app-logo-link:hover { transform: scale(1.05); }
+        .logo { height: 38px; cursor: pointer; display: block; }
+        
         .mode-selector {
-            display: flex; align-items: center; background-color: var(--bg-color);
-            padding: 6px; border-radius: var(--content-border-radius); gap: 6px;
+            display: flex; align-items: center; background-color: rgba(0,0,0,0.2);
+            padding: 6px; border-radius: var(--button-border-radius); gap: 6px;
+            border: 1px solid var(--border-color);
         }
         .mode-btn {
-            background-color: transparent; border: none; padding: 8px 18px;
-            border-radius: 18px; cursor: pointer;
+            background-color: transparent; border: none; padding: 8px 20px;
+            border-radius: 10px; cursor: pointer;
             font-family: 'ChangerFont', sans-serif; font-size: 0.9rem;
             color: var(--secondary-text-color);
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: all var(--transition-speed) ease;
         }
         .mode-btn.active {
             background-color: var(--accent-color); color: var(--accent-text-color);
+            box-shadow: 0 0 15px var(--accent-glow);
         }
         .mode-btn:not(.active):hover { color: var(--primary-text-color); }
-        
-        /* ... Other header styles from previous version ... */
+
+        .top-right-nav { position: relative; display: flex; align-items: center; }
+
         .user-controls-loggedin {
             display: flex; align-items: center; background-color: var(--surface-color);
             padding: 8px 8px 8px 18px; border-radius: var(--content-border-radius); gap: 12px;
+            border: 1px solid var(--border-color);
         }
         .token-display {
             display: flex; align-items: center; color: var(--primary-text-color);
-            font-size: 1rem;
+            font-size: 1rem; font-weight: normal;
         }
         .token-coin {
             width: 18px; height: 18px; background-color: var(--accent-color);
             border-radius: 50%; margin-left: 8px;
+            box-shadow: 0 0 10px var(--accent-glow);
         }
         .burger-menu-btn {
-            background-color: var(--accent-color); border: none; border-radius: 50%;
-            padding: 0; cursor: pointer; width: 38px; height: 38px;
+            background-color: transparent; border: 1px solid var(--border-color); border-radius: 50%;
+            padding: 0; cursor: pointer; width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
-            transition: transform 0.3s ease; position: relative;
+            transition: all var(--transition-speed) ease; position: relative;
         }
-        .burger-menu-btn:hover { transform: scale(1.1); }
-        .burger-menu-btn svg {
-            display: block; position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-        }
-        .burger-menu-btn svg .line { stroke: var(--accent-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
+        .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
+        .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
+        .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
         .burger-menu-btn.open .burger-icon .line1 { transform: translateY(10px) rotate(45deg) scaleX(1.2); }
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
         .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-10px) rotate(-45deg) scaleX(1.2); }
+        
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
-            background-color: rgba(60, 60, 60, 0.95);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border-radius: var(--element-border-radius); box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1); padding: 12px; width: 240px; z-index: 1000;
-            opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95);
-            transform-origin: top right;
-            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+            background-color: var(--surface-glass);
+            backdrop-filter: blur(var(--blur-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity));
+            border-radius: var(--element-border-radius); box-shadow: 0 10px 40px var(--shadow-color);
+            border: 1px solid var(--border-color); padding: 12px; width: 240px; z-index: 1000;
+            opacity: 0; visibility: hidden; transform: translateY(-10px);
+            transition: all var(--transition-speed) ease;
         }
-        .dropdown-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+        .dropdown-menu.open { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-header { padding: 5px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .dropdown-user-email { color: var(--primary-text-color); font-size: 0.9rem; font-weight: bold; }
+        .dropdown-menu ul { list-style: none; }
+        .dropdown-menu li a {
+            display: block; padding: 10px 5px; color: var(--primary-text-color); text-decoration: none;
+            font-size: 0.95rem; transition: all var(--transition-speed) ease;
+            border-radius: 8px;
+        }
+        .dropdown-menu li a:hover { color: var(--accent-color); background-color: rgba(255,255,255,0.05);}
+        
         .user-controls-loggedout {
-            background-color: var(--surface-color); padding: 8px 20px; border-radius: var(--content-border-radius);
+            display: flex; align-items: center; gap: 15px;
         }
+        .user-controls-loggedout .auth-button {
+            color: var(--primary-text-color); text-decoration: none; font-size: 0.9rem; font-weight: normal;
+            transition: color var(--transition-speed) ease; padding: 10px 18px;
+            border: 1px solid var(--border-color); border-radius: var(--button-border-radius);
+            background-color: rgba(255,255,255,0.05);
+        }
+        .user-controls-loggedout .auth-button:hover { color: var(--accent-text-color); background-color: var(--accent-color); border-color: var(--accent-color); }
 
         .content-wrapper {
-            width: 100%; max-width: 440px; height: auto;
-            padding: 32px;
-            background: var(--surface-color-glass);
+            width: 100%; max-width: 440px; padding: 25px;
+            background-color: var(--surface-color);
             border-radius: var(--content-border-radius);
-            backdrop-filter: blur(var(--blur-intensity));
-            -webkit-backdrop-filter: blur(var(--blur-intensity));
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            transition: opacity 0.3s, filter 0.3s;
+            transition: opacity var(--transition-speed), filter var(--transition-speed);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 40px var(--shadow-color);
         }
-        .content-wrapper.disabled { opacity: 0.5; pointer-events: none; }
-
+        .content-wrapper.disabled { opacity: 0.5; pointer-events: none; filter: blur(4px); }
+        
         #upscale-view, #edit-view {
             width: 100%; display: flex; flex-direction: column;
-            align-items: center; justify-content: flex-start; gap: 24px;
-        }
-
-        .image-inputs-container {
-            display: flex; justify-content: center; gap: 16px; width: 100%;
-        }
-        .image-inputs-container.merge-mode .image-drop-area { flex: 1; max-width: none; }
-
-        .image-drop-area {
-            width: 100%; max-width: 320px; height: 180px;
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: var(--element-border-radius);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            cursor: pointer; position: relative; overflow: hidden;
-            border: 1px dashed var(--border-color);
-            transition: border-color 0.3s ease, background-color 0.3s ease;
-        }
-        .image-drop-area:hover, .image-drop-area.dragover {
-             border-color: var(--border-hover-color);
-             background-color: rgba(217, 244, 122, 0.05);
-        }
-        .drop-placeholder-text {
-            color: var(--secondary-text-color); font-size: 1rem; font-weight: 300;
-        }
-        .image-preview-img {
-            display: none; width: 100%; height: 100%; object-fit: cover;
-            position: absolute; z-index: 1;
-        }
-
-        #result-area-right {
-            flex: 1; height: 100%; display: none;
-            justify-content: center; align-items: center; padding: 20px;
-        }
-        #result-image {
-            max-width: 100%; max-height: 100%;
-            object-fit: contain; border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            align-items: center; justify-content: flex-start; gap: 20px;
         }
         
-        .loader-container { display: flex; } /* Simplified */
-
-        .input-area {
-            display: flex; align-items: center; background-color: rgba(0,0,0,0.2);
-            border-radius: var(--button-border-radius); padding: 4px; width: 100%;
-            border: 1px solid var(--border-color); transition: border-color 0.3s, background-color 0.3s;
+        .image-inputs-container {
+            display: flex; justify-content: center; gap: 15px; width: 100%;
         }
-        .input-area:focus-within { border-color: var(--accent-color); background-color: rgba(0,0,0,0.3); }
+        .image-inputs-container.merge-mode .image-drop-area { flex: 1; max-width: none; }
+        
+        .image-drop-area {
+            width: 100%; height: 180px; background-color: rgba(0,0,0,0.25);
+            border-radius: var(--element-border-radius); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; cursor: pointer;
+            position: relative; overflow: hidden; border: 1px dashed var(--border-color);
+            transition: all var(--transition-speed) ease;
+        }
+        .image-drop-area:hover, .image-drop-area.dragover {
+             border-color: var(--accent-glow); background-color: rgba(217, 244, 122, 0.05);
+             transform: scale(1.02);
+        }
+        .drop-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; }
+        .drop-placeholder-icon { width: 40px; height: 40px; color: var(--secondary-text-color); transition: color var(--transition-speed) ease; }
+        .image-drop-area:hover .drop-placeholder-icon { color: var(--accent-color); }
+        .drop-placeholder-text { color: var(--secondary-text-color); font-size: 0.9rem; }
+        .image-drop-area .image-preview-img {
+            display: none; width: 100%; height: 100%; object-fit: cover;
+            border-radius: inherit; position: absolute; z-index: 1;
+        }
+        
+        #result-area-right {
+            flex: 1; height: calc(100vh - 125px); display: none;
+            justify-content: center; align-items: center;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: var(--content-border-radius);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+        }
+        .result-image-wrapper {
+             justify-content: center; display: flex; align-items: center;
+             width: 100%; height: 100%; position: relative;
+        }
+        #result-image {
+            max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--element-border-radius);
+            box-shadow: 0 10px 40px var(--shadow-color); display: block;
+        }
+        .download-action-link {
+            display: flex; position: absolute; top: calc(100% + 15px); right: 0;
+            z-index: 10; cursor: pointer;
+            transition: transform var(--transition-speed) ease;
+        }
+        .download-action-link:hover { transform: scale(1.1); }
+        .download-button-icon { height: 36px; width: 36px; display: block; filter: drop-shadow(0 4px 8px var(--shadow-color)); }
+
+        .loader-container {
+            width: 100%; height: 100%; justify-content: center; align-items: center; z-index: 101; display: flex;
+        }
+        .pulsating-dot {
+            width: 80px; height: 80px; background-color: var(--accent-color);
+            border-radius: 50%; position: relative;
+            box-shadow: 0 0 40px var(--accent-glow);
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1); opacity: 1; } }
+        
+        .input-area {
+            display: flex; align-items: center; background-color: rgba(0,0,0,0.25);
+            border-radius: var(--button-border-radius); padding: 6px 8px; width: 100%;
+            border: 1px solid var(--border-color); transition: all var(--transition-speed) ease;
+        }
+        .input-area:focus-within { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(217, 244, 122, 0.3); }
         #prompt {
-            flex-grow: 1; border: none; padding: 12px 15px; font-size: 0.95rem;
+            flex-grow: 1; border: none; padding: 10px 15px; font-size: 0.9rem;
             background-color: transparent; outline: none; color: var(--primary-text-color);
             font-family: 'ChangerFont', sans-serif;
         }
-        #prompt::placeholder { color: var(--secondary-text-color); font-weight: 300; }
-
+        #prompt::placeholder { color: var(--secondary-text-color); opacity: 1; }
+        
         .submit-action-group {
-            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 16px;
+            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;
         }
         .submit-button-element {
-            width: 100%; background-color: var(--accent-color); color: var(--accent-text-color);
-            border: none; cursor: pointer; padding: 16px;
-            border-radius: var(--button-border-radius); font-size: 1.1rem; font-weight: 600;
+            width: 100%; background-color: transparent; color: var(--accent-color);
+            border: 1px solid var(--accent-color); cursor: pointer; padding: 16px;
+            border-radius: var(--button-border-radius); font-size: 1rem;
             font-family: 'ChangerFont', sans-serif;
-            box-shadow: 0 5px 15px rgba(217, 244, 122, 0.2);
-            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all var(--transition-speed) ease-out;
+            position: relative; overflow: hidden;
         }
         .submit-button-element:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(217, 244, 122, 0.25);
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            box-shadow: 0 5px 20px var(--accent-glow);
         }
         .submit-button-element:active { transform: translateY(0); }
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .control-group > label {
+            font-size: 0.9rem; color: var(--primary-text-color); margin-bottom: 0; padding-left: 5px; font-weight: bold;
+        }
+        .edit-mode-selector, .resolution-selector {
+            display: flex; gap: 10px; width: 100%; background-color: rgba(0,0,0,0.25);
+            padding: 5px; border-radius: var(--button-border-radius); border: 1px solid var(--border-color);
+        }
+        .template-selector {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%;
+        }
+        .edit-mode-btn, .resolution-btn {
+            flex: 1; padding: 12px;
+            border-radius: 10px;
+            border: none; background-color: transparent;
+            color: var(--secondary-text-color); cursor: pointer; font-family: 'ChangerFont', sans-serif;
+            font-size: 0.85rem; transition: all var(--transition-speed) ease; text-align: center;
+        }
+        .edit-mode-btn:hover, .resolution-btn:hover {
+            color: var(--primary-text-color); background-color: rgba(255,255,255,0.05);
+        }
+        .edit-mode-btn.active, .resolution-btn.active {
+            background-color: var(--accent-color); border-color: var(--accent-color);
+            color: var(--accent-text-color); box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .template-btn {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 8px; padding: 15px; border-radius: var(--element-border-radius);
+            border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
+            color: var(--primary-text-color); cursor: pointer; font-family: 'ChangerFont', sans-serif;
+            font-size: 0.85rem; transition: all var(--transition-speed) ease; text-align: center;
+        }
+        .template-btn:hover {
+             border-color: var(--accent-color); transform: translateY(-3px);
+             background-color: rgba(217, 244, 122, 0.1);
+        }
+        .template-btn.active {
+            border-color: var(--accent-color); background-color: rgba(217, 244, 122, 0.15);
+            box-shadow: 0 0 15px rgba(217, 244, 122, 0.2); color: var(--accent-color);
+        }
+        .template-btn svg { width: 24px; height: 24px; margin-bottom: 5px; color: var(--secondary-text-color); transition: all var(--transition-speed) ease; }
+        .template-btn:hover svg, .template-btn.active svg { color: var(--accent-color); }
         
         .mode-description {
-            font-size: 0.9rem; color: var(--secondary-text-color); text-align: center;
-            width: 100%; line-height: 1.6; min-height: 3.5em; font-weight: 300;
+            font-size: 0.85rem; color: var(--secondary-text-color); text-align: center;
+            width: 100%; padding: 0 10px; line-height: 1.5; min-height: 2.5em;
         }
 
-        .edit-mode-selector, .template-selector, .resolution-selector {
-            display: flex; gap: 10px; width: 100%;
+        .slider-container { width: 100%; padding: 10px; background-color: rgba(0,0,0,0.25); border-radius: var(--element-border-radius); border: 1px solid var(--border-color);}
+        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .slider-container label { font-weight: normal; color: var(--primary-text-color); font-size: 0.9rem; }
+        .slider-value { font-weight: bold; color: var(--primary-text-color); }
+        .slider-container input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 4px; background: var(--border-color);
+            border-radius: 5px; outline: none; transition: background var(--transition-speed) ease;
         }
-        .template-selector { flex-wrap: wrap; }
-
-        .edit-mode-btn, .template-btn, .resolution-btn {
-            flex: 1 1 auto; padding: 12px;
-            border-radius: var(--button-border-radius);
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--secondary-text-color);
-            cursor: pointer; font-family: 'ChangerFont', sans-serif;
-            font-size: 0.85rem;
-            transition: all 0.25s ease;
-            text-align: center;
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: var(--accent-color); cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px var(--accent-glow);
+            transition: transform var(--transition-speed) ease;
         }
-        .edit-mode-btn:hover, .template-btn:hover, .resolution-btn:hover {
-            color: var(--primary-text-color);
-            background-color: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.25);
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: var(--accent-color); cursor: pointer; border: none;
+            box-shadow: 0 0 10px var(--accent-glow);
+            transition: transform var(--transition-speed) ease;
         }
-        .edit-mode-btn.active, .template-btn.active, .resolution-btn.active {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-            color: var(--accent-text-color);
-            font-weight: 600;
-        }
+        .slider-container input[type="range"]::-moz-range-thumb:hover { transform: scale(1.2); }
         
-        .slider-container { width: 100%; }
-        /* Slider styles are good, can remain as is */
-
         .token-cost {
             display: flex; justify-content: center; align-items: center; gap: 8px;
-            font-size: 0.85rem; color: var(--secondary-text-color); font-weight: 300;
+            font-size: 0.9rem; color: var(--secondary-text-color);
         }
-        .token-cost .token-coin { width: 12px; height: 12px; margin: 0; }
+        .token-cost .token-coin { width: 14px; height: 14px; margin-left: 0; background-color: var(--secondary-text-color); box-shadow: none; }
+
+        .error-message {
+            display: none; font-size: 0.9rem; color: #F0F0F0;
+            background-color: rgba(229, 62, 62, 0.5); backdrop-filter: blur(10px);
+            padding: 12px 18px; border-radius: 12px; position: fixed;
+            bottom: 20px; left: 50%; transform: translateX(-50%);
+            border: 1px solid rgba(229, 62, 62, 0.8);
+            width: auto; max-width: 480px; z-index: 105; text-align: center;
+            box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+            transition: all var(--transition-speed) ease;
+        }
         
-        /* Other styles like error messages, media queries etc. can remain as is */
+        @media (max-width: 992px) {
+            .app-container {
+                flex-direction: column; align-items: center; height: auto;
+                overflow-y: auto; padding-top: 100px; padding-bottom: 25px;
+            }
+             #result-area-right {
+                width: 100%; height: auto; aspect-ratio: 16/10; flex: none; min-height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container { padding-top: 150px; }
+            .header-left-group { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .page-header-inner { align-items: flex-start; }
+            .content-wrapper { max-width: 100%; }
+        }
     </style>
 </head>
 <body>
-    <div class="app-container-wrapper" id="app-bg-wrapper"></div>
     <div class="page-header-container">
         <div class="page-header-inner">
             <div class="header-left-group">
@@ -446,21 +552,22 @@ INDEX_HTML = """
                         </span>
                         <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
                             <svg class="burger-icon" viewBox="0 0 100 80"><rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect><rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect><rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect></svg>
-                             <svg class="close-icon" viewBox="0 0 80 80"><line class="line" x1="20" y1="20" x2="60" y2="60"/><line class="line" x1="60" y1="20" x2="20" y2="60"/></svg>
                         </button>
                     </div>
                     <div class="dropdown-menu" id="dropdown-menu">
-                         <ul>
-                            <li><a href="{{ url_for('buy_tokens_page') }}">пополнить баланс</a></li>
-                            <li><a href="{{ url_for('change_password') }}">Сменить пароль</a></li>
-                            <li><a href="{{ url_for('logout') }}">Выйти</a></li>
+                        <div class="dropdown-header">
+                             <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
+                        </div>
+                        <ul>
+                            <li><a href="{{ url_for('buy_tokens_page') }}">Top Up Balance</a></li>
+                            <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
+                            <li><a href="{{ url_for('logout') }}">Logout</a></li>
                         </ul>
                     </div>
                 {% else %}
                     <div class="user-controls-loggedout">
-                        <a href="{{ url_for('login') }}" class="auth-button">Логин</a>
-                        <span class="auth-separator">/</span>
-                        <a href="{{ url_for('register') }}" class="auth-button">Регистрация</a>
+                        <a href="{{ url_for('login') }}" class="auth-button">Login</a>
+                        <a href="{{ url_for('register') }}" class="auth-button">Sign Up</a>
                     </div>
                 {% endif %}
             </div>
@@ -470,22 +577,28 @@ INDEX_HTML = """
     <div class="app-container">
         <div class="content-wrapper" id="main-content-wrapper">
             <div id="edit-view">
-                <p id="edit-mode-description" class="mode-description"></p>
                 <div class="control-group">
                     <div class="edit-mode-selector">
-                        <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Use this tool to add or remove objects, and to modify the style or lighting of your image.">Edit</button>
-                        <button class="edit-mode-btn" data-edit-mode="merge" data-description="Merge two images, integrate new items into your shot, or transfer the style from a reference image.">Merge</button>
-                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Simply upload your image for automatic artifact removal and quality enhancement.">Auto fix</button>
+                        <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Add or remove objects, modify style or lighting.">Edit</button>
+                        <button class="edit-mode-btn" data-edit-mode="merge" data-description="Merge two images, integrate new items or transfer style.">Merge</button>
+                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
                     </div>
                 </div>
+                 <p id="edit-mode-description" class="mode-description"></p>
 
                 <div class="image-inputs-container">
                     <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
-                        <span class="drop-placeholder-text">just drop the image</span>
+                        <div class="drop-placeholder">
+                             <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
+                            <span class="drop-placeholder-text">Drop Image or Click to Upload</span>
+                        </div>
                         <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
                     </label>
                     <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
-                        <span class="drop-placeholder-text">just drop the image</span>
+                        <div class="drop-placeholder">
+                            <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
+                            <span class="drop-placeholder-text">Drop Style or Click to Upload</span>
+                        </div>
                         <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
                     </label>
                 </div>
@@ -495,48 +608,89 @@ INDEX_HTML = """
                 <div id="edit-controls-container" style="width:100%; display:flex; flex-direction:column; gap: 15px;">
                     <div class="control-group">
                          <div class="template-selector">
-                            <button class="template-btn" data-prompt="hyperrealistic photo of a modern object">Create</button>
-                            <button class="template-btn" data-prompt="dramatic studio lighting, cinematic relighting">Relight</button>
-                            <button class="template-btn" data-prompt="remove the main object">Remove</button>
-                            <button class="template-btn" data-prompt="change background to a detailed city street">Change</button>
+                            <button class="template-btn" data-prompt="hyperrealistic photo of a modern object">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                Create
+                            </button>
+                            <button class="template-btn" data-prompt="dramatic studio lighting, cinematic relighting">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>
+                                Relight
+                            </button>
+                            <button class="template-btn" data-prompt="remove the main object">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                                Remove
+                            </button>
+                            <button class="template-btn" data-prompt="change background to a detailed city street">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12a8.963 8.963 0 0 1 4.282-7.532" /></svg>
+                                Change
+                            </button>
                         </div>
                     </div>
-
                     <form id="edit-form" class="input-area">
-                         <input type="text" id="prompt" name="prompt" placeholder="Type what you want to change...">
+                         <input type="text" id="prompt" name="prompt" placeholder="Describe your changes...">
                     </form>
                 </div>
 
                 <div class="submit-action-group">
                     <button type="submit" id="submit-button-edit" class="submit-button-element">Generate</button>
                     <div class="token-cost">
-                        <span>Estimated cost: 1</span>
+                        <span>Cost: 1</span>
                         <span class="token-coin"></span>
                     </div>
                 </div>
             </div>
 
             <div id="upscale-view" style="display: none;">
-                <div class="image-inputs-container">
-                    <label for="image-file-upscale" class="image-drop-area">
-                        <span class="drop-placeholder-text">just drop the image</span>
-                        <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
-                    </label>
-                </div>
+                <label for="image-file-upscale" class="image-drop-area">
+                    <div class="drop-placeholder">
+                        <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
+                        <span class="drop-placeholder-text">Drop Image to Upscale</span>
+                    </div>
+                    <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
+                </label>
                 <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
 
                 <div class="control-group">
+                    <label>Resolution</label>
                     <div class="resolution-selector">
                         <button class="resolution-btn active" data-value="x2">x2</button>
                         <button class="resolution-btn" data-value="x4">x4</button>
                         <button class="resolution-btn" data-value="x8">x8</button>
                     </div>
                 </div>
-                
+
+                <div class="control-group">
+                     <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="creativity-slider">Creativity</label>
+                            <span class="slider-value" id="creativity-value">70</span>
+                        </div>
+                        <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
+                    </div>
+                </div>
+                <div class="control-group">
+                     <div class="slider-container">
+                         <div class="slider-header">
+                            <label for="resemblance-slider">Resemblance</label>
+                            <span class="slider-value" id="resemblance-value">80</span>
+                        </div>
+                        <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
+                    </div>
+                </div>
+                <div class="control-group">
+                     <div class="slider-container">
+                         <div class="slider-header">
+                            <label for="hdr-slider">HDR</label>
+                            <span class="slider-value" id="hdr-value">50</span>
+                        </div>
+                        <input type="range" id="hdr-slider" min="0" max="100" value="50" class="custom-slider">
+                    </div>
+                </div>
+
                 <div class="submit-action-group">
                     <button type="submit" id="submit-button-upscale" class="submit-button-element">Upscale</button>
                     <div class="token-cost">
-                        <span>Estimated cost: 5</span>
+                        <span>Cost: 5</span>
                         <span class="token-coin"></span>
                     </div>
                 </div>
@@ -549,16 +703,16 @@ INDEX_HTML = """
             </div>
             <div class="result-image-wrapper">
                 <img id="result-image" src="" alt="Generated Image">
+                <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
+                    <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
+                </a>
             </div>
         </div>
     </div>
-    
+
     <div id="error-box" class="error-message"></div>
 
     <script>
-    // The entire JavaScript block from the previous version should be pasted here.
-    // It is omitted for brevity in this display, but will be in the final code block.
-    // No functional changes are needed in the script.
     document.addEventListener('DOMContentLoaded', () => {
 
     const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
@@ -601,6 +755,7 @@ INDEX_HTML = """
             upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
 
             showView('main');
+            // Re-trigger click on active edit mode to set correct description
             if(currentMode === 'edit') {
                 const activeEditMode = document.querySelector('.edit-mode-btn.active');
                 if (activeEditMode) activeEditMode.click();
@@ -624,11 +779,11 @@ INDEX_HTML = """
             editModeDescription.textContent = e.currentTarget.dataset.description;
 
             const showSecondImage = (editMode === 'merge');
-            const showPrompt = (editMode === 'edit' || editMode === 'merge');
+            const showControls = (editMode === 'edit' || editMode === 'merge');
 
             imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
             imageInputsContainer.classList.toggle('merge-mode', showSecondImage);
-            editControlsContainer.style.display = showPrompt ? 'flex' : 'none';
+            editControlsContainer.style.display = showControls ? 'flex' : 'none';
         });
     });
 
@@ -643,6 +798,11 @@ INDEX_HTML = """
             button.classList.add('active');
         });
     });
+    
+    // Clear prompt when user types manually
+    promptInput.addEventListener('input', () => {
+        templateButtons.forEach(btn => btn.classList.remove('active'));
+    });
 
     // --- Upscale UI Logic ---
     document.querySelectorAll('.resolution-btn').forEach(button => {
@@ -651,7 +811,21 @@ INDEX_HTML = """
             button.classList.add('active');
         });
     });
-    
+
+    const setupSlider = (sliderId, valueId) => {
+        const slider = document.getElementById(sliderId);
+        const valueDisplay = document.getElementById(valueId);
+        if(slider && valueDisplay) {
+            valueDisplay.textContent = slider.value; // Set initial value
+            slider.addEventListener('input', (event) => {
+                valueDisplay.textContent = event.target.value;
+            });
+        }
+    };
+    setupSlider('creativity-slider', 'creativity-value');
+    setupSlider('resemblance-slider', 'resemblance-value');
+    setupSlider('hdr-slider', 'hdr-value');
+
     // --- Shared Logic and View JS ---
     const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
     const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
@@ -659,13 +833,14 @@ INDEX_HTML = """
 
     const resultImageWrapper = resultAreaRight.querySelector('.result-image-wrapper');
     const resultImage = document.getElementById('result-image');
+    const downloadLink = document.getElementById('download-action');
     const loader = resultAreaRight.querySelector('.loader-container');
     const errorBox = document.getElementById('error-box');
 
     function showError(message) {
         errorBox.textContent = message;
         errorBox.style.display = 'block';
-        setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
+        setTimeout(() => { errorBox.style.display = 'none'; }, 5000);
     }
 
     function showView(viewName) {
@@ -691,7 +866,7 @@ INDEX_HTML = """
     function handleFileSelect(file, previewElementId) {
         const previewElement = document.getElementById(previewElementId);
         const dropArea = previewElement.parentElement;
-        const placeholder = dropArea.querySelector('.drop-placeholder-text');
+        const placeholder = dropArea.querySelector('.drop-placeholder');
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -736,8 +911,8 @@ INDEX_HTML = """
             img.src = '#';
             img.style.display = 'none';
         });
-        document.querySelectorAll('.drop-placeholder-text').forEach(p => {
-            if (p) p.style.display = 'block';
+        document.querySelectorAll('.drop-placeholder').forEach(p => {
+            if (p) p.style.display = 'flex';
         });
         imageFileInputEdit1.value = '';
         imageFileInputEdit2.value = '';
@@ -745,19 +920,38 @@ INDEX_HTML = """
     }
 
     async function handleImageProcessing(submitButton) {
-        if (!imageFileInputEdit1.files[0]) {
-            showError("Please select an image to upload.");
-            return;
-        }
+        // This function determines which API endpoint to call based on the active view
+        const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
 
         showView('loading');
 
         const formData = new FormData();
-        formData.append('image', imageFileInputEdit1.files[0]);
-        formData.append('prompt', promptInput.value);
+        let url = '';
+
+        if (currentMode === 'edit') {
+            if (!imageFileInputEdit1.files[0]) {
+                showError("Please select an image to edit.");
+                showView('main'); return;
+            }
+            url = "{{ url_for('process_image') }}";
+            formData.append('image', imageFileInputEdit1.files[0]);
+            formData.append('prompt', promptInput.value);
+            // Add second image if in merge mode and it exists
+            const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
+            if (editMode === 'merge' && imageFileInputEdit2.files[0]) {
+                formData.append('image2', imageFileInputEdit2.files[0]);
+            }
+
+        } else if (currentMode === 'upscale') {
+            // NOTE: Upscale logic will need a new route, e.g., /process-upscale
+            // For now, this is a placeholder.
+            showError("Upscale functionality is not yet connected.");
+            showView('main');
+            return;
+        }
 
         try {
-            const response = await fetch("{{ url_for('process_image') }}", {
+            const response = await fetch(url, {
                 method: 'POST',
                 body: formData
             });
@@ -772,6 +966,7 @@ INDEX_HTML = """
             }
 
             resultImage.src = data.output_url;
+            downloadLink.href = data.output_url;
             if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
                 tokenBalanceDisplaySpan.textContent = data.new_token_balance;
             }
@@ -794,8 +989,15 @@ INDEX_HTML = """
         e.preventDefault();
         handleImageProcessing(e.currentTarget);
     });
+    
+    document.getElementById('submit-button-upscale').addEventListener('click', (e) => {
+        e.preventDefault();
+        // This will call the same handler, which currently shows an error for upscale.
+        // To implement, create a new backend route and update the handler.
+        handleImageProcessing(e.currentTarget);
+    });
 
-    document.querySelector('.logo').addEventListener('click', (e) => {
+    document.querySelector('.app-logo-link').addEventListener('click', (e) => {
         e.preventDefault();
         window.location.href = "{{ url_for('index') }}";
     });
@@ -822,15 +1024,81 @@ def buy_tokens_page():
         <html lang="ru">
         <head>
             <meta charset="UTF-8">
-            <title>Покупка токенов</title>
+            <title>Buy Tokens</title>
+            <style>
+                :root {
+                    --accent-color: #D9F47A;
+                    --accent-glow: rgba(217, 244, 122, 0.7);
+                    --bg-gradient-start: #0b0c0e;
+                    --bg-gradient-end: #1a1b1e;
+                    --surface-color: #1c1c1f;
+                    --primary-text-color: #EAEAEA;
+                    --secondary-text-color: #888888;
+                    --accent-text-color: #1A1A1A;
+                    --border-color: rgba(255, 255, 255, 0.1);
+                    --shadow-color: rgba(0, 0, 0, 0.5);
+                    --content-border-radius: 24px;
+                }
+                body {
+                    font-family: 'ChangerFont', sans-serif;
+                    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+                    color: var(--primary-text-color);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    margin: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: auto;
+                    background-color: var(--surface-color);
+                    padding: 40px;
+                    border-radius: var(--content-border-radius);
+                    box-shadow: 0 10px 40px var(--shadow-color);
+                    text-align: center;
+                    border: 1px solid var(--border-color);
+                }
+                h1 { color: var(--primary-text-color); margin-bottom: 20px; }
+                p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-text-color); }
+                .balance {
+                    font-size: 1.2rem;
+                    color: var(--accent-text-color);
+                    background-color: var(--accent-color);
+                    padding: 8px 15px;
+                    border-radius: 10px;
+                    display: inline-block;
+                    margin: 10px 0 20px;
+                    box-shadow: 0 0 15px var(--accent-glow);
+                }
+                .button {
+                    display: inline-block;
+                    padding: 12px 25px;
+                    background-color: transparent;
+                    color: var(--accent-color);
+                    border: 1px solid var(--accent-color);
+                    border-radius: 12px;
+                    text-decoration: none;
+                    margin-top: 25px;
+                    font-weight: bold;
+                    font-size: 1.1rem;
+                    transition: all 0.3s ease;
+                }
+                .button:hover {
+                    background-color: var(--accent-color);
+                    color: var(--accent-text-color);
+                    transform: scale(1.05);
+                    box-shadow: 0 0 20px var(--accent-glow);
+                }
+            </style>
         </head>
         <body>
             <div class="container">
-                <h1>Купить токены</h1>
-                <p>Привет, {{ current_user.email or current_user.username }}!</p>
-                <p>Ваш текущий баланс: <strong>{{ current_user.token_balance }}</strong> токенов.</p>
-                <p>Здесь будет информация о пакетах токенов и кнопка для перехода к оплате.</p>
-                <a href="{{ url_for('index') }}" class="button">Вернуться на главную</a>
+                <h1>Purchase Tokens</h1>
+                <p>Hello, {{ current_user.email or current_user.username }}!</p>
+                <p>Your current balance is: <strong class="balance">{{ current_user.token_balance }} tokens</strong>.</p>
+                <p>Payment system integration coming soon.</p>
+                <a href="{{ url_for('index') }}" class="button">Back to Main Page</a>
             </div>
         </body>
         </html>
