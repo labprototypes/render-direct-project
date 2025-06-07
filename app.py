@@ -171,8 +171,7 @@ INDEX_HTML = """
         :root {
             --accent-color: #D9F47A;
             --accent-glow: rgba(217, 244, 122, 0.7);
-            --bg-gradient-start: #0b0c0e;
-            --bg-gradient-end: #1a1b1e;
+            --bg-color: #0A0F1A; /* Новый базовый цвет фона */
             --surface-color: #1c1c1f;
             --surface-glass: rgba(35, 35, 38, 0.5);
             --primary-text-color: #EAEAEA;
@@ -193,48 +192,42 @@ INDEX_HTML = """
         body {
             font-family: 'ChangerFont', sans-serif;
             color: var(--primary-text-color);
-            background-color: #0A0A0A; /* Fallback color */
+            background-color: var(--bg-color); 
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             overflow: hidden;
-            
-            /* --- НОВЫЙ АНИМИРОВАННЫЙ ГРАДИЕНТ НА ОСНОВЕ РЕФЕРЕНСА --- */
-            background: linear-gradient(320deg, #0a0a0a, #283618, #606c38, #2a3a1f);
-            background-size: 400% 400%;
-            animation: softGradientAnimation 25s ease infinite;
-        }
-
-        @keyframes softGradientAnimation {
-            0%{background-position:0% 50%}
-            50%{background-position:100% 50%}
-            100%{background-position:0% 50%}
         }
         
-        /* --- СТИЛИ ДЛЯ ИНТЕРАКТИВНОГО ФОНА (СОХРАНЕНЫ) --- */
-        .background-shapes {
+        /* --- НОВЫЙ ФОН "ЦИФРОВОЙ ЧЕРТЕЖ" --- */
+        .background-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
-            pointer-events: none;
+            /* Сетка из точек */
+            background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.12) 1px, transparent 0);
+            background-size: 35px 35px;
+            /* Плавная анимация скроллинга */
+            animation: blueprintScroll 20s linear infinite;
         }
-        .shape {
-            position: absolute;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(217, 244, 122, 0.05), rgba(217, 244, 122, 0));
-            transition: transform 0.4s ease-out;
+        
+        @keyframes blueprintScroll {
+            from { background-position: 0 0; }
+            to { background-position: -70px 35px; }
         }
-        .shape.s1 { width: 400px; height: 400px; top: 10vh; left: 10vw; animation: drift 25s ease-in-out infinite alternate; }
-        .shape.s2 { width: 500px; height: 500px; top: 50vh; left: 70vw; animation: drift 35s ease-in-out infinite alternate; }
-        .shape.s3 { width: 300px; height: 300px; top: 70vh; left: 20vw; animation: drift 30s ease-in-out infinite alternate; }
-        .shape.s4 { width: 200px; height: 200px; top: 20vh; left: 80vw; animation: drift 20s ease-in-out infinite alternate; }
 
-        @keyframes drift {
-            from { transform: translate(0, 0) rotate(0deg); }
-            to { transform: translate(40px, 60px) rotate(90deg); }
+        /* Радиальный градиент для виньетирования */
+        .background-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 30%, var(--bg-color) 90%);
         }
         /* --- КОНЕЦ СТИЛЕЙ ДЛЯ ФОНА --- */
 
@@ -562,12 +555,7 @@ INDEX_HTML = """
     </style>
 </head>
 <body>
-    <div class="background-shapes">
-        <div class="shape s1"></div>
-        <div class="shape s2"></div>
-        <div class="shape s3"></div>
-        <div class="shape s4"></div>
-    </div>
+    <div class="background-overlay"></div>
 
     <div class="page-header-container">
         <div class="page-header-inner">
@@ -760,48 +748,6 @@ INDEX_HTML = """
     const appModeButtons = document.querySelectorAll('.mode-btn');
     const editView = document.getElementById('edit-view');
     const upscaleView = document.getElementById('upscale-view');
-    
-    // --- НОВЫЙ КОД ДЛЯ ИНТЕРАКТИВНОГО ФОНА ---
-    const shapes = document.querySelectorAll('.shape');
-    window.addEventListener('mousemove', (e) => {
-        const { clientX, clientY } = e;
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-
-        shapes.forEach(shape => {
-            const rect = shape.getBoundingClientRect();
-            const shapeCenterX = rect.left + rect.width / 2;
-            const shapeCenterY = rect.top + rect.height / 2;
-
-            // Расстояние от курсора до центра фигуры
-            const distance = Math.sqrt(Math.pow(clientX - shapeCenterX, 2) + Math.pow(clientY - shapeCenterY, 2));
-
-            // Сила отталкивания. Чем ближе курсор, тем сильнее
-            const maxDistance = 400; // Максимальная дистанция влияния
-            const force = Math.max(0, (maxDistance - distance) / maxDistance);
-            
-            // Вектор от курсора к фигуре
-            const deltaX = shapeCenterX - clientX;
-            const deltaY = shapeCenterY - clientY;
-
-            // Нормализуем вектор
-            const vectorLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            const normX = deltaX / vectorLength;
-            const normY = deltaY / vectorLength;
-
-            // Применяем силу отталкивания
-            const pushStrength = 50; // Насколько сильно отталкивать
-            const pushX = normX * force * pushStrength;
-            const pushY = normY * force * pushStrength;
-            
-            // Применяем transform. Мы не перезаписываем базовую анимацию,
-            // а добавляем к ней смещение от курсора.
-            // CSS transition сделает движение плавным.
-            shape.style.transform = `translate(${pushX}px, ${pushY}px)`;
-        });
-    });
-    // --- КОНЕЦ КОДА ДЛЯ ИНТЕРАКТИВНОГО ФОНА ---
-
 
     // --- Burger Menu Logic ---
     if (burgerMenuToggle) {
