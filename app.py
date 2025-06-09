@@ -119,9 +119,12 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+        
+        username_data = form.username.data if form.username.data and form.username.data.strip() else None
+
         new_user = User(
             email=form.email.data,
-            username=form.username.data,
+            username=username_data,
             password=hashed_password,
             marketing_consent=form.marketing_consent.data
         )
@@ -311,7 +314,11 @@ INDEX_HTML = """
             transition: all var(--transition-speed) ease; position: relative;
         }
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
-        .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
+        .burger-menu-btn svg .line {
+            stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round;
+            transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out;
+            transform-origin: center;
+        }
         .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
         .burger-menu-btn.open .burger-icon .line1 { transform: translateY(5.5px) rotate(45deg); }
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
@@ -370,7 +377,6 @@ INDEX_HTML = """
         .image-inputs-container {
             display: flex; justify-content: center; gap: 15px; width: 100%;
         }
-        .image-inputs-container.remix-mode .image-drop-area { flex: 1; max-width: none; }
         
         .image-drop-area {
             width: 100%; height: 160px; 
@@ -438,6 +444,7 @@ INDEX_HTML = """
         .loader-container {
             width: 100%; padding: 40px 0; justify-content: center; align-items: center; z-index: 101; display: flex;
             flex-shrink: 0;
+            flex-grow: 1;
         }
         .pulsating-dot {
             width: 80px; height: 80px; background-color: var(--accent-color);
@@ -487,14 +494,14 @@ INDEX_HTML = """
             font-size: 0.9rem; color: var(--primary-text-color); margin-bottom: 0; padding-left: 5px; 
             font-weight: 700;
         }
-        .edit-mode-selector, .resolution-selector {
+        .resolution-selector {
             display: flex; gap: 10px; width: 100%; background-color: rgba(0,0,0,0.25);
             padding: 5px; border-radius: var(--button-border-radius); border: 1px solid var(--border-color);
         }
         .template-selector {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%;
         }
-        .edit-mode-btn, .resolution-btn {
+        .resolution-btn {
             flex: 1; padding: 12px;
             border-radius: 10px;
             border: none; background-color: transparent;
@@ -502,10 +509,10 @@ INDEX_HTML = """
             font-size: 0.85rem; font-weight: 500;
             transition: all var(--transition-speed) ease; text-align: center;
         }
-        .edit-mode-btn:hover, .resolution-btn:hover {
+        .resolution-btn:hover {
             color: var(--primary-text-color); background-color: rgba(255,255,255,0.05);
         }
-        .edit-mode-btn.active, .resolution-btn.active {
+        .resolution-btn.active {
             background-color: var(--accent-color); border-color: var(--accent-color);
             color: var(--accent-text-color); box-shadow: 0 0 15px var(--accent-glow);
             font-weight: 700;
@@ -532,12 +539,6 @@ INDEX_HTML = """
         .template-btn svg { width: 22px; height: 22px; margin-bottom: 5px; color: var(--secondary-text-color); transition: all var(--transition-speed) ease; }
         .template-btn:hover svg, .template-btn.active svg { color: var(--accent-color); }
         
-        .mode-description {
-            font-size: 0.85rem; color: var(--secondary-text-color); text-align: center;
-            width: 100%; padding: 0 10px; line-height: 1.5; min-height: 2.5em;
-            font-weight: 300;
-        }
-
         .slider-container { width: 100%; padding: 10px; background-color: rgba(0,0,0,0.25); border-radius: var(--element-border-radius); border: 1px solid var(--border-color);}
         .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .slider-container label { font-weight: 500; color: var(--primary-text-color); font-size: 0.9rem; }
@@ -660,14 +661,6 @@ INDEX_HTML = """
     <div class="app-container">
         <div class="content-wrapper" id="main-content-wrapper">
             <div id="edit-view">
-                <div class="control-group">
-                    <div class="edit-mode-selector">
-                        <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Add or remove objects, modify style or lighting.">Edit</button>
-                        <button class="edit-mode-btn" data-edit-mode="remix" data-description="Remix two images, integrate new items or transfer style.">Remix</button>
-                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
-                    </div>
-                </div>
-                 <p id="edit-mode-description" class="mode-description"></p>
 
                 <div class="image-inputs-container">
                     <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
@@ -677,16 +670,8 @@ INDEX_HTML = """
                         </div>
                         <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
                     </label>
-                    <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
-                        <div class="drop-placeholder">
-                            <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-                            <span class="drop-placeholder-text">Drop Style or Click</span>
-                        </div>
-                        <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
-                    </label>
                 </div>
                 <input type="file" id="image-file-edit-1" name="image1" accept="image/*" style="display: none;">
-                <input type="file" id="image-file-edit-2" name="image2" accept="image/*" style="display: none;">
 
                 <div id="edit-controls-container" style="width:100%; display:flex; flex-direction:column; gap: 15px;">
                     <div class="control-group">
@@ -707,26 +692,6 @@ INDEX_HTML = """
                                 <button class="template-btn" data-prompt="change background to a detailed city street">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 3.94A2.25 2.25 0 0 1 12 2.25a2.25 2.25 0 0 1 1.66.94m-3.32 0A2.25 2.25 0 0 0 12 2.25a2.25 2.25 0 0 0 1.66.94m0 0a2.25 2.25 0 0 1 2.25 2.25v5.169a2.25 2.25 0 0 1-2.25-2.25H8.34a2.25 2.25 0 0 1-2.25-2.25V6.44a2.25 2.25 0 0 1 2.25-2.25m6.062 0a2.25 2.25 0 0 0-1.66-.94m-3.32 0a2.25 2.25 0 0 1-1.66.94m12.334 10.035a2.25 2.25 0 0 1-2.25 2.25h-5.169a2.25 2.25 0 0 1-2.25-2.25v-5.169a2.25 2.25 0 0 1 2.25-2.25h5.169a2.25 2.25 0 0 1 2.25 2.25v5.169z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.87a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25z" /></svg>
                                     Change
-                                </button>
-                            </div>
-                        </div>
-                        <div id="templates-for-remix" style="display: none;">
-                             <div class="template-selector">
-                                <button class="template-btn" data-prompt="professional product shot, clean background">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                                    Product shot
-                                </button>
-                                <button class="template-btn" data-prompt="consistent character, same face, different pose">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-                                    Consistent character
-                                </button>
-                                <button class="template-btn" data-prompt="virtual try-on, wearing the new clothing item from the second image">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404 4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
-                                    Try-on
-                                </button>
-                                <button class="template-btn" data-prompt="apply the artistic style of the second image to the first image">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 011.622-3.385m5.043.025a2.25 2.25 0 012.4-2.245 4.5 4.5 0 00-8.4-2.245c0 .399.078.78.22 1.128zm0 0a15.998 15.998 0 01-3.388-1.62m5.043-.025a15.998 15.998 0 00-1.622-3.385" /></svg>
-                                    Style transfer
                                 </button>
                             </div>
                         </div>
@@ -855,39 +820,9 @@ INDEX_HTML = """
             editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
             upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
             resetLeftPanel();
-            if(currentMode === 'edit') {
-                const activeEditMode = document.querySelector('.edit-mode-btn.active');
-                if (activeEditMode) activeEditMode.click();
-            }
         });
     });
 
-    const editModeButtons = document.querySelectorAll('.edit-mode-btn');
-    const editModeDescription = document.getElementById('edit-mode-description');
-    const imageInputsContainer = document.querySelector('.image-inputs-container');
-    const imageDropArea2 = document.getElementById('image-drop-area-edit-2');
-    const editControlsContainer = document.getElementById('edit-controls-container');
-    const templatesForEdit = document.getElementById('templates-for-edit');
-    const templatesForRemix = document.getElementById('templates-for-remix');
-
-    editModeButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            const editMode = e.currentTarget.dataset.editMode;
-            editModeButtons.forEach(btn => btn.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            editModeDescription.textContent = e.currentTarget.dataset.description;
-            const showSecondImage = (editMode === 'remix');
-            const showControls = (editMode === 'edit' || editMode === 'remix');
-            imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
-            imageInputsContainer.classList.toggle('remix-mode', showSecondImage);
-            editControlsContainer.style.display = showControls ? 'flex' : 'none';
-            if (showControls) {
-                templatesForEdit.style.display = (editMode === 'edit') ? 'block' : 'none';
-                templatesForRemix.style.display = (editMode === 'remix') ? 'block' : 'none';
-            }
-        });
-    });
-    
     const allTemplateButtons = document.querySelectorAll('.template-btn');
     const promptInput = document.getElementById('prompt');
     
@@ -926,7 +861,6 @@ INDEX_HTML = """
     setupSlider('hdr-slider', 'hdr-value');
 
     const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
-    const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
     const upscaleImageInput = document.getElementById('image-file-upscale');
     const errorBox = document.getElementById('error-box');
     const historyPlaceholder = document.getElementById('history-placeholder');
@@ -952,6 +886,11 @@ INDEX_HTML = """
         currentLoaderId = 'loader-' + Date.now();
         const loaderHtml = `<div class="loader-container" id="${currentLoaderId}"><div class="pulsating-dot"></div></div>`;
         resultAreaRight.insertAdjacentHTML('afterbegin', loaderHtml);
+        
+        const loader = document.getElementById(currentLoaderId);
+        if (loader && window.innerWidth <= 768) {
+            loader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
     
     function createHistoryItem(url) {
@@ -1018,7 +957,6 @@ INDEX_HTML = """
     }
 
     setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
-    setupDragAndDrop(document.getElementById('image-drop-area-edit-2'), imageFileInputEdit2);
     setupDragAndDrop(document.querySelector('#upscale-view .image-drop-area'), upscaleImageInput);
 
     function resetImagePreviews() {
@@ -1030,7 +968,6 @@ INDEX_HTML = """
             if (p) p.style.display = 'flex';
         });
         imageFileInputEdit1.value = '';
-        imageFileInputEdit2.value = '';
         upscaleImageInput.value = '';
     }
 
@@ -1041,23 +978,15 @@ INDEX_HTML = """
         formData.append('mode', currentMode);
 
         if (currentMode === 'edit') {
-            const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
-            formData.append('edit_mode', editMode);
+            formData.append('edit_mode', 'edit');
             
             if (!imageFileInputEdit1.files[0]) {
-                showError("Please select an image to " + editMode + ".");
+                showError("Please select an image to edit.");
                 stopLoading(null); return;
             }
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
 
-            if (editMode === 'remix') {
-                if (!imageFileInputEdit2.files[0]) {
-                    showError("Please select the second image for Remix mode.");
-                    stopLoading(null); return;
-                }
-                formData.append('image2', imageFileInputEdit2.files[0]);
-            }
         } else if (currentMode === 'upscale') {
             if (!upscaleImageInput.files[0]) {
                 showError("Please select an image to upscale.");
@@ -1328,47 +1257,13 @@ def process_image():
         model_version_id = ""
 
         if mode == 'edit':
-            edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
-            final_prompt = prompt
-
-            if edit_mode == 'remix':
-                if 'image2' not in request.files:
-                    return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
-                s3_url_2 = upload_file_to_s3(request.files['image2'])
-                model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
-                final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the style of the second image with the content of the first image"
-                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-                replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt}
-            
-            elif edit_mode == 'autofix':
-                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-                if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
-                
-                print("!!! Запрос к OpenAI Vision API для Autofix...")
-                response = openai_client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
-                        },
-                        { "role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
-                    ], max_tokens=150
-                )
-                final_prompt = response.choices[0].message.content.strip()
-                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-                print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
-                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
-
-            else: # Standard Edit mode
-                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-                final_prompt = improve_prompt_with_openai(prompt)
-                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            final_prompt = improve_prompt_with_openai(prompt)
+            final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
+            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
-            # ЗАМЕНА ID МОДЕЛИ
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             
             scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
@@ -1376,7 +1271,6 @@ def process_image():
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
             dynamic = round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
 
-            # Параметры соответствуют модели и UI
             replicate_input = {
                 "image": s3_url,
                 "scale_factor": scale_factor,
