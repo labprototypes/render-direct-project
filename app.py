@@ -86,7 +86,6 @@ REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 if OPENAI_API_KEY:
-    openai.api_key = OPENAI_API_KEY
     openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 else:
     openai_client = None
@@ -1052,7 +1051,11 @@ INDEX_HTML = """
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
 
-            if (editMode === 'remix' && imageFileInputEdit2.files[0]) {
+            if (editMode === 'remix') {
+                if (!imageFileInputEdit2.files[0]) {
+                    showError("Please select the second image for Remix mode.");
+                    stopLoading(null); return;
+                }
                 formData.append('image2', imageFileInputEdit2.files[0]);
             }
         } else if (currentMode === 'upscale') {
@@ -1255,11 +1258,36 @@ def upload_file_to_s3(file_to_upload):
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
     
+    file_to_upload.stream.seek(0)
     s3_client.upload_fileobj(file_to_upload.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': file_to_upload.content_type})
     
     hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
     print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
     return hosted_image_url
+
+def improve_prompt_with_openai(user_prompt):
+    if not openai_client:
+        print("!!! OpenAI API не настроен, возвращаем оригинальный промпт.")
+        return user_prompt
+    if not user_prompt or user_prompt.isspace():
+        return "A vibrant, hyperrealistic, high-detail image"
+        
+    try:
+        completion = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.5, max_tokens=100
+        )
+        improved_prompt = completion.choices[0].message.content.strip()
+        print(f"!!! Оригинальный промпт: {user_prompt}")
+        print(f"!!! Улучшенный промпт: {improved_prompt}")
+        return improved_prompt
+    except Exception as e:
+        print(f"!!! Ошибка при обращении к OpenAI для улучшения промпта: {e}")
+        return user_prompt # Fallback to original prompt
 
 def poll_replicate_for_result(prediction_url):
     headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
@@ -1267,7 +1295,9 @@ def poll_replicate_for_result(prediction_url):
     while retries < max_retries:
         time.sleep(2)
         get_response = requests.get(prediction_url, headers=headers)
-        get_response.raise_for_status() # Will raise an exception for 4xx/5xx status
+        if get_response.status_code >= 400:
+            print(f"!!! Ошибка от Replicate при получении статуса: {get_response.status_code} - {get_response.text}")
+            raise Exception(f"Ошибка API Replicate при проверке статуса: {get_response.text}")
         
         status_data = get_response.json()
         print(f"Статус генерации Replicate: {status_data['status']}")
@@ -1285,7 +1315,6 @@ def poll_replicate_for_result(prediction_url):
 def process_image():
     mode = request.form.get('mode')
     
-    # Determine token cost
     token_cost = 5 if mode == 'upscale' else 1
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Недостаточно токенов'}), 403
@@ -1301,71 +1330,59 @@ def process_image():
         if mode == 'edit':
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
+            final_prompt = prompt
 
             if edit_mode == 'remix':
                 if 'image2' not in request.files:
                     return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
                 s3_url_2 = upload_file_to_s3(request.files['image2'])
                 model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
-                replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": prompt}
+                final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the style of the second image with the content of the first image"
+                replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt}
             
-            else: # Handles 'edit' and 'autofix'
+            elif edit_mode == 'autofix':
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-                final_prompt = prompt
+                if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
                 
-                if edit_mode == 'autofix':
-                    if not openai_client:
-                        raise Exception("OpenAI API не настроен для Autofix.")
-                    
-                    print("!!! Запрос к OpenAI Vision API для Autofix...")
-                    response = openai_client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are an AI assistant that analyzes images for visual artifacts, flaws, or imperfections (like extra fingers, bad lighting, poor composition). Your task is to generate a concise, descriptive prompt for another AI image editor to fix these issues. Describe only the desired final state. For example, if there are 6 fingers on a hand, your output prompt should be 'Correct the hand to have five fingers, realistic anatomy'. Only output the corrective prompt itself, with no additional text or explanations."
-                            },
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"type": "text", "text": "Analyze this image and provide a prompt to fix its flaws."},
-                                    {"type": "image_url", "image_url": {"url": s3_url}},
-                                ],
-                            }
-                        ],
-                        max_tokens=100
-                    )
-                    final_prompt = response.choices[0].message.content.strip()
-                    print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
+                print("!!! Запрос к OpenAI Vision API для Autofix...")
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
+                        },
+                        { "role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
+                    ], max_tokens=150
+                )
+                final_prompt = response.choices[0].message.content.strip()
+                print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
+            else: # Standard Edit mode
+                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+                final_prompt = improve_prompt_with_openai(prompt)
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
             model_version_id = "philz1337x/clarity-upscaler:060422da195242273e57d19793540c11739818ca2101349a1714150a498b9a14"
             
-            # --- Конвертация значений со слайдеров ---
             scale_factor = int(request.form.get('scale_factor', 'x2').replace('x', ''))
             creativity = float(request.form.get('creativity', '30')) / 100.0
             resemblance = float(request.form.get('resemblance', '20')) / 100.0 * 3.0
             hdr = float(request.form.get('hdr', '10')) / 100.0 * 50.0
 
-            replicate_input = {
-                "image": s3_url,
-                "scale_factor": scale_factor,
-                "creativity": creativity,
-                "resemblance": resemblance,
-                "dynamic": hdr
-            }
+            replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": hdr}
         
         else:
             return jsonify({'error': 'Неизвестный режим работы'}), 400
 
-        # --- Запуск и ожидание Replicate ---
-        if not REPLICATE_API_TOKEN:
-            raise Exception("REPLICATE_API_TOKEN не настроен.")
+        if not REPLICATE_API_TOKEN: raise Exception("REPLICATE_API_TOKEN не настроен.")
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input}
+        
+        print(f"!!! Replicate Payload: {post_payload}") # --- Улучшенное логирование
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
