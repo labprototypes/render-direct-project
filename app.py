@@ -197,14 +197,14 @@ INDEX_HTML = """
             --accent-glow: rgba(217, 244, 122, 0.7);
             --base-bg-color: #0c0d10;
             --surface-color: #1c1c1f;
-            --surface-glass: rgba(28, 28, 31, 0.4); 
+            --surface-glass: rgba(35, 35, 38, 0.6); /* --- Непрозрачность подложки --- */
             --primary-text-color: #EAEAEA;
             --secondary-text-color: #888888;
             --accent-text-color: #1A1A1A;
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
 
-            --blur-intensity: 22px; 
+            --blur-intensity: 25px; /* --- Интенсивность блюра --- */
             --content-border-radius: 24px;
             --element-border-radius: 16px;
             --button-border-radius: 14px;
@@ -212,6 +212,13 @@ INDEX_HTML = """
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* --- Кастомный скроллбар для Webkit --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.2); }
+
 
         body {
             font-family: 'Norms', sans-serif;
@@ -233,7 +240,6 @@ INDEX_HTML = """
         
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
-            /* --- Изменены отступы, добавлен нижний --- */
             padding: 100px 25px 40px;
             display: flex; flex-direction: row; align-items: flex-start;
             gap: 25px; height: 100vh;
@@ -244,11 +250,12 @@ INDEX_HTML = """
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            /* --- Убрана подложка, теперь только стекло --- */
-            background-color: transparent;
+            background-color: var(--surface-glass); /* --- Возвращена подложка --- */
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border-bottom: 1px solid var(--border-color);
+            /* --- Тень для объема --- */
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
         }
         .page-header-inner {
             width: 100%; max-width: 1200px; padding: 0 25px;
@@ -270,15 +277,17 @@ INDEX_HTML = """
             border-radius: 10px; cursor: pointer;
             font-family: 'Norms', sans-serif; font-size: 0.9rem;
             font-weight: 500;
-            color: var(--secondary-text-color);
+            color: var(--primary-text-color); /* --- Изменен цвет неактивной кнопки на белый --- */
+            opacity: 0.7; /* --- Неактивная кнопка полупрозрачна --- */
             transition: all var(--transition-speed) ease;
         }
         .mode-btn.active {
             background-color: var(--accent-color); color: var(--accent-text-color);
             font-weight: 700;
+            opacity: 1;
             box-shadow: 0 0 15px var(--accent-glow);
         }
-        .mode-btn:not(.active):hover { color: var(--primary-text-color); }
+        .mode-btn:not(.active):hover { opacity: 1; color: var(--primary-text-color); }
 
         .top-right-nav { position: relative; display: flex; align-items: center; }
 
@@ -303,12 +312,12 @@ INDEX_HTML = """
             transition: all var(--transition-speed) ease; position: relative;
         }
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
-        /* --- Правка анимации бургера для центрирования крестика --- */
+        /* --- Финальная правка центрирования крестика --- */
         .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(5.5px) rotate(45deg); }
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(5.2px) rotate(45deg); }
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
-        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-5.5px) rotate(-45deg); }
+        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-5.2px) rotate(-45deg); }
         
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
@@ -351,6 +360,8 @@ INDEX_HTML = """
             transition: opacity var(--transition-speed), filter var(--transition-speed);
             border: 1px solid var(--border-color);
             box-shadow: 0 10px 40px var(--shadow-color);
+            /* --- Включен скролл для левой панели если контент не влезает --- */
+            overflow-y: auto;
         }
         .content-wrapper.disabled { opacity: 0.5; pointer-events: none; filter: blur(4px); }
         
@@ -365,7 +376,7 @@ INDEX_HTML = """
         .image-inputs-container.remix-mode .image-drop-area { flex: 1; max-width: none; }
         
         .image-drop-area {
-            width: 100%; height: 160px; /* --- Уменьшена высота --- */ 
+            width: 100%; height: 160px; 
             background-color: rgba(0,0,0,0.25);
             border-radius: var(--element-border-radius); display: flex; flex-direction: column;
             justify-content: center; align-items: center; cursor: pointer;
@@ -387,35 +398,50 @@ INDEX_HTML = """
             border-radius: inherit; position: absolute; z-index: 1;
         }
         
+        /* --- Стили для правой панели (истории) --- */
         #result-area-right {
             flex: 1; 
-            /* --- Изменена высота с учетом отступов --- */
             height: calc(100vh - 140px); 
-            display: none;
-            justify-content: center; align-items: center;
+            display: flex; /* --- Изменен на flex для управления контентом --- */
+            flex-direction: column;
+            gap: 20px;
             background-color: rgba(0,0,0,0.2);
             border-radius: var(--content-border-radius);
             border: 1px solid var(--border-color);
             padding: 20px;
+            overflow-y: auto; /* --- Включен скролл для истории --- */
         }
-        .result-image-wrapper {
+        #history-placeholder {
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; width: 100%; height: 100%; color: var(--secondary-text-color);
+            text-align: center; gap: 15px; font-size: 0.9rem;
+        }
+        #history-placeholder svg { width: 48px; height: 48px; }
+        
+        .history-item {
              justify-content: center; display: flex; align-items: center;
-             width: 100%; height: 100%; position: relative;
+             width: 100%; position: relative;
+             flex-shrink: 0; /* --- Предотвращает сжатие элементов истории --- */
         }
-        #result-image {
-            max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--element-border-radius);
+        .history-item-image {
+            width: 100%; height: auto; object-fit: contain; border-radius: var(--element-border-radius);
             box-shadow: 0 10px 40px var(--shadow-color); display: block;
         }
         .download-action-link {
-            display: flex; position: absolute; top: calc(100% + 15px); right: 0;
+            display: flex; position: absolute; bottom: 15px; right: 15px;
             z-index: 10; cursor: pointer;
             transition: transform var(--transition-speed) ease;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            padding: 8px;
         }
         .download-action-link:hover { transform: scale(1.1); }
-        .download-button-icon { height: 36px; width: 36px; display: block; filter: drop-shadow(0 4px 8px var(--shadow-color)); }
+        .download-button-icon { height: 24px; width: 24px; display: block; }
 
         .loader-container {
-            width: 100%; height: 100%; justify-content: center; align-items: center; z-index: 101; display: flex;
+            width: 100%; padding: 40px 0; justify-content: center; align-items: center; z-index: 101; display: flex;
+            flex-shrink: 0;
         }
         .pulsating-dot {
             width: 80px; height: 80px; background-color: var(--accent-color);
@@ -494,7 +520,7 @@ INDEX_HTML = """
             gap: 8px; padding: 12px; border-radius: var(--element-border-radius);
             border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
             color: var(--primary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
-            font-size: 0.8rem; /* --- Уменьшен шрифт --- */
+            font-size: 0.8rem;
             font-weight: 500; 
             transition: all var(--transition-speed) ease; text-align: center;
         }
@@ -546,8 +572,8 @@ INDEX_HTML = """
             display: flex; justify-content: center; align-items: center; gap: 8px;
             font-size: 0.9rem; color: var(--secondary-text-color); font-weight: 500;
         }
-        /* --- Удалена кастомная стилизация для монетки в 'cost', теперь она как в шапке --- */
-        .token-cost .token-coin { width: 14px; height: 14px; margin-left: 0; box-shadow: none; }
+        .token-cost .token-coin { width: 14px; height: 14px; margin-left: 0; box-shadow: none; background-color: var(--secondary-text-color);}
+        .token-cost .token-coin { background-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-glow); }
 
         .error-message {
             display: none; font-size: 0.9rem; color: #F0F0F0;
@@ -562,14 +588,16 @@ INDEX_HTML = """
         }
         
         @media (max-width: 992px) {
+            body { overflow-y: auto; } /* --- Включаем скролл на мобильных --- */
             .app-container {
                 flex-direction: column; align-items: center; height: auto;
-                overflow-y: auto; padding-top: 100px; padding-bottom: 25px;
+                overflow-y: visible; padding-top: 100px; padding-bottom: 25px;
             }
              #result-area-right {
-                width: 100%; height: auto; aspect-ratio: 16/10; flex: none; min-height: 300px;
-                margin-bottom: 15px;
+                width: 100%; height: auto; flex: none; min-height: 300px;
+                margin-bottom: 15px; max-height: 60vh;
             }
+            .content-wrapper { overflow-y: visible; }
         }
 
         @media (max-width: 768px) {
@@ -676,7 +704,7 @@ INDEX_HTML = """
                                     Remove
                                 </button>
                                 <button class="template-btn" data-prompt="change background to a detailed city street">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12a8.963 8.963 0 0 1 4.282-7.532" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.227m-5.88 12.333a11.956 11.956 0 01-2.348-1.757m3.256-4.013a11.956 11.956 0 011.757-2.348m0 0a48.067 48.067 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023m11.01 4.288a51.842 51.842 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023m11.01 4.288a51.842 51.842 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023m11.01 4.288a51.842 51.842 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.87a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z" /></svg>
                                     Change
                                 </button>
                             </div>
@@ -734,32 +762,34 @@ INDEX_HTML = """
                         <button class="resolution-btn" data-value="x8">x8</button>
                     </div>
                 </div>
-
-                <div class="control-group">
-                     <div class="slider-container">
-                        <div class="slider-header">
-                            <label for="creativity-slider">Creativity</label>
-                            <span class="slider-value" id="creativity-value">70</span>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                    <div class="control-group">
+                         <div class="slider-container">
+                            <div class="slider-header">
+                                <label for="creativity-slider">Creativity</label>
+                                <span class="slider-value" id="creativity-value">70</span>
+                            </div>
+                            <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
                         </div>
-                        <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
                     </div>
-                </div>
-                <div class="control-group">
-                     <div class="slider-container">
-                         <div class="slider-header">
-                            <label for="resemblance-slider">Resemblance</label>
-                            <span class="slider-value" id="resemblance-value">80</span>
+                    <div class="control-group">
+                         <div class="slider-container">
+                             <div class="slider-header">
+                                <label for="resemblance-slider">Resemblance</label>
+                                <span class="slider-value" id="resemblance-value">80</span>
+                            </div>
+                            <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
                         </div>
-                        <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
                     </div>
-                </div>
-                <div class="control-group">
-                     <div class="slider-container">
-                         <div class="slider-header">
-                            <label for="hdr-slider">HDR</label>
-                            <span class="slider-value" id="hdr-value">50</span>
+                    <div class="control-group">
+                         <div class="slider-container">
+                             <div class="slider-header">
+                                <label for="hdr-slider">HDR</label>
+                                <span class="slider-value" id="hdr-value">50</span>
+                            </div>
+                            <input type="range" id="hdr-slider" min="0" max="100" value="50" class="custom-slider">
                         </div>
-                        <input type="range" id="hdr-slider" min="0" max="100" value="50" class="custom-slider">
                     </div>
                 </div>
 
@@ -774,15 +804,12 @@ INDEX_HTML = """
         </div>
 
         <div id="result-area-right">
-             <div class="loader-container">
-                <div class="pulsating-dot"></div>
-            </div>
-            <div class="result-image-wrapper">
-                <img id="result-image" src="" alt="Generated Image">
-                <a href="#" id="download-action" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
-                    <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
-                </a>
-            </div>
+             <div id="history-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                Your generations will appear here.
+             </div>
         </div>
     </div>
 
@@ -828,7 +855,8 @@ INDEX_HTML = """
             editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
             upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
 
-            showView('main');
+            resetLeftPanel();
+
             if(currentMode === 'edit') {
                 const activeEditMode = document.querySelector('.edit-mode-btn.active');
                 if (activeEditMode) activeEditMode.click();
@@ -866,7 +894,6 @@ INDEX_HTML = """
         });
     });
     
-    // --- Template Buttons Logic (applies to all template buttons) ---
     const allTemplateButtons = document.querySelectorAll('.template-btn');
     const promptInput = document.getElementById('prompt');
     
@@ -874,7 +901,6 @@ INDEX_HTML = """
         button.addEventListener('click', () => {
             promptInput.value = button.dataset.prompt;
             promptInput.focus();
-            // Deactivate all template buttons, then activate the clicked one
             allTemplateButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
         });
@@ -908,11 +934,6 @@ INDEX_HTML = """
     const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
     const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
     const upscaleImageInput = document.getElementById('image-file-upscale');
-
-    const resultImageWrapper = resultAreaRight.querySelector('.result-image-wrapper');
-    const resultImage = document.getElementById('result-image');
-    const downloadLink = document.getElementById('download-action');
-    const loader = resultAreaRight.querySelector('.loader-container');
     const errorBox = document.getElementById('error-box');
 
     function showError(message) {
@@ -920,26 +941,59 @@ INDEX_HTML = """
         errorBox.style.display = 'block';
         setTimeout(() => { errorBox.style.display = 'none'; }, 5000);
     }
+    
+    function resetLeftPanel() {
+        mainContentWrapper.classList.remove('disabled');
+        resetImagePreviews();
+        promptInput.value = '';
+        allTemplateButtons.forEach(btn => btn.classList.remove('active'));
+    }
 
-    function showView(viewName) {
-        if (viewName === 'main') {
-            mainContentWrapper.classList.remove('disabled');
-            resultAreaRight.style.display = 'none';
-            resetImagePreviews();
-            promptInput.value = '';
-            allTemplateButtons.forEach(btn => btn.classList.remove('active'));
-        } else if (viewName === 'loading') {
-            mainContentWrapper.classList.add('disabled');
-            resultAreaRight.style.display = 'flex';
-            resultImageWrapper.style.display = 'none';
-            loader.style.display = 'flex';
-        } else if (viewName === 'result') {
-            mainContentWrapper.classList.remove('disabled');
-            resultAreaRight.style.display = 'flex';
-            loader.style.display = 'none';
-            resultImageWrapper.style.display = 'flex';
+    // --- Новый код для истории ---
+    const historyPlaceholder = document.getElementById('history-placeholder');
+    let currentLoaderId = null;
+
+    function startLoading() {
+        mainContentWrapper.classList.add('disabled');
+        if (historyPlaceholder) historyPlaceholder.style.display = 'none';
+        
+        currentLoaderId = 'loader-' + Date.now();
+        const loaderHtml = `
+            <div class="loader-container" id="${currentLoaderId}">
+                <div class="pulsating-dot"></div>
+            </div>`;
+        resultAreaRight.insertAdjacentHTML('afterbegin', loaderHtml);
+    }
+
+    function stopLoading(isSuccess) {
+        mainContentWrapper.classList.remove('disabled');
+        const loader = document.getElementById(currentLoaderId);
+        if (loader) {
+            loader.remove();
+        }
+        if (!isSuccess && resultAreaRight.children.length === 1) { // 1 because placeholder might be there
+             if (historyPlaceholder) historyPlaceholder.style.display = 'flex';
+        }
+        currentLoaderId = null;
+    }
+
+    function addImageToHistory(url) {
+        const historyItemHtml = `
+            <div class="history-item">
+                <img src="${url}" alt="Generated Image" class="history-item-image">
+                <a href="${url}" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
+                    <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
+                </a>
+            </div>`;
+        
+        const loader = document.getElementById(currentLoaderId);
+        if(loader) {
+            loader.insertAdjacentHTML('afterend', historyItemHtml);
+        } else {
+            resultAreaRight.insertAdjacentHTML('afterbegin', historyItemHtml);
         }
     }
+
 
     function handleFileSelect(file, previewElementId) {
         const previewElement = document.getElementById(previewElementId);
@@ -1000,7 +1054,7 @@ INDEX_HTML = """
     async function handleImageProcessing(submitButton) {
         const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
 
-        showView('loading');
+        startLoading();
 
         const formData = new FormData();
         let url = '';
@@ -1010,7 +1064,7 @@ INDEX_HTML = """
 
             if (!imageFileInputEdit1.files[0]) {
                 showError("Please select an image to " + editMode + ".");
-                showView('main'); return;
+                stopLoading(false); return;
             }
             url = "{{ url_for('process_image') }}";
             formData.append('image', imageFileInputEdit1.files[0]);
@@ -1022,7 +1076,7 @@ INDEX_HTML = """
 
         } else if (currentMode === 'upscale') {
             showError("Upscale functionality is not yet connected.");
-            showView('main');
+            stopLoading(false);
             return;
         }
 
@@ -1040,24 +1094,24 @@ INDEX_HTML = """
                 }
                 throw new Error(errorDetail);
             }
-
-            resultImage.src = data.output_url;
-            downloadLink.href = data.output_url;
-            if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
-                tokenBalanceDisplaySpan.textContent = data.new_token_balance;
-            }
-
+            
             const tempImg = new Image();
-            tempImg.onload = () => showView('result');
+            tempImg.onload = () => {
+                addImageToHistory(data.output_url);
+                stopLoading(true);
+                 if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
+                    tokenBalanceDisplaySpan.textContent = data.new_token_balance;
+                }
+            };
             tempImg.onerror = () => {
                 showError("Failed to load the generated image.");
-                showView('main');
+                stopLoading(false);
             };
             tempImg.src = data.output_url;
 
         } catch (error) {
             showError("An error occurred: " + error.message);
-            showView('main');
+            stopLoading(false);
         }
     }
 
@@ -1078,7 +1132,6 @@ INDEX_HTML = """
 
     // Initial setup on page load
     appModeButtons[0].click();
-    showView('main');
 
     });
     </script>
