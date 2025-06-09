@@ -11,6 +11,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
+from wtforms.widgets import CheckboxInput, SubmitInput
 
 # --- Настройки ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -91,6 +92,266 @@ else:
     openai_client = None
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
 
+# --- ШАБЛОН ДЛЯ СТРАНИЦ АУТЕНТИФИКАЦИИ ---
+def _render_auth_template(title, form, bottom_link_html):
+    
+    form_html = ""
+    for field in form:
+        if field.type == 'SubmitField':
+            continue # Кнопку обработаем отдельно
+        
+        field_html = f"<div class='form-group'>"
+        field_html += str(field.label(class_='form-label'))
+        
+        if field.type == 'BooleanField':
+             field_html += f"<div class='checkbox-wrapper'>{field(class_='form-checkbox')} <label for='{field.id}' class='checkbox-label'>{field.label.text}</label></div>"
+        else:
+            field_html += str(field(class_='form-input', placeholder=f'Введите {field.label.text.lower()}...'))
+
+        if field.errors:
+            field_html += "<ul class='errors'>"
+            for error in field.errors:
+                field_html += f"<li>{error}</li>"
+            field_html += "</ul>"
+        field_html += "</div>"
+        form_html += field_html
+
+    AUTH_TEMPLATE = f"""
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Changer AI - {title}</title>
+        <style>
+            @font-face {{
+                font-family: 'Norms';
+                src: url("{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2'); font-weight: 300;
+            }}
+            @font-face {{
+                font-family: 'Norms';
+                src: url("{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2'); font-weight: 400;
+            }}
+            @font-face {{
+                font-family: 'Norms';
+                src: url("{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2'); font-weight: 500;
+            }}
+            @font-face {{
+                font-family: 'Norms';
+                src: url("{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2'); font-weight: 700;
+            }}
+            :root {{
+                --accent-color: #D9F47A;
+                --accent-glow: rgba(217, 244, 122, 0.7);
+                --base-bg-color: #0c0d10;
+                --surface-color: #1c1c1f;
+                --primary-text-color: #EAEAEA;
+                --secondary-text-color: #888888;
+                --accent-text-color: #1A1A1A;
+                --border-color: rgba(255, 255, 255, 0.1);
+                --shadow-color: rgba(0, 0, 0, 0.5);
+                --error-color: #e53e3e;
+                --content-border-radius: 24px;
+                --button-border-radius: 14px;
+                --transition-speed: 0.3s;
+            }}
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{
+                font-family: 'Norms', sans-serif;
+                font-weight: 400;
+                color: var(--primary-text-color);
+                background-color: var(--base-bg-color);
+                background-image: url("{ url_for('static', filename='images/desktop_background.webp') }}");
+                background-size: cover;
+                background-position: center center;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            .page-header {{
+                position: absolute;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+            }}
+            .logo {{
+                height: 38px;
+            }}
+            .auth-container {{
+                width: 100%;
+                max-width: 440px;
+                padding: 35px;
+                background-color: var(--surface-color);
+                border-radius: var(--content-border-radius);
+                border: 1px solid var(--border-color);
+                box-shadow: 0 10px 40px var(--shadow-color);
+                text-align: center;
+            }}
+            h1 {{
+                font-weight: 700;
+                font-size: 2rem;
+                margin-bottom: 25px;
+            }}
+            .form-group {{
+                margin-bottom: 20px;
+                text-align: left;
+            }}
+            .form-label {{
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+                font-size: 0.9rem;
+                color: var(--primary-text-color);
+            }}
+            .form-input {{
+                width: 100%;
+                padding: 12px 15px;
+                background-color: rgba(0,0,0,0.25);
+                border: 1px solid var(--border-color);
+                border-radius: var(--button-border-radius);
+                color: var(--primary-text-color);
+                font-family: 'Norms', sans-serif;
+                font-size: 1rem;
+                transition: all var(--transition-speed) ease;
+            }}
+            .form-input:focus {{
+                outline: none;
+                border-color: var(--accent-color);
+                box-shadow: 0 0 15px rgba(217, 244, 122, 0.3);
+            }}
+            .form-input::placeholder {{
+                color: var(--secondary-text-color);
+            }}
+            .checkbox-wrapper {{
+                display: flex;
+                align-items: center;
+            }}
+            .form-checkbox {{
+                appearance: none;
+                background-color: rgba(0,0,0,0.25);
+                border: 1px solid var(--border-color);
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                cursor: pointer;
+                position: relative;
+                margin-right: 10px;
+                transition: all var(--transition-speed) ease;
+            }}
+            .form-checkbox:checked {{
+                background-color: var(--accent-color);
+                border-color: var(--accent-color);
+            }}
+            .form-checkbox:checked::after {{
+                content: '✔';
+                position: absolute;
+                color: var(--accent-text-color);
+                font-size: 14px;
+                font-weight: 900;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }}
+            .checkbox-label {{
+                font-weight: 400;
+                font-size: 0.9rem;
+                cursor: pointer;
+            }}
+            .errors li {{
+                color: var(--error-color);
+                font-size: 0.85rem;
+                list-style: none;
+                margin-top: 5px;
+            }}
+            .submit-button-element {{
+                width: 100%;
+                background-color: transparent;
+                color: var(--accent-color);
+                border: 1px solid var(--accent-color);
+                cursor: pointer;
+                padding: 16px;
+                border-radius: var(--button-border-radius);
+                font-size: 1.1rem;
+                font-family: 'Norms', sans-serif;
+                font-weight: 700;
+                transition: all var(--transition-speed) ease-out;
+                margin-top: 10px;
+            }}
+            .submit-button-element:hover {{
+                transform: translateY(-3px);
+                background-color: var(--accent-color);
+                color: var(--accent-text-color);
+                box-shadow: 0 5px 20px var(--accent-glow);
+            }}
+            .bottom-link {{
+                margin-top: 25px;
+                font-size: 0.9rem;
+            }}
+            .bottom-link a {{
+                color: var(--accent-color);
+                text-decoration: none;
+                font-weight: 700;
+            }}
+            .flash-messages {{
+                list-style: none;
+                padding: 0;
+                margin-bottom: 20px;
+            }}
+            .flash-messages li {{
+                padding: 12px 18px;
+                border-radius: 12px;
+                font-weight: 500;
+                border: 1px solid;
+            }}
+            .flash-messages li.error {{
+                color: #F0F0F0;
+                background-color: rgba(229, 62, 62, 0.5);
+                border-color: rgba(229, 62, 62, 0.8);
+            }}
+            .flash-messages li.success {{
+                 color: var(--accent-text-color);
+                 background-color: var(--accent-color);
+                 border-color: var(--accent-glow);
+            }}
+        </style>
+    </head>
+    <body>
+        <header class="page-header">
+            <a href="{url_for('index')}"><img src="{url_for('static', filename='images/LOGO_CHANGER.svg')}" alt="Changer Logo" class="logo"></a>
+        </header>
+        <main class="auth-container">
+            <h1>{title}</h1>
+
+            {{% with messages = get_flashed_messages(with_categories=true) %}}
+              {{% if messages %}}
+                <ul class="flash-messages">
+                {{% for category, message in messages %}}
+                  <li class="{{{{ category }}}}">{{{{ message }}}}</li>
+                {{% endfor %}}
+                </ul>
+              {{% endif %}}
+            {{% endwith %}}
+            
+            <form method="POST" action="">
+                {form.hidden_tag()}
+                {form_html}
+                {form.submit(class_='submit-button-element')}
+            </form>
+            <div class="bottom-link">
+                {bottom_link_html}
+            </div>
+        </main>
+    </body>
+    </html>
+    """
+    return render_template_string(AUTH_TEMPLATE)
+
+
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -102,10 +363,14 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user and check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember.data)
-            return redirect(url_for('index'))
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('index'))
         else:
             flash('Неверный email или пароль.', 'error')
-    return render_template('custom_login_user.html', form=form)
+    
+    bottom_link = f'Нет аккаунта? <a href="{url_for("register")}">Зарегистрироваться</a>'
+    return _render_auth_template("Вход", form, bottom_link)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -113,15 +378,21 @@ def register():
         return redirect(url_for('index'))
     form = RegisterForm()
     if form.validate_on_submit():
-        existing_user = User.query.filter_by(email=form.email.data).first()
-        if existing_user:
+        existing_user_by_email = User.query.filter_by(email=form.email.data).first()
+        if existing_user_by_email:
             flash('Пользователь с таким email уже существует.', 'error')
             return redirect(url_for('register'))
 
+        username_data = form.username.data if form.username.data and form.username.data.strip() else None
+        
+        if username_data:
+            existing_user_by_username = User.query.filter_by(username=username_data).first()
+            if existing_user_by_username:
+                flash('Это имя пользователя уже занято.', 'error')
+                return redirect(url_for('register'))
+
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
         
-        username_data = form.username.data if form.username.data and form.username.data.strip() else None
-
         new_user = User(
             email=form.email.data,
             username=username_data,
@@ -132,7 +403,9 @@ def register():
         db.session.commit()
         login_user(new_user)
         return redirect(url_for('index'))
-    return render_template('custom_register_user.html', form=form)
+
+    bottom_link = f'Уже есть аккаунт? <a href="{url_for("login")}">Войти</a>'
+    return _render_auth_template("Регистрация", form, bottom_link)
 
 @app.route('/change-password', methods=['GET', 'POST'])
 @login_required
@@ -141,13 +414,14 @@ def change_password():
     if form.validate_on_submit():
         if not check_password_hash(current_user.password, form.old_password.data):
             flash('Неверный текущий пароль.', 'error')
-            return redirect(url_for('change_password'))
-
-        current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
-        db.session.commit()
-        flash('Ваш пароль успешно изменен!', 'success')
-        return redirect(url_for('index'))
-    return render_template('custom_change_password.html', form=form)
+        else:
+            current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
+            db.session.commit()
+            flash('Ваш пароль успешно изменен!', 'success')
+            return redirect(url_for('index'))
+    
+    bottom_link = f'<a href="{url_for("index")}">Вернуться на главную</a>'
+    return _render_auth_template("Смена пароля", form, bottom_link)
 
 @app.route('/logout')
 @login_required
