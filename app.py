@@ -90,7 +90,7 @@ if OPENAI_API_KEY:
     openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 else:
     openai_client = None
-    print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
+    print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
 
 # --- ШАБЛОН ДЛЯ СТРАНИЦ АУТЕНТИФИКАЦИИ ---
 def _render_auth_template(title, form, bottom_link_html):
@@ -101,7 +101,10 @@ def _render_auth_template(title, form, bottom_link_html):
             continue # Кнопку обработаем отдельно
         
         field_html = f"<div class='form-group'>"
-        field_html += str(field.label(class_='form-label'))
+        
+        # Для чекбоксов не выводим label отдельно, он будет рядом с чекбоксом
+        if field.type != 'BooleanField':
+            field_html += str(field.label(class_='form-label'))
         
         if field.type == 'BooleanField':
              field_html += f"<div class='checkbox-wrapper'>{field(class_='form-checkbox')} <label for='{field.id}' class='checkbox-label'>{field.label.text}</label></div>"
@@ -116,6 +119,7 @@ def _render_auth_template(title, form, bottom_link_html):
         field_html += "</div>"
         form_html += field_html
 
+    # ВАЖНО: Все одинарные фигурные скобки Jinja заменены на двойные для корректной работы f-string
     AUTH_TEMPLATE = f"""
     <!DOCTYPE html>
     <html lang="ru">
@@ -124,22 +128,22 @@ def _render_auth_template(title, form, bottom_link_html):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Changer AI - {title}</title>
         <style>
-            @font-face {{
+            @font-face {{{{
                 font-family: 'Norms';
                 src: url("{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2'); font-weight: 300;
-            }}
-            @font-face {{
+            }}}}
+            @font-face {{{{
                 font-family: 'Norms';
                 src: url("{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2'); font-weight: 400;
-            }}
-            @font-face {{
+            }}}}
+            @font-face {{{{
                 font-family: 'Norms';
                 src: url("{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2'); font-weight: 500;
-            }}
-            @font-face {{
+            }}}}
+            @font-face {{{{
                 font-family: 'Norms';
                 src: url("{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2'); font-weight: 700;
-            }}
+            }}}}
             :root {{
                 --accent-color: #D9F47A;
                 --accent-glow: rgba(217, 244, 122, 0.7);
@@ -230,11 +234,16 @@ def _render_auth_template(title, form, bottom_link_html):
             .checkbox-wrapper {{
                 display: flex;
                 align-items: center;
+                cursor: pointer;
+            }}
+             .checkbox-wrapper .form-label {{
+                margin: 0;
             }}
             .form-checkbox {{
                 appearance: none;
                 background-color: rgba(0,0,0,0.25);
                 border: 1px solid var(--border-color);
+                min-width: 20px;
                 width: 20px;
                 height: 20px;
                 border-radius: 6px;
@@ -261,6 +270,11 @@ def _render_auth_template(title, form, bottom_link_html):
                 font-weight: 400;
                 font-size: 0.9rem;
                 cursor: pointer;
+                color: var(--secondary-text-color);
+            }}
+            .checkbox-label a {{
+                 color: var(--accent-color);
+                 text-decoration: none;
             }}
             .errors li {{
                 color: var(--error-color);
@@ -337,7 +351,7 @@ def _render_auth_template(title, form, bottom_link_html):
               {{% endif %}}
             {{% endwith %}}
             
-            <form method="POST" action="">
+            <form method="POST" action="" novalidate>
                 {form.hidden_tag()}
                 {form_html}
                 {form.submit(class_='submit-button-element')}
@@ -349,7 +363,7 @@ def _render_auth_template(title, form, bottom_link_html):
     </body>
     </html>
     """
-    return render_template_string(AUTH_TEMPLATE)
+    return render_template_string(AUTH_TEMPLATE.replace('{{%', '{%').replace('%}}', '%}').replace('{{{{', '{{').replace('}}}}', '}}'))
 
 
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
@@ -1494,7 +1508,7 @@ def improve_prompt_with_openai(user_prompt):
 
 def poll_replicate_for_result(prediction_url):
     headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-    max_retries, retries = 60, 0
+    max_retries, retries = 60, 0 # 2 минуты таймаут (60 * 2 сек)
     while retries < max_retries:
         time.sleep(2)
         get_response = requests.get(prediction_url, headers=headers)
