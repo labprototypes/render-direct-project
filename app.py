@@ -58,6 +58,7 @@ class User(db.Model, UserMixin):
     subscription_status = db.Column(db.String(50), default='inactive', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
+    current_plan = db.Column(db.String(50), nullable=True, default='free') # Например, free, taste, best, pro
 
     @property
     def is_active(self):
