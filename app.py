@@ -1383,18 +1383,18 @@ def process_image():
             # ШАГ 2: Получаем значения из формы и приводим их к правильному формату и диапазону
             
             # Коэффициент увеличения остается как есть
-            scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
+            scale_factor = int(request.form.get('scale_factor', 'x2').replace('x', ''))
             
             # Приводим значение Creativity (0-100) к диапазону (0.0-1.0)
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
+            creativity = round(int(request.form.get('creativity', '30')) / 100.0, 4)
             
             # Приводим значение Resemblance (0-100) к диапазону (0.0-1.0)
             # Убрана некорректная операция умножения на 3.0
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0, 4)
+            resemblance = round(int(request.form.get('resemblance', '20')) / 100.0, 4)
             
             # Приводим значение HDR (0-100) к диапазону (0.0-1.0)
             # Убрана некорректная операция умножения на 50.0
-            hdr_value = round(float(request.form.get('hdr', '10')) / 100.0, 4)
+            hdr_value = round(int(request.form.get('hdr', '10')) / 100.0, 4)
 
             # ШАГ 3: Формируем словарь replicate_input с правильными ключами
             # Ключ 'dynamic' заменен на 'hdr' в соответствии со схемой модели.
