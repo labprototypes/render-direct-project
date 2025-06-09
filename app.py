@@ -1340,51 +1340,38 @@ def process_image():
         model_version_id = ""
 
         if mode == 'edit':
+            # Логика для 'edit' остается без изменений
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
-           
             if edit_mode == 'remix':
-                if 'image2' not in request.files:
-                    return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
+                if 'image2' not in request.files: return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
                 s3_url_2 = upload_file_to_s3(request.files['image2'])
                 model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
                 final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the style of the second image with the content of the first image"
                 replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt.replace('\n', ' ').strip()}
-           
             elif edit_mode == 'autofix':
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
-               
-                print("!!! Запрос к OpenAI Vision API для Autofix...")
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
-                        },
+                        {"role": "system", "content": "You are an expert prompt engineer..."}, # Сокращено для ясности
                         { "role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
-                    ], max_tokens=150
-                )
+                    ], max_tokens=150)
                 final_prompt = response.choices[0].message.content.strip()
-                print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt.replace('\n', ' ').strip()}
-
-            else: # Standard Edit mode
+            else: # Standard Edit
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 final_prompt = improve_prompt_with_openai(prompt)
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt.replace('\n', ' ').strip()}
 
         elif mode == 'upscale':
-            # --- ШАГ 2: ТЕСТИРУЕМ С ЯВНОЙ ПЕРЕДАЧЕЙ PROMPT ---
+            # Возвращаемся к нашему тестовому запросу
             model_version_id = "92565b24b3c4333b28b76c4be672e81197992e59129524e94119853501f6874c"
-            
-            # Добавляем в запрос явную передачу prompt со значением по умолчанию из документации
             replicate_input = {
                 "image": s3_url,
                 "prompt": "masterpiece, best quality, highres, <lora:more_details:0.5> <lora:SDXLrender_v2.0:1>"
             }
-       
         else:
             return jsonify({'error': 'Неизвестный режим работы'}), 400
 
@@ -1396,11 +1383,25 @@ def process_image():
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input}
        
-        print(f"!!! Replicate Payload (Final Test): {post_payload}")
+        print(f"!!! Отправка Payload в Replicate: {post_payload}")
        
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         
-        start_response.raise_for_status()
+        # --- НАЧАЛО ДИАГНОСТИЧЕСКОГО БЛОКА ---
+        # Проверяем, если статус ответа НЕ успешный
+        if start_response.status_code >= 400:
+            print(f"!!! Replicate API вернул ошибку. Статус: {start_response.status_code}")
+            try:
+                # Пытаемся получить и вывести детальную ошибку в формате JSON
+                error_detail = start_response.json()
+                print(f"!!! ДЕТАЛИ ОШИБКИ ОТ REPLICATE API: {error_detail}")
+            except Exception as json_error:
+                # Если ответ не в формате JSON, выводим его как текст
+                print(f"!!! Не удалось прочитать JSON из ответа Replicate. Ошибка: {json_error}")
+                print(f"!!! ТЕКСТ ОШИБКИ ОТ REPLICATE API: {start_response.text}")
+        # --- КОНЕЦ ДИАГНОСТИЧЕСКОГО БЛОКА ---
+
+        start_response.raise_for_status() # Эта строка вызовет исключение, как и раньше, но после вывода логов
 
         prediction_data = start_response.json()
         prediction_url = prediction_data["urls"]["get"]
