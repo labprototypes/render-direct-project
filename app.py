@@ -161,7 +161,6 @@ INDEX_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Changer AI</title>
     <style>
-        /* --- НАСТРОЙКА ШРИФТОВ --- */
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
@@ -198,14 +197,14 @@ INDEX_HTML = """
             --accent-glow: rgba(217, 244, 122, 0.7);
             --base-bg-color: #0c0d10;
             --surface-color: #1c1c1f;
-            --surface-glass: rgba(28, 28, 31, 0.4); /* --- Цвет для эффекта стекла --- */
+            --surface-glass: rgba(28, 28, 31, 0.4); 
             --primary-text-color: #EAEAEA;
             --secondary-text-color: #888888;
             --accent-text-color: #1A1A1A;
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
 
-            --blur-intensity: 22px; /* --- Интенсивность размытия для "стекла" --- */
+            --blur-intensity: 22px; 
             --content-border-radius: 24px;
             --element-border-radius: 16px;
             --button-border-radius: 14px;
@@ -216,7 +215,7 @@ INDEX_HTML = """
 
         body {
             font-family: 'Norms', sans-serif;
-            font-weight: 400; /* --- Базовый вес Regular --- */
+            font-weight: 400; 
             color: var(--primary-text-color);
             background-color: var(--base-bg-color); 
             display: flex;
@@ -234,7 +233,8 @@ INDEX_HTML = """
         
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
-            padding: 100px 25px 25px;
+            /* --- Изменены отступы, добавлен нижний --- */
+            padding: 100px 25px 40px;
             display: flex; flex-direction: row; align-items: flex-start;
             gap: 25px; height: 100vh;
             position: relative;
@@ -244,7 +244,8 @@ INDEX_HTML = """
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            background-color: var(--surface-glass);
+            /* --- Убрана подложка, теперь только стекло --- */
+            background-color: transparent;
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border-bottom: 1px solid var(--border-color);
@@ -268,13 +269,13 @@ INDEX_HTML = """
             background-color: transparent; border: none; padding: 8px 20px;
             border-radius: 10px; cursor: pointer;
             font-family: 'Norms', sans-serif; font-size: 0.9rem;
-            font-weight: 500; /* --- Medium для кнопок режимов --- */
+            font-weight: 500;
             color: var(--secondary-text-color);
             transition: all var(--transition-speed) ease;
         }
         .mode-btn.active {
             background-color: var(--accent-color); color: var(--accent-text-color);
-            font-weight: 700; /* --- Bold для активной кнопки --- */
+            font-weight: 700;
             box-shadow: 0 0 15px var(--accent-glow);
         }
         .mode-btn:not(.active):hover { color: var(--primary-text-color); }
@@ -288,7 +289,7 @@ INDEX_HTML = """
         }
         .token-display {
             display: flex; align-items: center; color: var(--primary-text-color);
-            font-size: 1rem; font-weight: 500; /* --- Medium для баланса --- */
+            font-size: 1rem; font-weight: 500;
         }
         .token-coin {
             width: 18px; height: 18px; background-color: var(--accent-color);
@@ -302,11 +303,12 @@ INDEX_HTML = """
             transition: all var(--transition-speed) ease; position: relative;
         }
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
+        /* --- Правка анимации бургера для центрирования крестика --- */
         .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(10px) rotate(45deg) scaleX(1.2); }
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(5.5px) rotate(45deg); }
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
-        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-10px) rotate(-45deg) scaleX(1.2); }
+        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-5.5px) rotate(-45deg); }
         
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
@@ -320,12 +322,12 @@ INDEX_HTML = """
         .dropdown-menu.open { opacity: 1; visibility: visible; transform: translateY(0); }
         .dropdown-header { padding: 5px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); }
         .dropdown-user-email { 
-            color: var(--primary-text-color); font-size: 0.9rem; font-weight: 500; /* --- Medium для email --- */
+            color: var(--primary-text-color); font-size: 0.9rem; font-weight: 500;
         }
         .dropdown-menu ul { list-style: none; }
         .dropdown-menu li a {
             display: block; padding: 10px 5px; color: var(--primary-text-color); text-decoration: none;
-            font-size: 0.95rem; font-weight: 400; /* --- Regular для пунктов меню --- */
+            font-size: 0.95rem; font-weight: 400;
             transition: all var(--transition-speed) ease;
             border-radius: 8px;
         }
@@ -335,7 +337,7 @@ INDEX_HTML = """
             display: flex; align-items: center; gap: 15px;
         }
         .user-controls-loggedout .auth-button {
-            color: var(--primary-text-color); text-decoration: none; font-size: 0.9rem; font-weight: 500; /* --- Medium для кнопок входа --- */
+            color: var(--primary-text-color); text-decoration: none; font-size: 0.9rem; font-weight: 500;
             transition: color var(--transition-speed) ease; padding: 10px 18px;
             border: 1px solid var(--border-color); border-radius: var(--button-border-radius);
             background-color: rgba(255,255,255,0.05);
@@ -360,10 +362,11 @@ INDEX_HTML = """
         .image-inputs-container {
             display: flex; justify-content: center; gap: 15px; width: 100%;
         }
-        .image-inputs-container.merge-mode .image-drop-area { flex: 1; max-width: none; }
+        .image-inputs-container.remix-mode .image-drop-area { flex: 1; max-width: none; }
         
         .image-drop-area {
-            width: 100%; height: 180px; background-color: rgba(0,0,0,0.25);
+            width: 100%; height: 160px; /* --- Уменьшена высота --- */ 
+            background-color: rgba(0,0,0,0.25);
             border-radius: var(--element-border-radius); display: flex; flex-direction: column;
             justify-content: center; align-items: center; cursor: pointer;
             position: relative; overflow: hidden; border: 1px dashed var(--border-color);
@@ -374,10 +377,10 @@ INDEX_HTML = """
              transform: scale(1.02);
         }
         .drop-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; }
-        .drop-placeholder-icon { width: 40px; height: 40px; color: var(--secondary-text-color); transition: color var(--transition-speed) ease; }
+        .drop-placeholder-icon { width: 32px; height: 32px; color: var(--secondary-text-color); transition: color var(--transition-speed) ease; }
         .image-drop-area:hover .drop-placeholder-icon { color: var(--accent-color); }
         .drop-placeholder-text { 
-            color: var(--secondary-text-color); font-size: 0.9rem; font-weight: 400; /* --- Regular для плейсхолдера --- */
+            color: var(--secondary-text-color); font-size: 0.85rem; font-weight: 400; text-align: center;
         }
         .image-drop-area .image-preview-img {
             display: none; width: 100%; height: 100%; object-fit: cover;
@@ -385,7 +388,10 @@ INDEX_HTML = """
         }
         
         #result-area-right {
-            flex: 1; height: calc(100vh - 125px); display: none;
+            flex: 1; 
+            /* --- Изменена высота с учетом отступов --- */
+            height: calc(100vh - 140px); 
+            display: none;
             justify-content: center; align-items: center;
             background-color: rgba(0,0,0,0.2);
             border-radius: var(--content-border-radius);
@@ -429,7 +435,7 @@ INDEX_HTML = """
             flex-grow: 1; border: none; padding: 10px 15px; font-size: 0.9rem;
             background-color: transparent; outline: none; color: var(--primary-text-color);
             font-family: 'Norms', sans-serif;
-            font-weight: 400; /* --- Regular для поля ввода --- */
+            font-weight: 400;
         }
         #prompt::placeholder { color: var(--secondary-text-color); opacity: 1; }
         
@@ -439,12 +445,12 @@ INDEX_HTML = """
         .submit-button-element {
             width: 100%; background-color: transparent; color: var(--accent-color);
             border: 1px solid var(--accent-color); cursor: pointer; padding: 16px;
-            border-radius: var(--button-border-radius); font-size: 1.1rem; /* --- Увеличен шрифт --- */
+            border-radius: var(--button-border-radius); font-size: 1.1rem;
             font-family: 'Norms', sans-serif;
-            font-weight: 700; /* --- Bold для главной кнопки --- */
+            font-weight: 700; 
             transition: all var(--transition-speed) ease-out;
             position: relative; overflow: hidden;
-            letter-spacing: 0.5px; /* --- Небольшой интервал --- */
+            letter-spacing: 0.5px;
         }
         .submit-button-element:hover {
             transform: translateY(-3px);
@@ -456,8 +462,8 @@ INDEX_HTML = """
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
         .control-group > label {
-            font-size: 0.95rem; color: var(--primary-text-color); margin-bottom: 0; padding-left: 5px; 
-            font-weight: 700; /* --- Bold для заголовков групп --- */
+            font-size: 0.9rem; color: var(--primary-text-color); margin-bottom: 0; padding-left: 5px; 
+            font-weight: 700;
         }
         .edit-mode-selector, .resolution-selector {
             display: flex; gap: 10px; width: 100%; background-color: rgba(0,0,0,0.25);
@@ -471,7 +477,7 @@ INDEX_HTML = """
             border-radius: 10px;
             border: none; background-color: transparent;
             color: var(--secondary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
-            font-size: 0.85rem; font-weight: 500; /* --- Medium для подрежимов --- */
+            font-size: 0.85rem; font-weight: 500;
             transition: all var(--transition-speed) ease; text-align: center;
         }
         .edit-mode-btn:hover, .resolution-btn:hover {
@@ -480,15 +486,16 @@ INDEX_HTML = """
         .edit-mode-btn.active, .resolution-btn.active {
             background-color: var(--accent-color); border-color: var(--accent-color);
             color: var(--accent-text-color); box-shadow: 0 0 15px var(--accent-glow);
-            font-weight: 700; /* --- Bold для активного подрежима --- */
+            font-weight: 700;
         }
 
         .template-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 8px; padding: 15px; border-radius: var(--element-border-radius);
+            gap: 8px; padding: 12px; border-radius: var(--element-border-radius);
             border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
             color: var(--primary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
-            font-size: 0.85rem; font-weight: 500; /* --- Medium для шаблонов --- */
+            font-size: 0.8rem; /* --- Уменьшен шрифт --- */
+            font-weight: 500; 
             transition: all var(--transition-speed) ease; text-align: center;
         }
         .template-btn:hover {
@@ -498,21 +505,21 @@ INDEX_HTML = """
         .template-btn.active {
             border-color: var(--accent-color); background-color: rgba(217, 244, 122, 0.15);
             box-shadow: 0 0 15px rgba(217, 244, 122, 0.2); color: var(--accent-color);
-            font-weight: 700; /* --- Bold для активного шаблона --- */
+            font-weight: 700;
         }
-        .template-btn svg { width: 24px; height: 24px; margin-bottom: 5px; color: var(--secondary-text-color); transition: all var(--transition-speed) ease; }
+        .template-btn svg { width: 22px; height: 22px; margin-bottom: 5px; color: var(--secondary-text-color); transition: all var(--transition-speed) ease; }
         .template-btn:hover svg, .template-btn.active svg { color: var(--accent-color); }
         
         .mode-description {
             font-size: 0.85rem; color: var(--secondary-text-color); text-align: center;
             width: 100%; padding: 0 10px; line-height: 1.5; min-height: 2.5em;
-            font-weight: 300; /* --- Light для описаний --- */
+            font-weight: 300;
         }
 
         .slider-container { width: 100%; padding: 10px; background-color: rgba(0,0,0,0.25); border-radius: var(--element-border-radius); border: 1px solid var(--border-color);}
         .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .slider-container label { font-weight: 500; /* --- Medium для лейблов слайдеров --- */ color: var(--primary-text-color); font-size: 0.9rem; }
-        .slider-value { font-weight: 700; /* --- Bold для значения слайдера --- */ color: var(--primary-text-color); }
+        .slider-container label { font-weight: 500; color: var(--primary-text-color); font-size: 0.9rem; }
+        .slider-value { font-weight: 700; color: var(--primary-text-color); }
         .slider-container input[type="range"] {
             -webkit-appearance: none; appearance: none;
             width: 100%; height: 4px; background: var(--border-color);
@@ -537,9 +544,10 @@ INDEX_HTML = """
         
         .token-cost {
             display: flex; justify-content: center; align-items: center; gap: 8px;
-            font-size: 0.9rem; color: var(--secondary-text-color); font-weight: 500; /* --- Medium --- */
+            font-size: 0.9rem; color: var(--secondary-text-color); font-weight: 500;
         }
-        .token-cost .token-coin { width: 14px; height: 14px; margin-left: 0; background-color: var(--secondary-text-color); box-shadow: none; }
+        /* --- Удалена кастомная стилизация для монетки в 'cost', теперь она как в шапке --- */
+        .token-cost .token-coin { width: 14px; height: 14px; margin-left: 0; box-shadow: none; }
 
         .error-message {
             display: none; font-size: 0.9rem; color: #F0F0F0;
@@ -560,6 +568,7 @@ INDEX_HTML = """
             }
              #result-area-right {
                 width: 100%; height: auto; aspect-ratio: 16/10; flex: none; min-height: 300px;
+                margin-bottom: 15px;
             }
         }
 
@@ -625,7 +634,7 @@ INDEX_HTML = """
                 <div class="control-group">
                     <div class="edit-mode-selector">
                         <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Add or remove objects, modify style or lighting.">Edit</button>
-                        <button class="edit-mode-btn" data-edit-mode="merge" data-description="Merge two images, integrate new items or transfer style.">Merge</button>
+                        <button class="edit-mode-btn" data-edit-mode="remix" data-description="Remix two images, integrate new items or transfer style.">Remix</button>
                         <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
                     </div>
                 </div>
@@ -635,14 +644,14 @@ INDEX_HTML = """
                     <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
                         <div class="drop-placeholder">
                              <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-                            <span class="drop-placeholder-text">Drop Image or Click to Upload</span>
+                            <span class="drop-placeholder-text">Drop Image or Click</span>
                         </div>
                         <img id="image-preview-edit-1" src="#" alt="Preview" class="image-preview-img">
                     </label>
                     <label for="image-file-edit-2" id="image-drop-area-edit-2" class="image-drop-area" style="display: none;">
                         <div class="drop-placeholder">
                             <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-                            <span class="drop-placeholder-text">Drop Style or Click to Upload</span>
+                            <span class="drop-placeholder-text">Drop Style or Click</span>
                         </div>
                         <img id="image-preview-edit-2" src="#" alt="Preview" class="image-preview-img">
                     </label>
@@ -652,23 +661,45 @@ INDEX_HTML = """
 
                 <div id="edit-controls-container" style="width:100%; display:flex; flex-direction:column; gap: 15px;">
                     <div class="control-group">
-                         <div class="template-selector">
-                            <button class="template-btn" data-prompt="hyperrealistic photo of a modern object">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                                Create
-                            </button>
-                            <button class="template-btn" data-prompt="dramatic studio lighting, cinematic relighting">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>
-                                Relight
-                            </button>
-                            <button class="template-btn" data-prompt="remove the main object">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
-                                Remove
-                            </button>
-                            <button class="template-btn" data-prompt="change background to a detailed city street">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12a8.963 8.963 0 0 1 4.282-7.532" /></svg>
-                                Change
-                            </button>
+                        <div id="templates-for-edit">
+                             <div class="template-selector">
+                                <button class="template-btn" data-prompt="hyperrealistic photo of a modern object">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                    Create
+                                </button>
+                                <button class="template-btn" data-prompt="dramatic studio lighting, cinematic relighting">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>
+                                    Relight
+                                </button>
+                                <button class="template-btn" data-prompt="remove the main object">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                                    Remove
+                                </button>
+                                <button class="template-btn" data-prompt="change background to a detailed city street">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12a8.963 8.963 0 0 1 4.282-7.532" /></svg>
+                                    Change
+                                </button>
+                            </div>
+                        </div>
+                        <div id="templates-for-remix" style="display: none;">
+                             <div class="template-selector">
+                                <button class="template-btn" data-prompt="professional product shot, clean background">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                                    Product shot
+                                </button>
+                                <button class="template-btn" data-prompt="consistent character, same face, different pose">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                                    Consistent character
+                                </button>
+                                <button class="template-btn" data-prompt="virtual try-on, wearing the new clothing item from the second image">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404 4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
+                                    Try-on
+                                </button>
+                                <button class="template-btn" data-prompt="apply the artistic style of the second image to the first image">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 011.622-3.385m5.043.025a2.25 2.25 0 012.4-2.245 4.5 4.5 0 00-8.4-2.245c0 .399.078.78.22 1.128zm0 0a15.998 15.998 0 01-3.388-1.62m5.043-.025a15.998 15.998 0 00-1.622-3.385" /></svg>
+                                    Style transfer
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <form id="edit-form" class="input-area">
@@ -679,7 +710,7 @@ INDEX_HTML = """
                 <div class="submit-action-group">
                     <button type="submit" id="submit-button-edit" class="submit-button-element">Generate</button>
                     <div class="token-cost">
-                        <span>Cost: 1</span>
+                        <span>Estimated cost: 1</span>
                         <span class="token-coin"></span>
                     </div>
                 </div>
@@ -735,7 +766,7 @@ INDEX_HTML = """
                 <div class="submit-action-group">
                     <button type="submit" id="submit-button-upscale" class="submit-button-element">Upscale</button>
                     <div class="token-cost">
-                        <span>Cost: 5</span>
+                        <span>Estimated cost: 5</span>
                         <span class="token-coin"></span>
                     </div>
                 </div>
@@ -769,7 +800,6 @@ INDEX_HTML = """
     const editView = document.getElementById('edit-view');
     const upscaleView = document.getElementById('upscale-view');
 
-    // --- Burger Menu Logic ---
     if (burgerMenuToggle) {
         burgerMenuToggle.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -789,7 +819,6 @@ INDEX_HTML = """
         }
     });
 
-    // --- App Mode Switching Logic (Edit/Upscale) ---
     appModeButtons.forEach(button => {
         button.addEventListener('click', () => {
             const currentMode = button.dataset.mode;
@@ -800,7 +829,6 @@ INDEX_HTML = """
             upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
 
             showView('main');
-            // Re-trigger click on active edit mode to set correct description
             if(currentMode === 'edit') {
                 const activeEditMode = document.querySelector('.edit-mode-btn.active');
                 if (activeEditMode) activeEditMode.click();
@@ -808,12 +836,13 @@ INDEX_HTML = """
         });
     });
 
-    // --- Edit View Sub-Mode Logic ---
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');
     const editModeDescription = document.getElementById('edit-mode-description');
     const imageInputsContainer = document.querySelector('.image-inputs-container');
     const imageDropArea2 = document.getElementById('image-drop-area-edit-2');
     const editControlsContainer = document.getElementById('edit-controls-container');
+    const templatesForEdit = document.getElementById('templates-for-edit');
+    const templatesForRemix = document.getElementById('templates-for-remix');
 
     editModeButtons.forEach(button => {
         button.addEventListener('click', (e) => {
@@ -823,33 +852,38 @@ INDEX_HTML = """
 
             editModeDescription.textContent = e.currentTarget.dataset.description;
 
-            const showSecondImage = (editMode === 'merge');
-            const showControls = (editMode === 'edit' || editMode === 'merge');
-
+            const showSecondImage = (editMode === 'remix');
+            const showControls = (editMode === 'edit' || editMode === 'remix');
+            
             imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
-            imageInputsContainer.classList.toggle('merge-mode', showSecondImage);
+            imageInputsContainer.classList.toggle('remix-mode', showSecondImage);
             editControlsContainer.style.display = showControls ? 'flex' : 'none';
+
+            if (showControls) {
+                templatesForEdit.style.display = (editMode === 'edit') ? 'block' : 'none';
+                templatesForRemix.style.display = (editMode === 'remix') ? 'block' : 'none';
+            }
         });
     });
-
-    // --- Template Buttons Logic ---
-    const templateButtons = document.querySelectorAll('.template-btn');
+    
+    // --- Template Buttons Logic (applies to all template buttons) ---
+    const allTemplateButtons = document.querySelectorAll('.template-btn');
     const promptInput = document.getElementById('prompt');
-    templateButtons.forEach(button => {
+    
+    allTemplateButtons.forEach(button => {
         button.addEventListener('click', () => {
             promptInput.value = button.dataset.prompt;
             promptInput.focus();
-            templateButtons.forEach(btn => btn.classList.remove('active'));
+            // Deactivate all template buttons, then activate the clicked one
+            allTemplateButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
         });
     });
     
-    // Clear prompt when user types manually
     promptInput.addEventListener('input', () => {
-        templateButtons.forEach(btn => btn.classList.remove('active'));
+        allTemplateButtons.forEach(btn => btn.classList.remove('active'));
     });
 
-    // --- Upscale UI Logic ---
     document.querySelectorAll('.resolution-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.resolution-btn').forEach(btn => btn.classList.remove('active'));
@@ -861,7 +895,7 @@ INDEX_HTML = """
         const slider = document.getElementById(sliderId);
         const valueDisplay = document.getElementById(valueId);
         if(slider && valueDisplay) {
-            valueDisplay.textContent = slider.value; // Set initial value
+            valueDisplay.textContent = slider.value;
             slider.addEventListener('input', (event) => {
                 valueDisplay.textContent = event.target.value;
             });
@@ -871,7 +905,6 @@ INDEX_HTML = """
     setupSlider('resemblance-slider', 'resemblance-value');
     setupSlider('hdr-slider', 'hdr-value');
 
-    // --- Shared Logic and View JS ---
     const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
     const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
     const upscaleImageInput = document.getElementById('image-file-upscale');
@@ -894,7 +927,7 @@ INDEX_HTML = """
             resultAreaRight.style.display = 'none';
             resetImagePreviews();
             promptInput.value = '';
-            templateButtons.forEach(btn => btn.classList.remove('active'));
+            allTemplateButtons.forEach(btn => btn.classList.remove('active'));
         } else if (viewName === 'loading') {
             mainContentWrapper.classList.add('disabled');
             resultAreaRight.style.display = 'flex';
@@ -973,15 +1006,17 @@ INDEX_HTML = """
         let url = '';
 
         if (currentMode === 'edit') {
+            const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
+
             if (!imageFileInputEdit1.files[0]) {
-                showError("Please select an image to edit.");
+                showError("Please select an image to " + editMode + ".");
                 showView('main'); return;
             }
             url = "{{ url_for('process_image') }}";
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
-            const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
-            if (editMode === 'merge' && imageFileInputEdit2.files[0]) {
+
+            if (editMode === 'remix' && imageFileInputEdit2.files[0]) {
                 formData.append('image2', imageFileInputEdit2.files[0]);
             }
 
@@ -1065,7 +1100,6 @@ def buy_tokens_page():
             <meta charset="UTF-8">
             <title>Buy Tokens</title>
             <style>
-                /* --- КОПИЯ НАСТРОЕК ШРИФТОВ ДЛЯ ЕДИНООБРАЗИЯ --- */
                 @font-face {
                     font-family: 'Norms';
                     src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
@@ -1134,9 +1168,9 @@ def buy_tokens_page():
                 h1 { 
                     color: var(--primary-text-color); 
                     margin-bottom: 20px; 
-                    font-weight: 700; /* --- Bold заголовок --- */
+                    font-weight: 700;
                 }
-                p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-text-color); font-weight: 400; /* --- Regular для параграфов --- */ }
+                p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-text-color); font-weight: 400; }
                 .balance {
                     font-size: 1.2rem;
                     color: var(--accent-text-color);
@@ -1146,7 +1180,7 @@ def buy_tokens_page():
                     display: inline-block;
                     margin: 10px 0 20px;
                     box-shadow: 0 0 15px var(--accent-glow);
-                    font-weight: 700; /* --- Bold для баланса --- */
+                    font-weight: 700;
                 }
                 .button {
                     display: inline-block;
@@ -1157,7 +1191,7 @@ def buy_tokens_page():
                     border-radius: 12px;
                     text-decoration: none;
                     margin-top: 25px;
-                    font-weight: 700; /* --- Bold для кнопки --- */
+                    font-weight: 700;
                     font-size: 1.1rem;
                     transition: all 0.3s ease;
                 }
