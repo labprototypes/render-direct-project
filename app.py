@@ -113,15 +113,24 @@ def register():
         return redirect(url_for('index'))
     form = RegisterForm()
     if form.validate_on_submit():
-        existing_user = User.query.filter_by(email=form.email.data).first()
-        if existing_user:
+        existing_user_by_email = User.query.filter_by(email=form.email.data).first()
+        if existing_user_by_email:
             flash('Пользователь с таким email уже существует.', 'error')
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+
+        # Проверяем, указал ли пользователь username. Если нет, сохраняем None.
+        username_value = form.username.data if form.username.data and form.username.data.strip() else None
+
+        # Дополнительно: проверяем, не занято ли имя пользователя, если оно было указано
+        if username_value and User.query.filter_by(username=username_value).first():
+            flash('Это имя пользователя уже занято. Пожалуйста, выберите другое.', 'error')
+            return redirect(url_for('register'))
+
         new_user = User(
             email=form.email.data,
-            username=form.username.data,
+            username=username_value, # Используем исправленное значение
             password=hashed_password,
             marketing_consent=form.marketing_consent.data
         )
