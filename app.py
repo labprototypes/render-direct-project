@@ -721,7 +721,7 @@ INDEX_HTML = """
                                     Consistent character
                                 </button>
                                 <button class="template-btn" data-prompt="virtual try-on, wearing the new clothing item from the second image">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404 4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404-4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
                                     Try-on
                                 </button>
                                 <button class="template-btn" data-prompt="apply the artistic style of the second image to the first image">
@@ -1372,18 +1372,17 @@ def process_image():
             
             # --- Используем правильные ключи и типы данных согласно схеме ---
             scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
-            creativity = float(request.form.get('creativity', '30')) / 100.0
-            resemblance = float(request.form.get('resemblance', '20')) / 100.0 * 3.0
-            dynamic = float(request.form.get('hdr', '10')) / 100.0 * 50.0
+            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
+            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
+            dynamic = round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
 
+            # FIX: Sending only the parameters controlled by the UI, with correct keys from schema.
             replicate_input = {
                 "image": s3_url,
                 "scale_factor": scale_factor,
                 "creativity": creativity,
                 "resemblance": resemblance,
-                "dynamic": dynamic,
-                "prompt": "masterpiece, best quality, highres, <lora:more_details:0.5> <lora:SDXLrender_v2.0:1>",
-                "negative_prompt": "(worst quality, low quality, normal quality:2) JuggernautNegative-neg"
+                "dynamic": dynamic
             }
         
         else:
