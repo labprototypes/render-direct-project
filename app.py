@@ -1370,12 +1370,12 @@ def process_image():
         elif mode == 'upscale':
             model_version_id = "philz1337x/clarity-upscaler:060422da195242273e57d19793540c11739818ca2101349a1714150a498b9a14"
             
-            scale = int(request.form.get('scale_factor', 'x2').replace('x', ''))
+            # FIX: Convert scale to float to match model's expected type for all numbers
+            scale = float(request.form.get('scale_factor', 'x2').replace('x', ''))
             creativity = float(request.form.get('creativity', '30')) / 100.0
             resemblance = float(request.form.get('resemblance', '20')) / 100.0 * 3.0
             hdr = float(request.form.get('hdr', '10')) / 100.0 * 50.0
 
-            # FIX: Renamed 'dynamic' to 'dynamic_range'
             replicate_input = {"image": s3_url, "scale": scale, "creativity": creativity, "resemblance": resemblance, "dynamic_range": hdr}
         
         else:
