@@ -1336,7 +1336,7 @@ def process_image():
                 if 'image2' not in request.files:
                     return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
                 s3_url_2 = upload_file_to_s3(request.files['image2'])
-                model_version_id = "flux-kontext-apps/multi-image-kontext-max:8286af979163749316bc1a7d22526c336096d1e6776bd3ce03449cbdaa0e6dfd"
+                model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
                 final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the style of the second image with the content of the first image"
                 final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
                 replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt}
