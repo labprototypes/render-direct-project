@@ -11,7 +11,6 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
-from wtforms.widgets import CheckboxInput, SubmitInput
 
 # --- Настройки ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -94,57 +93,31 @@ else:
 
 # --- ШАБЛОН ДЛЯ СТРАНИЦ АУТЕНТИФИКАЦИИ ---
 def _render_auth_template(title, form, bottom_link_html):
-    
-    form_html = ""
-    for field in form:
-        if field.type == 'SubmitField':
-            continue # Кнопку обработаем отдельно
-        
-        field_html = f"<div class='form-group'>"
-        
-        # Для чекбоксов не выводим label отдельно, он будет рядом с чекбоксом
-        if field.type != 'BooleanField':
-            field_html += str(field.label(class_='form-label'))
-        
-        if field.type == 'BooleanField':
-             field_html += f"<div class='checkbox-wrapper'>{field(class_='form-checkbox')} <label for='{field.id}' class='checkbox-label'>{field.label.text}</label></div>"
-        else:
-            field_html += str(field(class_='form-input', placeholder=f'Введите {field.label.text.lower()}...'))
-
-        if field.errors:
-            field_html += "<ul class='errors'>"
-            for error in field.errors:
-                field_html += f"<li>{error}</li>"
-            field_html += "</ul>"
-        field_html += "</div>"
-        form_html += field_html
-
-    # ВАЖНО: Все одинарные фигурные скобки Jinja заменены на двойные для корректной работы f-string
-    AUTH_TEMPLATE = f"""
+    AUTH_TEMPLATE = """
     <!DOCTYPE html>
     <html lang="ru">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Changer AI - {title}</title>
+        <title>Changer AI - {{ title }}</title>
         <style>
-            @font-face {{{{
+            @font-face {
                 font-family: 'Norms';
-                src: url("{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2'); font-weight: 300;
-            }}}}
-            @font-face {{{{
+                src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2'); font-weight: 300;
+            }
+            @font-face {
                 font-family: 'Norms';
-                src: url("{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2'); font-weight: 400;
-            }}}}
-            @font-face {{{{
+                src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2'); font-weight: 400;
+            }
+            @font-face {
                 font-family: 'Norms';
-                src: url("{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2'); font-weight: 500;
-            }}}}
-            @font-face {{{{
+                src: url("{{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2'); font-weight: 500;
+            }
+            @font-face {
                 font-family: 'Norms';
-                src: url("{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2'); font-weight: 700;
-            }}}}
-            :root {{
+                src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2'); font-weight: 700;
+            }
+            :root {
                 --accent-color: #D9F47A;
                 --accent-glow: rgba(217, 244, 122, 0.7);
                 --base-bg-color: #0c0d10;
@@ -158,14 +131,14 @@ def _render_auth_template(title, form, bottom_link_html):
                 --content-border-radius: 24px;
                 --button-border-radius: 14px;
                 --transition-speed: 0.3s;
-            }}
-            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-            body {{
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
                 font-family: 'Norms', sans-serif;
                 font-weight: 400;
                 color: var(--primary-text-color);
                 background-color: var(--base-bg-color);
-                background-image: url("{ url_for('static', filename='images/desktop_background.webp') }}");
+                background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
                 background-size: cover;
                 background-position: center center;
                 background-repeat: no-repeat;
@@ -176,17 +149,17 @@ def _render_auth_template(title, form, bottom_link_html):
                 justify-content: center;
                 min-height: 100vh;
                 padding: 20px;
-            }}
-            .page-header {{
+            }
+            .page-header {
                 position: absolute;
                 top: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-            }}
-            .logo {{
+            }
+            .logo {
                 height: 38px;
-            }}
-            .auth-container {{
+            }
+            .auth-container {
                 width: 100%;
                 max-width: 440px;
                 padding: 35px;
@@ -195,24 +168,24 @@ def _render_auth_template(title, form, bottom_link_html):
                 border: 1px solid var(--border-color);
                 box-shadow: 0 10px 40px var(--shadow-color);
                 text-align: center;
-            }}
-            h1 {{
+            }
+            h1 {
                 font-weight: 700;
                 font-size: 2rem;
                 margin-bottom: 25px;
-            }}
-            .form-group {{
+            }
+            .form-group {
                 margin-bottom: 20px;
                 text-align: left;
-            }}
-            .form-label {{
+            }
+            .form-label {
                 display: block;
                 margin-bottom: 8px;
                 font-weight: 500;
                 font-size: 0.9rem;
                 color: var(--primary-text-color);
-            }}
-            .form-input {{
+            }
+            .form-input {
                 width: 100%;
                 padding: 12px 15px;
                 background-color: rgba(0,0,0,0.25);
@@ -222,24 +195,21 @@ def _render_auth_template(title, form, bottom_link_html):
                 font-family: 'Norms', sans-serif;
                 font-size: 1rem;
                 transition: all var(--transition-speed) ease;
-            }}
-            .form-input:focus {{
+            }
+            .form-input:focus {
                 outline: none;
                 border-color: var(--accent-color);
                 box-shadow: 0 0 15px rgba(217, 244, 122, 0.3);
-            }}
-            .form-input::placeholder {{
+            }
+            .form-input::placeholder {
                 color: var(--secondary-text-color);
-            }}
-            .checkbox-wrapper {{
+            }
+            .checkbox-wrapper {
                 display: flex;
                 align-items: center;
                 cursor: pointer;
-            }}
-             .checkbox-wrapper .form-label {{
-                margin: 0;
-            }}
-            .form-checkbox {{
+            }
+            .form-checkbox {
                 appearance: none;
                 background-color: rgba(0,0,0,0.25);
                 border: 1px solid var(--border-color);
@@ -251,12 +221,12 @@ def _render_auth_template(title, form, bottom_link_html):
                 position: relative;
                 margin-right: 10px;
                 transition: all var(--transition-speed) ease;
-            }}
-            .form-checkbox:checked {{
+            }
+            .form-checkbox:checked {
                 background-color: var(--accent-color);
                 border-color: var(--accent-color);
-            }}
-            .form-checkbox:checked::after {{
+            }
+            .form-checkbox:checked::after {
                 content: '✔';
                 position: absolute;
                 color: var(--accent-text-color);
@@ -265,24 +235,24 @@ def _render_auth_template(title, form, bottom_link_html):
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-            }}
-            .checkbox-label {{
+            }
+            .checkbox-label {
                 font-weight: 400;
                 font-size: 0.9rem;
                 cursor: pointer;
                 color: var(--secondary-text-color);
-            }}
-            .checkbox-label a {{
+            }
+            .checkbox-label a {
                  color: var(--accent-color);
                  text-decoration: none;
-            }}
-            .errors li {{
+            }
+            .errors li {
                 color: var(--error-color);
                 font-size: 0.85rem;
                 list-style: none;
                 margin-top: 5px;
-            }}
-            .submit-button-element {{
+            }
+            .submit-button-element {
                 width: 100%;
                 background-color: transparent;
                 color: var(--accent-color);
@@ -295,75 +265,102 @@ def _render_auth_template(title, form, bottom_link_html):
                 font-weight: 700;
                 transition: all var(--transition-speed) ease-out;
                 margin-top: 10px;
-            }}
-            .submit-button-element:hover {{
+            }
+            .submit-button-element:hover {
                 transform: translateY(-3px);
                 background-color: var(--accent-color);
                 color: var(--accent-text-color);
                 box-shadow: 0 5px 20px var(--accent-glow);
-            }}
-            .bottom-link {{
+            }
+            .bottom-link {
                 margin-top: 25px;
                 font-size: 0.9rem;
-            }}
-            .bottom-link a {{
+            }
+            .bottom-link a {
                 color: var(--accent-color);
                 text-decoration: none;
                 font-weight: 700;
-            }}
-            .flash-messages {{
+            }
+            .flash-messages {
                 list-style: none;
                 padding: 0;
                 margin-bottom: 20px;
-            }}
-            .flash-messages li {{
+            }
+            .flash-messages li {
                 padding: 12px 18px;
                 border-radius: 12px;
                 font-weight: 500;
                 border: 1px solid;
-            }}
-            .flash-messages li.error {{
+            }
+            .flash-messages li.error {
                 color: #F0F0F0;
                 background-color: rgba(229, 62, 62, 0.5);
                 border-color: rgba(229, 62, 62, 0.8);
-            }}
-            .flash-messages li.success {{
+            }
+            .flash-messages li.success {
                  color: var(--accent-text-color);
                  background-color: var(--accent-color);
                  border-color: var(--accent-glow);
-            }}
+            }
         </style>
     </head>
     <body>
         <header class="page-header">
-            <a href="{url_for('index')}"><img src="{url_for('static', filename='images/LOGO_CHANGER.svg')}" alt="Changer Logo" class="logo"></a>
+            <a href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo"></a>
         </header>
         <main class="auth-container">
-            <h1>{title}</h1>
+            <h1>{{ title }}</h1>
 
-            {{% with messages = get_flashed_messages(with_categories=true) %}}
-              {{% if messages %}}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
                 <ul class="flash-messages">
-                {{% for category, message in messages %}}
-                  <li class="{{{{ category }}}}">{{{{ message }}}}</li>
-                {{% endfor %}}
+                {% for category, message in messages %}
+                  <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
                 </ul>
-              {{% endif %}}
-            {{% endwith %}}
+              {% endif %}
+            {% endwith %}
             
             <form method="POST" action="" novalidate>
-                {form.hidden_tag()}
-                {form_html}
-                {form.submit(class_='submit-button-element')}
+                {{ form.hidden_tag() }}
+                
+                {% for field in form %}
+                    {% if field.type != 'SubmitField' %}
+                    <div class="form-group">
+                        {% if field.type != 'BooleanField' %}
+                            {{ field.label(class_='form-label') }}
+                        {% endif %}
+                        
+                        {% if field.type == 'BooleanField' %}
+                            <div class="checkbox-wrapper">
+                                {{ field(class_='form-checkbox') }} 
+                                <label for="{{ field.id }}" class="checkbox-label">{{ field.label.text }}</label>
+                            </div>
+                        {% else %}
+                            {{ field(class_='form-input', placeholder='Введите ' + field.label.text.lower() + '...') }}
+                        {% endif %}
+
+                        {% if field.errors %}
+                            <ul class="errors">
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                {{ form.submit(class_='submit-button-element') }}
             </form>
             <div class="bottom-link">
-                {bottom_link_html}
+                {{ bottom_link_html|safe }}
             </div>
         </main>
     </body>
     </html>
     """
-    return render_template_string(AUTH_TEMPLATE.replace('{{%', '{%').replace('%}}', '%}').replace('{{{{', '{{').replace('}}}}', '}}'))
+    return render_template_string(AUTH_TEMPLATE, title=title, form=form, bottom_link_html=bottom_link_html)
 
 
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
