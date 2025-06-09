@@ -1376,14 +1376,13 @@ def process_image():
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt.replace('\n', ' ').strip()}
 
         elif mode == 'upscale':
-            # --- ШАГ 1: ТЕСТИРУЕМ С НАСТРОЙКАМИ ПО УМОЛЧАНИЮ ---
-            # Используем правильный, актуальный ID версии модели
+            # --- ШАГ 2: ТЕСТИРУЕМ С ЯВНОЙ ПЕРЕДАЧЕЙ PROMPT ---
             model_version_id = "92565b24b3c4333b28b76c4be672e81197992e59129524e94119853501f6874c"
             
-            # Отправляем только изображение. Все остальные параметры (scale, creativity и т.д.)
-            # модель возьмет из своих настроек по умолчанию.
+            # Добавляем в запрос явную передачу prompt со значением по умолчанию из документации
             replicate_input = {
-                "image": s3_url
+                "image": s3_url,
+                "prompt": "masterpiece, best quality, highres, <lora:more_details:0.5> <lora:SDXLrender_v2.0:1>"
             }
        
         else:
@@ -1397,11 +1396,10 @@ def process_image():
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input}
        
-        print(f"!!! Replicate Payload (Debug Test): {post_payload}")
+        print(f"!!! Replicate Payload (Final Test): {post_payload}")
        
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         
-        # Эта строка вызовет ошибку, если Replicate вернет код типа 4xx или 5xx, что и произошло
         start_response.raise_for_status()
 
         prediction_data = start_response.json()
@@ -1415,9 +1413,7 @@ def process_image():
         return jsonify({'output_url': output_url, 'new_token_balance': current_user.token_balance})
 
     except Exception as e:
-        # Добавляем больше деталей в лог ошибки для лучшей диагностики
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {type(e).__name__} - {e}")
-        # Включаем traceback в лог render.com для полного понимания, где произошла ошибка
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
