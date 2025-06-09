@@ -1,0 +1,69 @@
+{% extends "base_portal.html" %}
+
+{% block title %}Billing{% endblock %}
+
+{% block portal_content %}
+<div class="portal-header">
+    <h1>Manage Your Plan</h1>
+    <p>Your current plan: <strong>{{ current_user.current_plan.replace('_', ' ')|title }}</strong>. You have <strong>{{ current_user.token_balance }}</strong> credits.</p>
+</div>
+
+<div class="plans-grid" style="margin-bottom: 40px; grid-template-columns: 1fr; max-width: 350px;">
+     <div class="plan-card">
+        <h3 class="plan-name">Top Up Credits</h3>
+        <p class="plan-description">Need more credits before your next renewal?</p>
+        <div class="plan-price">&euro;5</div>
+        <ul class="plan-includes">
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>One-time purchase of 1,000 credits</li>
+        </ul>
+        <form action="/create-checkout-session" method="POST">
+            <input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_ТОКЕНОВ" />
+            <button type="submit" class="btn btn-secondary">Purchase Credits</button>
+        </form>
+    </div>
+</div>
+
+
+<div class="plans-grid">
+    <div class="plan-card {% if current_user.current_plan == 'taste' %}highlighted{% endif %}">
+        <h3 class="plan-name">A Taste Of It</h3>
+        <p class="plan-description">For those who wants to start</p>
+        <div class="plan-price">&euro;9<span>/mo</span></div>
+        {% if current_user.current_plan == 'taste' %}
+            <button class="btn-disabled">Your Current Plan</button>
+        {% elif current_user.current_plan == 'best' or current_user.current_plan == 'pro' %}
+            <form action="/create-portal-session" method="POST"><button type="submit" class="btn btn-secondary">Downgrade Plan</button></form>
+        {% else %}
+            <form action="/create-checkout-session" method="POST"><input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_€9" /><button type="submit" class="btn">Choose Plan</button></form>
+        {% endif %}
+    </div>
+
+    <div class="plan-card {% if current_user.current_plan == 'best' %}highlighted{% endif %}">
+        <h3 class="plan-name">The Best Pick</h3>
+        <p class="plan-description">Best for full-time creators</p>
+        <div class="plan-price">&euro;19<span>/mo</span></div>
+        {% if current_user.current_plan == 'best' %}
+            <button class="btn-disabled">Your Current Plan</button>
+        {% elif current_user.current_plan == 'pro' %}
+             <form action="/create-portal-session" method="POST"><button type="submit" class="btn btn-secondary">Downgrade Plan</button></form>
+        {% else %}
+             <form action="/create-portal-session" method="POST"><button type="submit" class="btn">Upgrade to Best</button></form>
+        {% endif %}
+    </div>
+
+    <div class="plan-card {% if current_user.current_plan == 'pro' %}highlighted{% endif %}">
+        <h3 class="plan-name">Pick&Flip Pro</h3>
+        <p class="plan-description">Best for full-time creators</p>
+        <div class="plan-price">&euro;35<span>/mo</span></div>
+        {% if current_user.current_plan == 'pro' %}
+            <button class="btn-disabled">Your Current Plan</button>
+        {% else %}
+            <form action="/create-portal-session" method="POST"><button type="submit" class="btn">Upgrade to Pro</button></form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="bottom-link">
+    <a href="{{ url_for('index') }}">Back to the App</a>
+</div>
+{% endblock %}
