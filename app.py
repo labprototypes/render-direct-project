@@ -23,6 +23,14 @@ app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# FIX 1: Add SQLAlchemy Engine Options for database connection stability
+# This helps prevent 'psycopg2.OperationalError' by testing connections before use.
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 280,
+}
+
+
 db = SQLAlchemy(app)
 
 # --- Настройка Flask-Login ---
@@ -1464,7 +1472,6 @@ def process_image():
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
-            # ЗАМЕНА ID МОДЕЛИ
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             
             scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
@@ -1472,7 +1479,6 @@ def process_image():
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
             dynamic = round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
 
-            # Параметры соответствуют модели и UI
             replicate_input = {
                 "image": s3_url,
                 "scale_factor": scale_factor,
@@ -1486,7 +1492,6 @@ def process_image():
 
         if not REPLICATE_API_TOKEN: raise Exception("REPLICATE_API_TOKEN не настроен.")
 
-        # Создаем запись о предсказании в нашей БД
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
         db.session.commit()
@@ -1507,16 +1512,31 @@ def process_image():
         prediction_data = start_response.json()
         replicate_prediction_id = prediction_data.get('id')
 
-        # Обновляем нашу запись с ID от Replicate и списываем токены
         new_prediction.replicate_id = replicate_prediction_id
         current_user.token_balance -= token_cost
         db.session.commit()
 
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
+    # FIX 2: Enhanced exception handling to capture detailed API errors
+    except requests.exceptions.HTTPError as e:
+        error_details = "No details in response."
+        if e.response is not None:
+            error_details = e.response.text
+        
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image (HTTPError): {e}\nReplicate Response: {error_details}")
+        
+        error_to_show = error_details
+        try:
+            error_json = e.response.json()
+            error_to_show = error_json.get('detail', error_details)
+        except ValueError: # If response is not JSON
+            pass
+        return jsonify({'error': f'Ошибка API Replicate: {error_to_show}'}), 500
     except Exception as e:
-        print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
+
 
 with app.app_context():
     db.create_all()
