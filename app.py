@@ -1,3 +1,8 @@
+# FIX 1: Explicitly apply gevent monkey-patching at the very top of the file.
+# This MUST be the first piece of code to run to prevent RecursionError with networking libraries.
+from gevent import monkey
+monkey.patch_all()
+
 import os
 import boto3
 import uuid
@@ -23,7 +28,6 @@ app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# FIX 1: Add SQLAlchemy Engine Options for database connection stability
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 280,
@@ -740,7 +744,7 @@ INDEX_HTML = """
                                     Consistent character
                                 </button>
                                 <button class="template-btn" data-prompt="virtual try-on, wearing the new clothing item from the second image">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404 4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404-4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
                                     Try-on
                                 </button>
                                 <button class="template-btn" data-prompt="apply the artistic style of the second image to the first image">
@@ -1096,10 +1100,10 @@ INDEX_HTML = """
         }, 3000); // Poll every 3 seconds
 
         setTimeout(() => {
-            clearInterval(interval);
-            if (document.getElementById(currentLoaderId)) {
-                 showError("Generation is taking longer than expected. The result will appear here when ready.");
-                 // We leave the loader active, as the webhook may still arrive.
+            const loader = document.getElementById(currentLoaderId);
+            if(loader) { // Check if the loader is still present
+                clearInterval(interval);
+                showError("Generation is taking longer than expected. The result will appear here when ready.");
             }
         }, 300000); // 5 minute timeout
     }
@@ -1362,7 +1366,6 @@ def get_result(prediction_id):
     if not prediction or prediction.user_id != current_user.id:
         return jsonify({'error': 'Prediction not found or access denied'}), 404
 
-    # If status is already completed in our DB, just return the result.
     if prediction.status == 'completed':
         return jsonify({
             'status': 'completed',
@@ -1370,7 +1373,6 @@ def get_result(prediction_id):
             'new_token_balance': current_user.token_balance
         })
     
-    # If status is already marked as failed, report it.
     if prediction.status == 'failed':
         return jsonify({
             'status': 'failed',
@@ -1378,8 +1380,6 @@ def get_result(prediction_id):
             'new_token_balance': User.query.get(current_user.id).token_balance
         })
 
-    # If status is 'pending', check with Replicate directly to see if it has failed.
-    # This handles cases where the 'failed' webhook isn't supported or doesn't arrive.
     if prediction.status == 'pending' and prediction.replicate_id:
         try:
             headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
@@ -1402,10 +1402,7 @@ def get_result(prediction_id):
                 })
         except requests.exceptions.RequestException as e:
             print(f"!!! Error polling Replicate status for {prediction.id}: {e}")
-            # Don't fail the user's request, just let them continue polling.
-            # The 'completed' webhook might still arrive.
 
-    # If none of the above, the process is still genuinely pending.
     return jsonify({'status': 'pending'})
 
 
@@ -1431,9 +1428,6 @@ def replicate_webhook():
         db.session.commit()
         print(f"!!! Webhook: Prediction {prediction.id} completed successfully.")
     
-    # We no longer listen for the 'failed' webhook, as it's not a valid option.
-    # Failure is now handled by the /get-result polling endpoint.
-
     return jsonify({'status': 'ok'}), 200
 
 @app.route('/process-image', methods=['POST'])
@@ -1520,8 +1514,6 @@ def process_image():
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         
-        # FIX 2: Correct the webhook_events_filter to use a valid value.
-        # The value "failed" is not supported by the Replicate API.
         post_payload = {
             "version": model_version_id,
             "input": replicate_input,
@@ -1543,6 +1535,11 @@ def process_image():
 
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
+    # FIX 2: Add specific handling for RecursionError before the general Exception.
+    except RecursionError:
+        error_message = "A recursion error occurred on the server. This can happen with gevent and SSL operations."
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image (RecursionError): {error_message}")
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {error_message}'}), 500
     except requests.exceptions.HTTPError as e:
         error_details = "No details in response."
         if e.response is not None:
@@ -1558,6 +1555,7 @@ def process_image():
             pass
         return jsonify({'error': f'Ошибка API Replicate: {error_to_show}'}), 500
     except Exception as e:
+        # The general exception handler remains as a catch-all.
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
