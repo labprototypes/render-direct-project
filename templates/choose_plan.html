@@ -1,0 +1,64 @@
+{% extends "base_portal.html" %}
+
+{% block title %}Choose Your Plan{% endblock %}
+
+{% block portal_content %}
+<div class="portal-header">
+    <h1>Choose Your Plan</h1>
+    <p>Made flexible for a better experience. Now with never expiring credits.</p>
+</div>
+
+<div class="plans-grid">
+    <div class="plan-card">
+        <h3 class="plan-name">A Taste Of It</h3>
+        <p class="plan-description">For those who wants to start</p>
+        <div class="plan-price">&euro;9<span>/mo</span></div>
+        <ul class="plan-includes">
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>for 1,500 credits</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 90 images monthly</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Generation</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
+        </ul>
+        <form action="/create-checkout-session" method="POST">
+            <input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_€9" />
+            <button type="submit" class="btn">Choose A Taste Of It</button>
+        </form>
+    </div>
+
+    <div class="plan-card highlighted">
+        <h3 class="plan-name">The Best Pick</h3>
+        <p class="plan-description">Best for full-time creators</p>
+        <div class="plan-price">&euro;19<span>/mo</span></div>
+        <ul class="plan-includes">
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>for 4,000 credits</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>2K resolution (1440p)</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>up to 2x Upscaler</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Access to LAB command</li>
+        </ul>
+        <form action="/create-checkout-session" method="POST">
+            <input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_€19" />
+            <button type="submit" class="btn">Choose The Best Pick</button>
+        </form>
+    </div>
+
+    <div class="plan-card">
+        <h3 class="plan-name">Pick&Flip Pro</h3>
+        <p class="plan-description">Best for full-time creators</p>
+        <div class="plan-price">&euro;35<span>/mo</span></div>
+        <ul class="plan-includes">
+             <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>for 10,000 credits</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4K resolution (2160p)</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>up to 8x Upscaler</li>
+            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Access to LAB command</li>
+        </ul>
+        <form action="/create-checkout-session" method="POST">
+            <input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_€35" />
+            <button type="submit" class="btn">Choose Pick&Flip Pro</button>
+        </form>
+    </div>
+</div>
+
+<div class="bottom-link">
+    <a href="{{ url_for('index') }}">I just want to try</a>
+</div>
+{% endblock %}
