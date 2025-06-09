@@ -197,14 +197,14 @@ INDEX_HTML = """
             --accent-glow: rgba(217, 244, 122, 0.7);
             --base-bg-color: #0c0d10;
             --surface-color: #1c1c1f;
-            --surface-glass: rgba(35, 35, 38, 0.6); /* --- Непрозрачность подложки --- */
+            --surface-glass: rgba(35, 35, 38, 0.6); 
             --primary-text-color: #EAEAEA;
             --secondary-text-color: #888888;
             --accent-text-color: #1A1A1A;
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
 
-            --blur-intensity: 25px; /* --- Интенсивность блюра --- */
+            --blur-intensity: 25px; 
             --content-border-radius: 24px;
             --element-border-radius: 16px;
             --button-border-radius: 14px;
@@ -213,7 +213,6 @@ INDEX_HTML = """
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* --- Кастомный скроллбар для Webkit --- */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); border-radius: 10px; }
@@ -250,12 +249,11 @@ INDEX_HTML = """
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            background-color: var(--surface-glass); /* --- Возвращена подложка --- */
+            background-color: var(--surface-glass);
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border-bottom: 1px solid var(--border-color);
-            /* --- Тень для объема --- */
-            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1); /* --- Объем для подложки --- */
         }
         .page-header-inner {
             width: 100%; max-width: 1200px; padding: 0 25px;
@@ -277,8 +275,8 @@ INDEX_HTML = """
             border-radius: 10px; cursor: pointer;
             font-family: 'Norms', sans-serif; font-size: 0.9rem;
             font-weight: 500;
-            color: var(--primary-text-color); /* --- Изменен цвет неактивной кнопки на белый --- */
-            opacity: 0.7; /* --- Неактивная кнопка полупрозрачна --- */
+            color: var(--primary-text-color); 
+            opacity: 0.7; 
             transition: all var(--transition-speed) ease;
         }
         .mode-btn.active {
@@ -312,12 +310,11 @@ INDEX_HTML = """
             transition: all var(--transition-speed) ease; position: relative;
         }
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
-        /* --- Финальная правка центрирования крестика --- */
         .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(5.2px) rotate(45deg); }
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(5.5px) rotate(45deg); }
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
-        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-5.2px) rotate(-45deg); }
+        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-5.5px) rotate(-45deg); }
         
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
@@ -360,7 +357,6 @@ INDEX_HTML = """
             transition: opacity var(--transition-speed), filter var(--transition-speed);
             border: 1px solid var(--border-color);
             box-shadow: 0 10px 40px var(--shadow-color);
-            /* --- Включен скролл для левой панели если контент не влезает --- */
             overflow-y: auto;
         }
         .content-wrapper.disabled { opacity: 0.5; pointer-events: none; filter: blur(4px); }
@@ -398,18 +394,17 @@ INDEX_HTML = """
             border-radius: inherit; position: absolute; z-index: 1;
         }
         
-        /* --- Стили для правой панели (истории) --- */
         #result-area-right {
             flex: 1; 
             height: calc(100vh - 140px); 
-            display: flex; /* --- Изменен на flex для управления контентом --- */
+            display: flex; 
             flex-direction: column;
             gap: 20px;
             background-color: rgba(0,0,0,0.2);
             border-radius: var(--content-border-radius);
             border: 1px solid var(--border-color);
             padding: 20px;
-            overflow-y: auto; /* --- Включен скролл для истории --- */
+            overflow-y: auto; 
         }
         #history-placeholder {
             display: flex; flex-direction: column; justify-content: center;
@@ -421,7 +416,7 @@ INDEX_HTML = """
         .history-item {
              justify-content: center; display: flex; align-items: center;
              width: 100%; position: relative;
-             flex-shrink: 0; /* --- Предотвращает сжатие элементов истории --- */
+             flex-shrink: 0;
         }
         .history-item-image {
             width: 100%; height: auto; object-fit: contain; border-radius: var(--element-border-radius);
@@ -572,8 +567,13 @@ INDEX_HTML = """
             display: flex; justify-content: center; align-items: center; gap: 8px;
             font-size: 0.9rem; color: var(--secondary-text-color); font-weight: 500;
         }
-        .token-cost .token-coin { width: 14px; height: 14px; margin-left: 0; box-shadow: none; background-color: var(--secondary-text-color);}
-        .token-cost .token-coin { background-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-glow); }
+        .token-cost .token-coin { 
+            width: 14px; 
+            height: 14px; 
+            margin-left: 0; 
+            background-color: var(--accent-color); 
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
 
         .error-message {
             display: none; font-size: 0.9rem; color: #F0F0F0;
@@ -588,7 +588,7 @@ INDEX_HTML = """
         }
         
         @media (max-width: 992px) {
-            body { overflow-y: auto; } /* --- Включаем скролл на мобильных --- */
+            body { overflow-y: auto; }
             .app-container {
                 flex-direction: column; align-items: center; height: auto;
                 overflow-y: visible; padding-top: 100px; padding-bottom: 25px;
@@ -704,7 +704,7 @@ INDEX_HTML = """
                                     Remove
                                 </button>
                                 <button class="template-btn" data-prompt="change background to a detailed city street">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.227m-5.88 12.333a11.956 11.956 0 01-2.348-1.757m3.256-4.013a11.956 11.956 0 011.757-2.348m0 0a48.067 48.067 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023m11.01 4.288a51.842 51.842 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023m11.01 4.288a51.842 51.842 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023m11.01 4.288a51.842 51.842 0 01-7.5 0c-1.846 0-3.543.385-5.007 1.023M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.87a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 3.94A2.25 2.25 0 0 1 12 2.25a2.25 2.25 0 0 1 1.66.94m-3.32 0A2.25 2.25 0 0 0 12 2.25a2.25 2.25 0 0 0 1.66.94m0 0a2.25 2.25 0 0 1 2.25 2.25v5.169a2.25 2.25 0 0 1-2.25 2.25H8.34a2.25 2.25 0 0 1-2.25-2.25V6.44a2.25 2.25 0 0 1 2.25-2.25m6.062 0a2.25 2.25 0 0 0-1.66-.94m-3.32 0a2.25 2.25 0 0 1-1.66.94m12.334 10.035a2.25 2.25 0 0 1-2.25 2.25h-5.169a2.25 2.25 0 0 1-2.25-2.25v-5.169a2.25 2.25 0 0 1 2.25-2.25h5.169a2.25 2.25 0 0 1 2.25 2.25v5.169z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.87a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25z" /></svg>
                                     Change
                                 </button>
                             </div>
@@ -753,17 +753,17 @@ INDEX_HTML = """
                     <img id="image-preview-upscale" src="#" alt="Preview" class="image-preview-img">
                 </label>
                 <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
-
-                <div class="control-group">
-                    <label>Resolution</label>
-                    <div class="resolution-selector">
-                        <button class="resolution-btn active" data-value="x2">x2</button>
-                        <button class="resolution-btn" data-value="x4">x4</button>
-                        <button class="resolution-btn" data-value="x8">x8</button>
-                    </div>
-                </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                    <div class="control-group">
+                        <label>Resolution</label>
+                        <div class="resolution-selector">
+                            <button class="resolution-btn active" data-value="x2">x2</button>
+                            <button class="resolution-btn" data-value="x4">x4</button>
+                            <button class="resolution-btn" data-value="x8">x8</button>
+                        </div>
+                    </div>
+
                     <div class="control-group">
                          <div class="slider-container">
                             <div class="slider-header">
@@ -851,12 +851,9 @@ INDEX_HTML = """
             const currentMode = button.dataset.mode;
             appModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-
             editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
             upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
-
             resetLeftPanel();
-
             if(currentMode === 'edit') {
                 const activeEditMode = document.querySelector('.edit-mode-btn.active');
                 if (activeEditMode) activeEditMode.click();
@@ -877,16 +874,12 @@ INDEX_HTML = """
             const editMode = e.currentTarget.dataset.editMode;
             editModeButtons.forEach(btn => btn.classList.remove('active'));
             e.currentTarget.classList.add('active');
-
             editModeDescription.textContent = e.currentTarget.dataset.description;
-
             const showSecondImage = (editMode === 'remix');
             const showControls = (editMode === 'edit' || editMode === 'remix');
-            
             imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
             imageInputsContainer.classList.toggle('remix-mode', showSecondImage);
             editControlsContainer.style.display = showControls ? 'flex' : 'none';
-
             if (showControls) {
                 templatesForEdit.style.display = (editMode === 'edit') ? 'block' : 'none';
                 templatesForRemix.style.display = (editMode === 'remix') ? 'block' : 'none';
@@ -935,6 +928,8 @@ INDEX_HTML = """
     const imageFileInputEdit2 = document.getElementById('image-file-edit-2');
     const upscaleImageInput = document.getElementById('image-file-upscale');
     const errorBox = document.getElementById('error-box');
+    const historyPlaceholder = document.getElementById('history-placeholder');
+    let currentLoaderId = null;
 
     function showError(message) {
         errorBox.textContent = message;
@@ -949,57 +944,47 @@ INDEX_HTML = """
         allTemplateButtons.forEach(btn => btn.classList.remove('active'));
     }
 
-    // --- Новый код для истории ---
-    const historyPlaceholder = document.getElementById('history-placeholder');
-    let currentLoaderId = null;
-
     function startLoading() {
         mainContentWrapper.classList.add('disabled');
         if (historyPlaceholder) historyPlaceholder.style.display = 'none';
         
         currentLoaderId = 'loader-' + Date.now();
-        const loaderHtml = `
-            <div class="loader-container" id="${currentLoaderId}">
-                <div class="pulsating-dot"></div>
-            </div>`;
+        const loaderHtml = `<div class="loader-container" id="${currentLoaderId}"><div class="pulsating-dot"></div></div>`;
         resultAreaRight.insertAdjacentHTML('afterbegin', loaderHtml);
     }
+    
+    function createHistoryItem(url) {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+            <img src="${url}" alt="Generated Image" class="history-item-image">
+            <a href="${url}" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
+                <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
+            </a>`;
+        return item;
+    }
 
-    function stopLoading(isSuccess) {
+    function stopLoading(newUrl) {
         mainContentWrapper.classList.remove('disabled');
         const loader = document.getElementById(currentLoaderId);
         if (loader) {
-            loader.remove();
+            if (newUrl) {
+                const newItem = createHistoryItem(newUrl);
+                loader.replaceWith(newItem);
+            } else {
+                loader.remove();
+            }
         }
-        if (!isSuccess && resultAreaRight.children.length === 1) { // 1 because placeholder might be there
+        if (resultAreaRight.children.length === 1 && resultAreaRight.contains(historyPlaceholder)) {
              if (historyPlaceholder) historyPlaceholder.style.display = 'flex';
         }
         currentLoaderId = null;
     }
 
-    function addImageToHistory(url) {
-        const historyItemHtml = `
-            <div class="history-item">
-                <img src="${url}" alt="Generated Image" class="history-item-image">
-                <a href="${url}" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
-                    <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
-                </a>
-            </div>`;
-        
-        const loader = document.getElementById(currentLoaderId);
-        if(loader) {
-            loader.insertAdjacentHTML('afterend', historyItemHtml);
-        } else {
-            resultAreaRight.insertAdjacentHTML('afterbegin', historyItemHtml);
-        }
-    }
-
-
     function handleFileSelect(file, previewElementId) {
         const previewElement = document.getElementById(previewElementId);
         const dropArea = previewElement.parentElement;
         const placeholder = dropArea.querySelector('.drop-placeholder');
-
         const reader = new FileReader();
         reader.onload = (e) => {
             previewElement.src = e.target.result;
@@ -1011,13 +996,10 @@ INDEX_HTML = """
 
     function setupDragAndDrop(dropArea, fileInputElement) {
         if (!dropArea || !fileInputElement) return;
-
         const previewImgId = dropArea.querySelector('.image-preview-img').id;
-
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
         });
-
         dropArea.addEventListener('dragenter', () => dropArea.classList.add('dragover'));
         dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
         dropArea.addEventListener('drop', (e) => {
@@ -1053,30 +1035,25 @@ INDEX_HTML = """
 
     async function handleImageProcessing(submitButton) {
         const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
-
         startLoading();
-
         const formData = new FormData();
         let url = '';
 
         if (currentMode === 'edit') {
             const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
-
             if (!imageFileInputEdit1.files[0]) {
                 showError("Please select an image to " + editMode + ".");
-                stopLoading(false); return;
+                stopLoading(null); return;
             }
             url = "{{ url_for('process_image') }}";
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
-
             if (editMode === 'remix' && imageFileInputEdit2.files[0]) {
                 formData.append('image2', imageFileInputEdit2.files[0]);
             }
-
         } else if (currentMode === 'upscale') {
             showError("Upscale functionality is not yet connected.");
-            stopLoading(false);
+            stopLoading(null);
             return;
         }
 
@@ -1086,7 +1063,6 @@ INDEX_HTML = """
                 body: formData
             });
             const data = await response.json();
-
             if (!response.ok) {
                 let errorDetail = data.error || data.detail || 'Unknown server error';
                 if (response.status === 403) {
@@ -1097,21 +1073,19 @@ INDEX_HTML = """
             
             const tempImg = new Image();
             tempImg.onload = () => {
-                addImageToHistory(data.output_url);
-                stopLoading(true);
-                 if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
+                stopLoading(data.output_url);
+                if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
                     tokenBalanceDisplaySpan.textContent = data.new_token_balance;
                 }
             };
             tempImg.onerror = () => {
                 showError("Failed to load the generated image.");
-                stopLoading(false);
+                stopLoading(null);
             };
             tempImg.src = data.output_url;
-
         } catch (error) {
             showError("An error occurred: " + error.message);
-            stopLoading(false);
+            stopLoading(null);
         }
     }
 
@@ -1130,9 +1104,7 @@ INDEX_HTML = """
         window.location.href = "{{ url_for('index') }}";
     });
 
-    // Initial setup on page load
     appModeButtons[0].click();
-
     });
     </script>
 </body>
