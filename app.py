@@ -1338,6 +1338,7 @@ def process_image():
                 s3_url_2 = upload_file_to_s3(request.files['image2'])
                 model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
                 final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the style of the second image with the content of the first image"
+                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip() # FIX: Sanitize prompt
                 replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt}
             
             elif edit_mode == 'autofix':
@@ -1345,6 +1346,7 @@ def process_image():
                 if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
                 
                 print("!!! Запрос к OpenAI Vision API для Autofix...")
+                # FIX: Improved system prompt for Autofix
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -1356,23 +1358,26 @@ def process_image():
                     ], max_tokens=150
                 )
                 final_prompt = response.choices[0].message.content.strip()
+                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip() # FIX: Sanitize prompt
                 print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
             else: # Standard Edit mode
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 final_prompt = improve_prompt_with_openai(prompt)
+                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip() # FIX: Sanitize prompt
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
             model_version_id = "philz1337x/clarity-upscaler:060422da195242273e57d19793540c11739818ca2101349a1714150a498b9a14"
             
-            scale_factor = int(request.form.get('scale_factor', 'x2').replace('x', ''))
+            scale = int(request.form.get('scale_factor', 'x2').replace('x', ''))
             creativity = float(request.form.get('creativity', '30')) / 100.0
             resemblance = float(request.form.get('resemblance', '20')) / 100.0 * 3.0
             hdr = float(request.form.get('hdr', '10')) / 100.0 * 50.0
 
-            replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": hdr}
+            # FIX: Renamed 'scale_factor' to 'scale'
+            replicate_input = {"image": s3_url, "scale": scale, "creativity": creativity, "resemblance": resemblance, "dynamic": hdr}
         
         else:
             return jsonify({'error': 'Неизвестный режим работы'}), 400
@@ -1382,7 +1387,7 @@ def process_image():
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input}
         
-        print(f"!!! Replicate Payload: {post_payload}") # --- Улучшенное логирование
+        print(f"!!! Replicate Payload: {post_payload}")
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
