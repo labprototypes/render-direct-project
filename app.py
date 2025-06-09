@@ -273,7 +273,8 @@ INDEX_HTML = """
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            background-color: var(--surface-glass);
+            /* FIX 2: Removed background-color to make the header transparent */
+            background-color: transparent;
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border-bottom: 1px solid var(--border-color);
@@ -336,9 +337,11 @@ INDEX_HTML = """
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
         .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(5.5px) rotate(45deg); }
+
+        /* FIX 3: Corrected burger menu animation for a centered cross */
+        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(34px) rotate(45deg); }
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
-        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-5.5px) rotate(-45deg); }
+        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-34px) rotate(-45deg); }
         
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
@@ -393,7 +396,6 @@ INDEX_HTML = """
         .image-inputs-container {
             display: flex; justify-content: center; gap: 15px; width: 100%;
         }
-        .image-inputs-container.remix-mode .image-drop-area { flex: 1; max-width: none; }
         
         .image-drop-area {
             width: 100%; height: 160px; 
@@ -686,7 +688,6 @@ INDEX_HTML = """
                 <div class="control-group">
                     <div class="edit-mode-selector">
                         <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Add or remove objects, modify style or lighting.">Edit</button>
-                        <button class="edit-mode-btn" data-edit-mode="remix" data-description="Remix two images, integrate new items or transfer style.">Remix</button>
                         <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
                     </div>
                 </div>
@@ -733,27 +734,7 @@ INDEX_HTML = """
                                 </button>
                             </div>
                         </div>
-                        <div id="templates-for-remix" style="display: none;">
-                             <div class="template-selector">
-                                <button class="template-btn" data-prompt="professional product shot, clean background">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                                    Product shot
-                                </button>
-                                <button class="template-btn" data-prompt="consistent character, same face, different pose">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-                                    Consistent character
-                                </button>
-                                <button class="template-btn" data-prompt="virtual try-on, wearing the new clothing item from the second image">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404-4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
-                                    Try-on
-                                </button>
-                                <button class="template-btn" data-prompt="apply the artistic style of the second image to the first image">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 011.622-3.385m5.043.025a2.25 2.25 0 012.4-2.245 4.5 4.5 0 00-8.4-2.245c0 .399.078.78.22 1.128zm0 0a15.998 15.998 0 01-3.388-1.62m5.043-.025a15.998 15.998 0 00-1.622-3.385" /></svg>
-                                    Style transfer
-                                </button>
-                            </div>
                         </div>
-                    </div>
                     <form id="edit-form" class="input-area">
                          <input type="text" id="prompt" name="prompt" placeholder="Describe your changes...">
                     </form>
@@ -887,11 +868,10 @@ INDEX_HTML = """
 
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');
     const editModeDescription = document.getElementById('edit-mode-description');
-    const imageInputsContainer = document.querySelector('.image-inputs-container');
+    // FIX 1: Removed variables related to Remix mode as it's no longer used
     const imageDropArea2 = document.getElementById('image-drop-area-edit-2');
     const editControlsContainer = document.getElementById('edit-controls-container');
     const templatesForEdit = document.getElementById('templates-for-edit');
-    const templatesForRemix = document.getElementById('templates-for-remix');
 
     editModeButtons.forEach(button => {
         button.addEventListener('click', (e) => {
@@ -899,14 +879,13 @@ INDEX_HTML = """
             editModeButtons.forEach(btn => btn.classList.remove('active'));
             e.currentTarget.classList.add('active');
             editModeDescription.textContent = e.currentTarget.dataset.description;
-            const showSecondImage = (editMode === 'remix');
-            const showControls = (editMode === 'edit' || editMode === 'remix');
-            imageDropArea2.style.display = showSecondImage ? 'flex' : 'none';
-            imageInputsContainer.classList.toggle('remix-mode', showSecondImage);
+
+            // FIX 1: Simplified logic now that Remix is gone
+            const showControls = (editMode === 'edit' || editMode === 'autofix');
+            imageDropArea2.style.display = 'none'; // Always hide the second image drop area
             editControlsContainer.style.display = showControls ? 'flex' : 'none';
             if (showControls) {
                 templatesForEdit.style.display = (editMode === 'edit') ? 'block' : 'none';
-                templatesForRemix.style.display = (editMode === 'remix') ? 'block' : 'none';
             }
         });
     });
@@ -1125,13 +1104,8 @@ INDEX_HTML = """
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
 
-            if (editMode === 'remix') {
-                if (!imageFileInputEdit2.files[0]) {
-                    showError("Please select the second image for Remix mode.");
-                    stopLoading(null); return;
-                }
-                formData.append('image2', imageFileInputEdit2.files[0]);
-            }
+            // FIX 1: Logic for second image (remix) is no longer needed
+            
         } else if (currentMode === 'upscale') {
             if (!upscaleImageInput.files[0]) {
                 showError("Please select an image to upscale.");
@@ -1154,7 +1128,6 @@ INDEX_HTML = """
                 throw new Error(data.error || 'Unknown server error');
             }
             
-            // Update token balance immediately after starting
             if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
                  tokenBalanceDisplaySpan.textContent = data.new_token_balance;
             }
@@ -1182,7 +1155,9 @@ INDEX_HTML = """
         window.location.href = "{{ url_for('index') }}";
     });
 
+    // Set a default active button on load
     appModeButtons[0].click();
+    document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
     });
     </script>
 </body>
@@ -1196,7 +1171,6 @@ def index():
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
-    # This page remains unchanged as per the instructions
     return render_template_string("""
         <!DOCTYPE html>
         <html lang="ru">
@@ -1452,23 +1426,8 @@ def process_image():
             prompt = request.form.get('prompt', '')
             final_prompt = prompt
 
-            if edit_mode == 'remix':
-                if 'image2' not in request.files:
-                    return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
-                s3_url_2 = upload_file_to_s3(request.files['image2'])
-                
-                # FIX 4: Revert to the user-specified model and use its correct input parameters.
-                model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
-                final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the two images"
-                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-                # Use the correct input keys for this model: 'input_image_1' and 'input_image_2'
-                replicate_input = {
-                    "input_image_1": s3_url, 
-                    "input_image_2": s3_url_2, 
-                    "prompt": final_prompt
-                }
-            
-            elif edit_mode == 'autofix':
+            # FIX 1: Removed Remix logic block entirely
+            if edit_mode == 'autofix':
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
                 
