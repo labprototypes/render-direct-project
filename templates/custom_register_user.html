@@ -4,35 +4,35 @@
 
 {% block content %}
 <h2>Регистрация</h2>
-<form method="POST" action="{{ url_for('register') }}">
+<form method="POST" action="{{ url_for('register') }}" novalidate>
     {{ form.hidden_tag() }}
 
-    <div>
-        {{ form.email.label }}
+    <div class="form-group">
+        {{ form.email.label(style="display: none;") }}
         {{ form.email(class="form-control", placeholder="Email") }}
         {% for error in form.email.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
     </div>
     
-    <div>
-        {{ form.username.label }}
+    <div class="form-group">
+        {{ form.username.label(style="display: none;") }}
         {{ form.username(class="form-control", placeholder="Имя пользователя (опционально)") }}
         {% for error in form.username.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
     </div>
 
-    <div>
-        {{ form.password.label }}
+    <div class="form-group">
+        {{ form.password.label(style="display: none;") }}
         {{ form.password(class="form-control", placeholder="Придумайте пароль") }}
         {% for error in form.password.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
     </div>
     
-    <div>
-        {{ form.password_confirm.label }}
+    <div class="form-group">
+        {{ form.password_confirm.label(style="display: none;") }}
         {{ form.password_confirm(class="form-control", placeholder="Подтвердите пароль") }}
         {% for error in form.password_confirm.errors %}
             <div class="help-block">{{ error }}</div>
@@ -41,17 +41,17 @@
 
     <div class="checkbox-wrapper">
         <div class="custom-checkbox-container">
-            {{ form.accept_tos() }}
+            {{ form.accept_tos(id="accept_tos") }}
             <label for="accept_tos">
-                Я принимаю <a href="/terms" target="_blank">условия использования</a> и согласен на <a href="/privacy" target="_blank">обработку персональных данных</a>
+                Я принимаю <a href="/terms" target="_blank">условия использования</a>
             </label>
         </div>
         {% for error in form.accept_tos.errors %}
-            <div class="help-block" style="margin-top: 5px;">{{ error }}</div>
+            <div class="help-block" style="text-align: center; padding: 0;">{{ error }}</div>
         {% endfor %}
         
         <div class="custom-checkbox-container" style="margin-top: 10px;">
-            {{ form.marketing_consent() }}
+            {{ form.marketing_consent(id="marketing_consent") }}
             <label for="marketing_consent">{{ form.marketing_consent.label.text }}</label>
         </div>
     </div>
@@ -59,6 +59,6 @@
     {{ form.submit(class="btn") }}
 </form>
 <div class="links">
-    <p><a href="{{ url_for('login') }}">Уже есть аккаунт? Войти</a></p>
+    <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
 </div>
 {% endblock %}
