@@ -17,6 +17,8 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
 AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
+SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:5001')
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key-for-flask-login')
@@ -47,10 +49,21 @@ class User(db.Model, UserMixin):
     subscription_status = db.Column(db.String(50), default='inactive', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
+    generations = db.relationship('Generation', backref='user', lazy=True)
 
     @property
     def is_active(self):
         return True
+
+class Generation(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    replicate_id = db.Column(db.String(50), nullable=True)
+    status = db.Column(db.String(20), default='processing', nullable=False)
+    output_url = db.Column(db.String(255), nullable=True)
+    error_message = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    completed_at = db.Column(db.DateTime, nullable=True)
 
 # --- Формы ---
 class LoginForm(FlaskForm):
@@ -91,7 +104,6 @@ else:
     openai_client = None
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
 
-# --- ШАБЛОН ДЛЯ СТРАНИЦ АУТЕНТИФИКАЦИИ ---
 def _render_auth_template(title, form, bottom_link_html):
     AUTH_TEMPLATE = """
     <!DOCTYPE html>
@@ -101,10 +113,6 @@ def _render_auth_template(title, form, bottom_link_html):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Changer AI - {{ title }}</title>
         <style>
-            @font-face {
-                font-family: 'Norms';
-                src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2'); font-weight: 300;
-            }
             @font-face {
                 font-family: 'Norms';
                 src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2'); font-weight: 400;
@@ -134,289 +142,97 @@ def _render_auth_template(title, form, bottom_link_html):
             }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-                font-family: 'Norms', sans-serif;
-                font-weight: 400;
-                color: var(--primary-text-color);
-                background-color: var(--base-bg-color);
+                font-family: 'Norms', sans-serif; font-weight: 400;
+                color: var(--primary-text-color); background-color: var(--base-bg-color);
                 background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
-                background-size: cover;
-                background-position: center center;
-                background-repeat: no-repeat;
-                background-attachment: fixed;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 100vh;
-                padding: 20px;
+                background-size: cover; background-position: center center; background-attachment: fixed;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                min-height: 100vh; padding: 20px;
             }
-            .page-header {
-                position: absolute;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-            .logo {
-                height: 38px;
-            }
+            .page-header { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); }
+            .logo { height: 38px; }
             .auth-container {
-                width: 100%;
-                max-width: 440px;
-                padding: 35px;
-                background-color: var(--surface-color);
-                border-radius: var(--content-border-radius);
-                border: 1px solid var(--border-color);
-                box-shadow: 0 10px 40px var(--shadow-color);
-                text-align: center;
+                width: 100%; max-width: 440px; padding: 35px; background-color: var(--surface-color);
+                border-radius: var(--content-border-radius); border: 1px solid var(--border-color);
+                box-shadow: 0 10px 40px var(--shadow-color); text-align: center;
             }
-            h1 {
-                font-weight: 700;
-                font-size: 2rem;
-                margin-bottom: 25px;
-            }
-            .form-group {
-                margin-bottom: 20px;
-                text-align: left;
-            }
-            .form-label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 500;
-                font-size: 0.9rem;
-                color: var(--primary-text-color);
-            }
+            h1 { font-weight: 700; font-size: 2rem; margin-bottom: 25px; }
+            .form-group { margin-bottom: 20px; text-align: left; }
+            .form-label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; }
             .form-input {
-                width: 100%;
-                padding: 12px 15px;
-                background-color: rgba(0,0,0,0.25);
-                border: 1px solid var(--border-color);
-                border-radius: var(--button-border-radius);
-                color: var(--primary-text-color);
-                font-family: 'Norms', sans-serif;
-                font-size: 1rem;
-                transition: all var(--transition-speed) ease;
+                width: 100%; padding: 12px 15px; background-color: rgba(0,0,0,0.25);
+                border: 1px solid var(--border-color); border-radius: var(--button-border-radius);
+                color: var(--primary-text-color); font-family: 'Norms', sans-serif; font-size: 1rem;
+                transition: all 0.3s ease;
             }
-            .form-input:focus {
-                outline: none;
-                border-color: var(--accent-color);
-                box-shadow: 0 0 15px rgba(217, 244, 122, 0.3);
-            }
-            .form-input::placeholder {
-                color: var(--secondary-text-color);
-            }
-            .checkbox-wrapper {
-                display: flex;
-                align-items: center;
-                cursor: pointer;
-            }
-            .form-checkbox {
-                appearance: none;
-                background-color: rgba(0,0,0,0.25);
-                border: 1px solid var(--border-color);
-                min-width: 20px;
-                width: 20px;
-                height: 20px;
-                border-radius: 6px;
-                cursor: pointer;
-                position: relative;
-                margin-right: 10px;
-                transition: all var(--transition-speed) ease;
-            }
-            .form-checkbox:checked {
-                background-color: var(--accent-color);
-                border-color: var(--accent-color);
-            }
-            .form-checkbox:checked::after {
-                content: '✔';
-                position: absolute;
-                color: var(--accent-text-color);
-                font-size: 14px;
-                font-weight: 900;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-            .checkbox-label {
-                font-weight: 400;
-                font-size: 0.9rem;
-                cursor: pointer;
-                color: var(--secondary-text-color);
-            }
-            .checkbox-label a {
-                 color: var(--accent-color);
-                 text-decoration: none;
-            }
-            .errors li {
-                color: var(--error-color);
-                font-size: 0.85rem;
-                list-style: none;
-                margin-top: 5px;
-            }
-            .submit-button-element {
-                width: 100%;
-                background-color: transparent;
-                color: var(--accent-color);
-                border: 1px solid var(--accent-color);
-                cursor: pointer;
-                padding: 16px;
-                border-radius: var(--button-border-radius);
-                font-size: 1.1rem;
-                font-family: 'Norms', sans-serif;
-                font-weight: 700;
-                transition: all var(--transition-speed) ease-out;
-                margin-top: 10px;
-            }
-            .submit-button-element:hover {
-                transform: translateY(-3px);
-                background-color: var(--accent-color);
-                color: var(--accent-text-color);
-                box-shadow: 0 5px 20px var(--accent-glow);
-            }
-            .bottom-link {
-                margin-top: 25px;
-                font-size: 0.9rem;
-            }
-            .bottom-link a {
-                color: var(--accent-color);
-                text-decoration: none;
-                font-weight: 700;
-            }
-            .flash-messages {
-                list-style: none;
-                padding: 0;
-                margin-bottom: 20px;
-            }
-            .flash-messages li {
-                padding: 12px 18px;
-                border-radius: 12px;
-                font-weight: 500;
-                border: 1px solid;
-            }
-            .flash-messages li.error {
-                color: #F0F0F0;
-                background-color: rgba(229, 62, 62, 0.5);
-                border-color: rgba(229, 62, 62, 0.8);
-            }
-            .flash-messages li.success {
-                 color: var(--accent-text-color);
-                 background-color: var(--accent-color);
-                 border-color: var(--accent-glow);
-            }
+            .form-input:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 15px rgba(217, 244, 122, 0.3); }
+            .checkbox-wrapper { display: flex; align-items: center; cursor: pointer; }
+            .form-checkbox { appearance: none; background-color: rgba(0,0,0,0.25); border: 1px solid var(--border-color); min-width: 20px; width: 20px; height: 20px; border-radius: 6px; cursor: pointer; position: relative; margin-right: 10px; }
+            .form-checkbox:checked { background-color: var(--accent-color); border-color: var(--accent-color); }
+            .form-checkbox:checked::after { content: '✔'; position: absolute; color: var(--accent-text-color); font-size: 14px; font-weight: 900; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .checkbox-label { font-weight: 400; font-size: 0.9rem; cursor: pointer; color: var(--secondary-text-color); }
+            .errors li { color: var(--error-color); font-size: 0.85rem; list-style: none; margin-top: 5px; }
+            .submit-button-element { width: 100%; background-color: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); cursor: pointer; padding: 16px; border-radius: var(--button-border-radius); font-size: 1.1rem; font-family: 'Norms', sans-serif; font-weight: 700; transition: all 0.3s ease-out; margin-top: 10px; }
+            .submit-button-element:hover { transform: translateY(-3px); background-color: var(--accent-color); color: var(--accent-text-color); box-shadow: 0 5px 20px var(--accent-glow); }
+            .bottom-link { margin-top: 25px; font-size: 0.9rem; }
+            .bottom-link a { color: var(--accent-color); text-decoration: none; font-weight: 700; }
+            .flash-messages { list-style: none; padding: 0; margin-bottom: 20px; }
+            .flash-messages li { padding: 12px 18px; border-radius: 12px; font-weight: 500; border: 1px solid; }
+            .flash-messages li.error { color: #F0F0F0; background-color: rgba(229, 62, 62, 0.5); border-color: rgba(229, 62, 62, 0.8); }
+            .flash-messages li.success { color: var(--accent-text-color); background-color: var(--accent-color); border-color: var(--accent-glow); }
         </style>
     </head>
     <body>
-        <header class="page-header">
-            <a href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo"></a>
-        </header>
+        <header class="page-header"><a href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo"></a></header>
         <main class="auth-container">
             <h1>{{ title }}</h1>
-
             {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                <ul class="flash-messages">
-                {% for category, message in messages %}
-                  <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-                </ul>
-              {% endif %}
+              {% if messages %}<ul class="flash-messages">{% for category, message in messages %}<li class="{{ category }}">{{ message }}</li>{% endfor %}</ul>{% endif %}
             {% endwith %}
-            
             <form method="POST" action="" novalidate>
                 {{ form.hidden_tag() }}
-                
-                {% for field in form %}
-                    {% if field.type != 'SubmitField' %}
-                    <div class="form-group">
-                        {% if field.type != 'BooleanField' %}
-                            {{ field.label(class_='form-label') }}
-                        {% endif %}
-                        
-                        {% if field.type == 'BooleanField' %}
-                            <div class="checkbox-wrapper">
-                                {{ field(class_='form-checkbox') }} 
-                                <label for="{{ field.id }}" class="checkbox-label">{{ field.label.text }}</label>
-                            </div>
-                        {% else %}
-                            {{ field(class_='form-input', placeholder='Введите ' + field.label.text.lower() + '...') }}
-                        {% endif %}
-
-                        {% if field.errors %}
-                            <ul class="errors">
-                            {% for error in field.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                {% endfor %}
-
+                {% for field in form %}{% if field.type != 'SubmitField' %}<div class="form-group">
+                    {% if field.type != 'BooleanField' %}{{ field.label(class_='form-label') }}{% endif %}
+                    {% if field.type == 'BooleanField' %}<div class="checkbox-wrapper">{{ field(class_='form-checkbox') }} <label for="{{ field.id }}" class="checkbox-label">{{ field.label.text }}</label></div>
+                    {% else %}{{ field(class_='form-input', placeholder='Введите ' + field.label.text.lower() + '...') }}{% endif %}
+                    {% if field.errors %}<ul class="errors">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+                </div>{% endif %}{% endfor %}
                 {{ form.submit(class_='submit-button-element') }}
             </form>
-            <div class="bottom-link">
-                {{ bottom_link_html|safe }}
-            </div>
+            <div class="bottom-link">{{ bottom_link_html|safe }}</div>
         </main>
-    </body>
-    </html>
+    </body></html>
     """
     return render_template_string(AUTH_TEMPLATE, title=title, form=form, bottom_link_html=bottom_link_html)
 
-
-# --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
+    if current_user.is_authenticated: return redirect(url_for('index'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember.data)
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('index'))
-        else:
-            flash('Неверный email или пароль.', 'error')
-    
-    bottom_link = f'Нет аккаунта? <a href="{url_for("register")}">Зарегистрироваться</a>'
-    return _render_auth_template("Вход", form, bottom_link)
-
+            return redirect(request.args.get('next') or url_for('index'))
+        else: flash('Неверный email или пароль.', 'error')
+    return _render_auth_template("Вход", form, f'Нет аккаунта? <a href="{url_for("register")}">Зарегистрироваться</a>')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
+    if current_user.is_authenticated: return redirect(url_for('index'))
     form = RegisterForm()
     if form.validate_on_submit():
-        existing_user_by_email = User.query.filter_by(email=form.email.data).first()
-        if existing_user_by_email:
+        if User.query.filter_by(email=form.email.data).first():
             flash('Пользователь с таким email уже существует.', 'error')
             return redirect(url_for('register'))
-
-        username_data = form.username.data if form.username.data and form.username.data.strip() else None
-        
-        if username_data:
-            existing_user_by_username = User.query.filter_by(username=username_data).first()
-            if existing_user_by_username:
-                flash('Это имя пользователя уже занято.', 'error')
-                return redirect(url_for('register'))
-
-        hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
-        
-        new_user = User(
-            email=form.email.data,
-            username=username_data,
-            password=hashed_password,
-            marketing_consent=form.marketing_consent.data
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        login_user(new_user)
+        username_data = form.username.data.strip() if form.username.data else None
+        if username_data and User.query.filter_by(username=username_data).first():
+            flash('Это имя пользователя уже занято.', 'error')
+            return redirect(url_for('register'))
+        new_user = User(email=form.email.data, username=username_data, password=generate_password_hash(form.password.data, method='pbkdf2:sha256'), marketing_consent=form.marketing_consent.data)
+        db.session.add(new_user); db.session.commit(); login_user(new_user)
         return redirect(url_for('index'))
-
-    bottom_link = f'Уже есть аккаунт? <a href="{url_for("login")}">Войти</a>'
-    return _render_auth_template("Регистрация", form, bottom_link)
+    return _render_auth_template("Регистрация", form, f'Уже есть аккаунт? <a href="{url_for("login")}">Войти</a>')
 
 @app.route('/change-password', methods=['GET', 'POST'])
 @login_required
@@ -430,17 +246,13 @@ def change_password():
             db.session.commit()
             flash('Ваш пароль успешно изменен!', 'success')
             return redirect(url_for('index'))
-    
-    bottom_link = f'<a href="{url_for("index")}">Вернуться на главную</a>'
-    return _render_auth_template("Смена пароля", form, bottom_link)
+    return _render_auth_template("Смена пароля", form, f'<a href="{url_for("index")}">Вернуться на главную</a>')
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('index'))
-
-# --- Главная страница и API ---
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -1069,265 +881,236 @@ INDEX_HTML = """
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-    const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
-    const burgerMenuToggle = document.getElementById('burger-menu-toggle');
-    const dropdownMenu = document.getElementById('dropdown-menu');
-    const mainContentWrapper = document.getElementById('main-content-wrapper');
-    const resultAreaRight = document.getElementById('result-area-right');
-    const appModeButtons = document.querySelectorAll('.mode-btn');
-    const editView = document.getElementById('edit-view');
-    const upscaleView = document.getElementById('upscale-view');
+        const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
+        const burgerMenuToggle = document.getElementById('burger-menu-toggle');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+        const mainContentWrapper = document.getElementById('main-content-wrapper');
+        const resultAreaRight = document.getElementById('result-area-right');
+        const appModeButtons = document.querySelectorAll('.mode-btn');
+        const editView = document.getElementById('edit-view');
+        const upscaleView = document.getElementById('upscale-view');
+        const imageFileInputEdit = document.getElementById('image-file-edit-1');
+        const upscaleImageInput = document.getElementById('image-file-upscale');
+        const errorBox = document.getElementById('error-box');
+        const historyPlaceholder = document.getElementById('history-placeholder');
+        const promptInput = document.getElementById('prompt');
+        let activePollInterval = null;
+    
+        if (burgerMenuToggle) {
+            burgerMenuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                burgerMenuToggle.classList.toggle('open');
+                dropdownMenu.classList.toggle('open');
+            });
+        }
 
-    if (burgerMenuToggle) {
-        burgerMenuToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isOpen = burgerMenuToggle.classList.toggle('open');
-            burgerMenuToggle.setAttribute('aria-expanded', String(isOpen));
-            dropdownMenu.classList.toggle('open');
-        });
-    }
-
-    document.addEventListener('click', (event) => {
-        if (dropdownMenu && dropdownMenu.classList.contains('open')) {
-            if (!dropdownMenu.contains(event.target) && !burgerMenuToggle.contains(event.target)) {
+        document.addEventListener('click', (event) => {
+            if (dropdownMenu && dropdownMenu.classList.contains('open') && !dropdownMenu.contains(event.target) && !burgerMenuToggle.contains(event.target)) {
                 burgerMenuToggle.classList.remove('open');
-                burgerMenuToggle.setAttribute('aria-expanded', 'false');
                 dropdownMenu.classList.remove('open');
             }
-        }
-    });
-
-    appModeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const currentMode = button.dataset.mode;
-            appModeButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
-            upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
-            resetLeftPanel();
         });
-    });
 
-    const allTemplateButtons = document.querySelectorAll('.template-btn');
-    const promptInput = document.getElementById('prompt');
-    
-    allTemplateButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            promptInput.value = button.dataset.prompt;
-            promptInput.focus();
-            allTemplateButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+        appModeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                appModeButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                editView.style.display = (button.dataset.mode === 'edit') ? 'flex' : 'none';
+                upscaleView.style.display = (button.dataset.mode === 'upscale') ? 'flex' : 'none';
+                resetLeftPanel();
+            });
         });
-    });
-    
-    promptInput.addEventListener('input', () => {
-        allTemplateButtons.forEach(btn => btn.classList.remove('active'));
-    });
 
-    document.querySelectorAll('.resolution-btn').forEach(button => {
-        button.addEventListener('click', () => {
+        document.querySelectorAll('.template-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.template-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                promptInput.value = button.dataset.prompt;
+                promptInput.focus();
+            });
+        });
+        promptInput.addEventListener('input', () => document.querySelectorAll('.template-btn').forEach(btn => btn.classList.remove('active')));
+        
+        document.querySelectorAll('.resolution-btn').forEach(button => button.addEventListener('click', () => {
             document.querySelectorAll('.resolution-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-        });
-    });
+        }));
 
-    const setupSlider = (sliderId, valueId) => {
-        const slider = document.getElementById(sliderId);
-        const valueDisplay = document.getElementById(valueId);
-        if(slider && valueDisplay) {
-            valueDisplay.textContent = slider.value;
-            slider.addEventListener('input', (event) => {
-                valueDisplay.textContent = event.target.value;
+        ['creativity', 'resemblance', 'hdr'].forEach(id => {
+            const slider = document.getElementById(`${id}-slider`);
+            const valueDisplay = document.getElementById(`${id}-value`);
+            if(slider && valueDisplay) {
+                valueDisplay.textContent = slider.value;
+                slider.addEventListener('input', (e) => valueDisplay.textContent = e.target.value);
+            }
+        });
+
+        function showError(message) {
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+            setTimeout(() => { errorBox.style.display = 'none'; }, 5000);
+        }
+        
+        function resetImagePreviews() {
+            document.querySelectorAll('.image-preview-img').forEach(img => {
+                img.src = '#';
+                img.style.display = 'none';
+            });
+            document.querySelectorAll('.drop-placeholder').forEach(p => {
+                if (p) p.style.display = 'flex';
+            });
+            imageFileInputEdit.value = '';
+            upscaleImageInput.value = '';
+        }
+
+        function resetLeftPanel() {
+            mainContentWrapper.classList.remove('disabled');
+            resetImagePreviews();
+            promptInput.value = '';
+            document.querySelectorAll('.template-btn').forEach(btn => btn.classList.remove('active'));
+        }
+
+        function startLoading() {
+            mainContentWrapper.classList.add('disabled');
+            if (historyPlaceholder) historyPlaceholder.style.display = 'none';
+            const loaderId = 'loader-' + Date.now();
+            const loaderHtml = `<div class="loader-container" id="${loaderId}"><div class="pulsating-dot"></div></div>`;
+            resultAreaRight.insertAdjacentHTML('afterbegin', loaderHtml);
+            const loader = document.getElementById(loaderId);
+            if (loader && window.innerWidth <= 992) {
+                loader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return loaderId;
+        }
+
+        function stopLoading(loaderId, newUrl) {
+            mainContentWrapper.classList.remove('disabled');
+            if(activePollInterval) {
+                clearInterval(activePollInterval);
+                activePollInterval = null;
+            }
+            const loader = document.getElementById(loaderId);
+            if (loader) {
+                if (newUrl) {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'history-item';
+                    newItem.innerHTML = `<img src="${newUrl}" alt="Generated Image" class="history-item-image"><a href="${newUrl}" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer"><img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon"></a>`;
+                    loader.replaceWith(newItem);
+                } else {
+                    loader.remove();
+                }
+            }
+            if (!resultAreaRight.querySelector('.history-item') && !resultAreaRight.querySelector('.loader-container')) {
+                 historyPlaceholder.style.display = 'flex';
+            }
+        }
+
+        function setupDragAndDrop(dropAreaId, fileInput) {
+            const dropArea = document.getElementById(dropAreaId);
+            if (!dropArea || !fileInput) return;
+            const previewImgId = dropArea.querySelector('.image-preview-img').id;
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            dropArea.addEventListener('dragenter', () => dropArea.classList.add('dragover'));
+            dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+            dropArea.addEventListener('drop', (e) => {
+                dropArea.classList.remove('dragover');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelect(fileInput.files[0], previewImgId);
+                }
+            });
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files && fileInput.files[0]) {
+                     handleFileSelect(fileInput.files[0], previewImgId);
+                }
             });
         }
-    };
-    setupSlider('creativity-slider', 'creativity-value');
-    setupSlider('resemblance-slider', 'resemblance-value');
-    setupSlider('hdr-slider', 'hdr-value');
-
-    const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
-    const upscaleImageInput = document.getElementById('image-file-upscale');
-    const errorBox = document.getElementById('error-box');
-    const historyPlaceholder = document.getElementById('history-placeholder');
-    let currentLoaderId = null;
-
-    function showError(message) {
-        errorBox.textContent = message;
-        errorBox.style.display = 'block';
-        setTimeout(() => { errorBox.style.display = 'none'; }, 5000);
-    }
-    
-    function resetLeftPanel() {
-        mainContentWrapper.classList.remove('disabled');
-        resetImagePreviews();
-        promptInput.value = '';
-        allTemplateButtons.forEach(btn => btn.classList.remove('active'));
-    }
-
-    function startLoading() {
-        mainContentWrapper.classList.add('disabled');
-        if (historyPlaceholder) historyPlaceholder.style.display = 'none';
         
-        currentLoaderId = 'loader-' + Date.now();
-        const loaderHtml = `<div class="loader-container" id="${currentLoaderId}"><div class="pulsating-dot"></div></div>`;
-        resultAreaRight.insertAdjacentHTML('afterbegin', loaderHtml);
-        
-        const loader = document.getElementById(currentLoaderId);
-        if (loader && window.innerWidth <= 768) {
-            loader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        function handleFileSelect(file, previewElementId) {
+            const previewElement = document.getElementById(previewElementId);
+            const dropArea = previewElement.parentElement;
+            const placeholder = dropArea.querySelector('.drop-placeholder');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewElement.src = e.target.result;
+                previewElement.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+            }
+            reader.readAsDataURL(file);
         }
-    }
-    
-    function createHistoryItem(url) {
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        item.innerHTML = `
-            <img src="${url}" alt="Generated Image" class="history-item-image">
-            <a href="${url}" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
-                <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
-            </a>`;
-        return item;
-    }
 
-    function stopLoading(newUrl) {
-        mainContentWrapper.classList.remove('disabled');
-        const loader = document.getElementById(currentLoaderId);
-        if (loader) {
-            if (newUrl) {
-                const newItem = createHistoryItem(newUrl);
-                loader.replaceWith(newItem);
+        setupDragAndDrop('image-drop-area-edit-1', imageFileInputEdit);
+        setupDragAndDrop('image-drop-area-upscale', upscaleImageInput);
+
+        async function handleImageProcessing() {
+            if (activePollInterval) {
+                showError("Пожалуйста, подождите завершения текущей генерации.");
+                return;
+            }
+            
+            const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
+            const formData = new FormData();
+            formData.append('mode', currentMode);
+
+            const fileInput = currentMode === 'edit' ? imageFileInputEdit : upscaleImageInput;
+            if (!fileInput.files[0]) {
+                showError(`Пожалуйста, выберите изображение для ${currentMode}.`);
+                return;
+            }
+            formData.append('image', fileInput.files[0]);
+
+            if (currentMode === 'edit') {
+                formData.append('prompt', promptInput.value);
             } else {
-                loader.remove();
+                formData.append('scale_factor', document.querySelector('.resolution-btn.active').dataset.value);
+                formData.append('creativity', document.getElementById('creativity-slider').value);
+                formData.append('resemblance', document.getElementById('resemblance-slider').value);
+                formData.append('hdr', document.getElementById('hdr-slider').value);
             }
-        }
-        if (resultAreaRight.childElementCount === 0 && historyPlaceholder) {
-             historyPlaceholder.style.display = 'flex';
-        }
-        currentLoaderId = null;
-    }
 
-    function handleFileSelect(file, previewElementId) {
-        const previewElement = document.getElementById(previewElementId);
-        const dropArea = previewElement.parentElement;
-        const placeholder = dropArea.querySelector('.drop-placeholder');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewElement.src = e.target.result;
-            previewElement.style.display = 'block';
-            if (placeholder) placeholder.style.display = 'none';
-        }
-        reader.readAsDataURL(file);
-    }
+            const loaderId = startLoading();
 
-    function setupDragAndDrop(dropArea, fileInputElement) {
-        if (!dropArea || !fileInputElement) return;
-        const previewImgId = dropArea.querySelector('.image-preview-img').id;
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-        dropArea.addEventListener('dragenter', () => dropArea.classList.add('dragover'));
-        dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-        dropArea.addEventListener('drop', (e) => {
-            dropArea.classList.remove('dragover');
-            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                fileInputElement.files = e.dataTransfer.files;
-                handleFileSelect(fileInputElement.files[0], previewImgId);
-            }
-        });
-        fileInputElement.addEventListener('change', () => {
-            if (fileInputElement.files && fileInputElement.files[0]) {
-                 handleFileSelect(fileInputElement.files[0], previewImgId);
-            }
-        });
-    }
-
-    setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
-    setupDragAndDrop(document.querySelector('#upscale-view .image-drop-area'), upscaleImageInput);
-
-    function resetImagePreviews() {
-        document.querySelectorAll('.image-preview-img').forEach(img => {
-            img.src = '#';
-            img.style.display = 'none';
-        });
-        document.querySelectorAll('.drop-placeholder').forEach(p => {
-            if (p) p.style.display = 'flex';
-        });
-        imageFileInputEdit1.value = '';
-        upscaleImageInput.value = '';
-    }
-
-    async function handleImageProcessing() {
-        const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
-        startLoading();
-        const formData = new FormData();
-        formData.append('mode', currentMode);
-
-        if (currentMode === 'edit') {
-            formData.append('edit_mode', 'edit');
-            
-            if (!imageFileInputEdit1.files[0]) {
-                showError("Please select an image to edit.");
-                stopLoading(null); return;
-            }
-            formData.append('image', imageFileInputEdit1.files[0]);
-            formData.append('prompt', promptInput.value);
-
-        } else if (currentMode === 'upscale') {
-            if (!upscaleImageInput.files[0]) {
-                showError("Please select an image to upscale.");
-                stopLoading(null); return;
-            }
-            formData.append('image', upscaleImageInput.files[0]);
-            formData.append('scale_factor', document.querySelector('.resolution-btn.active').dataset.value);
-            formData.append('creativity', document.getElementById('creativity-slider').value);
-            formData.append('resemblance', document.getElementById('resemblance-slider').value);
-            formData.append('hdr', document.getElementById('hdr-slider').value);
-        }
-
-        try {
-            const response = await fetch("{{ url_for('process_image') }}", {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Unknown server error');
-            }
-            
-            const tempImg = new Image();
-            tempImg.onload = () => {
-                stopLoading(data.output_url);
+            try {
+                const response = await fetch("{{ url_for('process_image') }}", { method: 'POST', body: formData });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Не удалось запустить генерацию.');
+                
                 if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
                     tokenBalanceDisplaySpan.textContent = data.new_token_balance;
                 }
-            };
-            tempImg.onerror = () => {
-                showError("Failed to load the generated image.");
-                stopLoading(null);
-            };
-            tempImg.src = data.output_url;
-        } catch (error) {
-            showError("An error occurred: " + error.message);
-            stopLoading(null);
+                pollForStatus(data.generation_id, loaderId);
+
+            } catch (error) {
+                showError(error.message);
+                stopLoading(loaderId, null);
+            }
         }
-    }
 
-    document.getElementById('submit-button-edit').addEventListener('click', (e) => {
-        e.preventDefault();
-        handleImageProcessing();
-    });
-    
-    document.getElementById('submit-button-upscale').addEventListener('click', (e) => {
-        e.preventDefault();
-        handleImageProcessing();
-    });
+        function pollForStatus(generationId, loaderId) {
+            activePollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/check-status/${generationId}`);
+                    const data = await response.json();
 
-    document.querySelector('.app-logo-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = "{{ url_for('index') }}";
-    });
+                    if (data.status === 'succeeded') {
+                        stopLoading(loaderId, data.output_url);
+                    } else if (data.status === 'failed') {
+                        showError(data.error_message || 'Генерация не удалась.');
+                        stopLoading(loaderId, null);
+                    }
+                } catch (error) {
+                     showError('Ошибка проверки статуса.');
+                     stopLoading(loaderId, null);
+                }
+            }, 3000);
+        }
 
-    appModeButtons[0].click();
+        document.getElementById('submit-button-edit').addEventListener('click', handleImageProcessing);
+        document.getElementById('submit-button-upscale').addEventListener('click', handleImageProcessing);
+        
+        appModeButtons[0].click();
     });
     </script>
 </body>
@@ -1341,151 +1124,55 @@ def index():
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
-    # This page remains unchanged as per the instructions
-    return render_template_string("""
-        <!DOCTYPE html>
-        <html lang="ru">
-        <head>
-            <meta charset="UTF-8">
-            <title>Buy Tokens</title>
-            <style>
-                @font-face {
-                    font-family: 'Norms';
-                    src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
-                    font-weight: 300;
-                    font-style: normal;
-                }
-                @font-face {
-                    font-family: 'Norms';
-                    src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
-                    font-weight: 400;
-                    font-style: normal;
-                }
-                @font-face {
-                    font-family: 'Norms';
-                    src: url("{{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2');
-                    font-weight: 500;
-                    font-style: normal;
-                }
-                @font-face {
-                    font-family: 'Norms';
-                    src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
-                    font-weight: 700;
-                    font-style: normal;
-                }
-                @font-face {
-                    font-family: 'Norms';
-                    src: url("{{ url_for('static', filename='fonts/norms_black.woff2') }}") format('woff2');
-                    font-weight: 900;
-                    font-style: normal;
-                }
+    return _render_auth_template("Покупка токенов", None, "Страница находится в разработке")
 
-                :root {
-                    --accent-color: #D9F47A;
-                    --accent-glow: rgba(217, 244, 122, 0.7);
-                    --bg-gradient-start: #0b0c0e;
-                    --bg-gradient-end: #1a1b1e;
-                    --surface-color: #1c1c1f;
-                    --primary-text-color: #EAEAEA;
-                    --secondary-text-color: #888888;
-                    --accent-text-color: #1A1A1A;
-                    --border-color: rgba(255, 255, 255, 0.1);
-                    --shadow-color: rgba(0, 0, 0, 0.5);
-                    --content-border-radius: 24px;
-                }
-                body {
-                    font-family: 'Norms', sans-serif;
-                    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-                    color: var(--primary-text-color);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 100vh;
-                    margin: 0;
-                    font-weight: 400;
-                }
-                .container {
-                    max-width: 600px;
-                    margin: auto;
-                    background-color: var(--surface-color);
-                    padding: 40px;
-                    border-radius: var(--content-border-radius);
-                    box-shadow: 0 10px 40px var(--shadow-color);
-                    text-align: center;
-                    border: 1px solid var(--border-color);
-                }
-                h1 { 
-                    color: var(--primary-text-color); 
-                    margin-bottom: 20px; 
-                    font-weight: 700;
-                }
-                p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-text-color); font-weight: 400; }
-                .balance {
-                    font-size: 1.2rem;
-                    color: var(--accent-text-color);
-                    background-color: var(--accent-color);
-                    padding: 8px 15px;
-                    border-radius: 10px;
-                    display: inline-block;
-                    margin: 10px 0 20px;
-                    box-shadow: 0 0 15px var(--accent-glow);
-                    font-weight: 700;
-                }
-                .button {
-                    display: inline-block;
-                    padding: 12px 25px;
-                    background-color: transparent;
-                    color: var(--accent-color);
-                    border: 1px solid var(--accent-color);
-                    border-radius: 12px;
-                    text-decoration: none;
-                    margin-top: 25px;
-                    font-weight: 700;
-                    font-size: 1.1rem;
-                    transition: all 0.3s ease;
-                }
-                .button:hover {
-                    background-color: var(--accent-color);
-                    color: var(--accent-text-color);
-                    transform: scale(1.05);
-                    box-shadow: 0 0 20px var(--accent-glow);
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>Purchase Tokens</h1>
-                <p>Hello, {{ current_user.email or current_user.username }}!</p>
-                <p>Your current balance is: <strong class="balance">{{ current_user.token_balance }} tokens</strong>.</p>
-                <p>Payment system integration coming soon.</p>
-                <a href="{{ url_for('index') }}" class="button">Back to Main Page</a>
-            </div>
-        </body>
-        </html>
-    """, current_user=current_user)
-
-def upload_file_to_s3(file_to_upload):
-    if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
-        raise Exception("Ошибка конфигурации сервера для загрузки изображений.")
-
-    s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-    _, f_ext = os.path.splitext(file_to_upload.filename)
-    object_name = f"uploads/{uuid.uuid4()}{f_ext}"
+@app.route('/check-status/<generation_id>')
+@login_required
+def check_status(generation_id):
+    generation = Generation.query.filter_by(id=generation_id, user_id=current_user.id).first_or_404()
     
-    file_to_upload.stream.seek(0)
-    s3_client.upload_fileobj(file_to_upload.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': file_to_upload.content_type})
-    
-    hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
-    print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
-    return hosted_image_url
+    if generation.status == 'succeeded':
+        return jsonify({
+            'status': 'succeeded',
+            'output_url': generation.output_url,
+        })
+    elif generation.status == 'failed':
+        return jsonify({
+            'status': 'failed',
+            'error_message': generation.error_message or 'Unknown error'
+        })
+    else:
+        return jsonify({'status': 'processing'})
+
+@app.route('/replicate-webhook/<generation_id>', methods=['POST'])
+def replicate_webhook(generation_id):
+    data = request.json
+    generation = Generation.query.get(generation_id)
+
+    if not generation:
+        return jsonify({'status': 'not found'}), 404
+
+    generation.replicate_id = data.get('id')
+    generation.status = data.get('status')
+    generation.completed_at = db.func.now()
+
+    if generation.status == 'succeeded':
+        generation.output_url = data['output'][0] if isinstance(data.get('output'), list) else data.get('output')
+    elif generation.status == 'failed':
+        generation.error_message = data.get('error')
+        user = User.query.get(generation.user_id)
+        if user:
+            # Определяем стоимость задачи для возврата. Упрощенная логика.
+            token_cost = 5 if 'upscal' in data.get('version', '') else 1
+            user.token_balance += token_cost
+            print(f"!!! Токены ({token_cost}) возвращены пользователю {user.email} за неудачную генерацию {generation.id}")
+
+    db.session.commit()
+    return jsonify({'status': 'ok'}), 200
 
 def improve_prompt_with_openai(user_prompt):
-    if not openai_client:
-        print("!!! OpenAI API не настроен, возвращаем оригинальный промпт.")
-        return user_prompt
-    if not user_prompt or user_prompt.isspace():
-        return "A vibrant, hyperrealistic, high-detail image"
-        
+    if not openai_client: return user_prompt
+    if not user_prompt or user_prompt.isspace(): return "A vibrant, hyperrealistic, high-detail image"
     try:
         completion = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -1495,49 +1182,34 @@ def improve_prompt_with_openai(user_prompt):
             ],
             temperature=0.5, max_tokens=100
         )
-        improved_prompt = completion.choices[0].message.content.strip()
-        print(f"!!! Оригинальный промпт: {user_prompt}")
-        print(f"!!! Улучшенный промпт: {improved_prompt}")
-        return improved_prompt
+        return completion.choices[0].message.content.strip()
     except Exception as e:
         print(f"!!! Ошибка при обращении к OpenAI для улучшения промпта: {e}")
         return user_prompt 
-
-def poll_replicate_for_result(prediction_url):
-    headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-    max_retries, retries = 60, 0 # 2 минуты таймаут (60 * 2 сек)
-    while retries < max_retries:
-        time.sleep(2)
-        get_response = requests.get(prediction_url, headers=headers)
-        if get_response.status_code >= 400:
-            print(f"!!! Ошибка от Replicate при получении статуса: {get_response.status_code} - {get_response.text}")
-            raise Exception(f"Ошибка API Replicate при проверке статуса: {get_response.text}")
-        
-        status_data = get_response.json()
-        print(f"Статус генерации Replicate: {status_data['status']}")
-
-        if status_data["status"] == "succeeded":
-            return status_data["output"][0] if isinstance(status_data["output"], list) else str(status_data["output"])
-        elif status_data["status"] in ["failed", "canceled"]:
-            raise Exception(f"Генерация Replicate не удалась: {status_data.get('error', 'неизвестная ошибка Replicate')}")
-        
-        retries += 1
-    raise Exception("Генерация Replicate заняла слишком много времени.")
 
 @app.route('/process-image', methods=['POST'])
 @login_required
 def process_image():
     mode = request.form.get('mode')
-    
     token_cost = 5 if mode == 'upscale' else 1
+    
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Недостаточно токенов'}), 403
 
     if 'image' not in request.files:
         return jsonify({'error': 'Отсутствует изображение'}), 400
 
+    new_generation = None
     try:
         s3_url = upload_file_to_s3(request.files['image'])
+        
+        new_generation = Generation(user_id=current_user.id)
+        db.session.add(new_generation)
+        db.session.commit()
+
+        current_user.token_balance -= token_cost
+        db.session.commit()
+
         replicate_input = {}
         model_version_id = ""
 
@@ -1545,50 +1217,45 @@ def process_image():
             prompt = request.form.get('prompt', '')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
             final_prompt = improve_prompt_with_openai(prompt)
-            final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
-
+            replicate_input = {"input_image": s3_url, "prompt": final_prompt.replace('\n', ' ').strip()}
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            
-            scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
-            dynamic = round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
-
             replicate_input = {
                 "image": s3_url,
-                "scale_factor": scale_factor,
-                "creativity": creativity,
-                "resemblance": resemblance,
-                "dynamic": dynamic
+                "scale_factor": float(request.form.get('scale_factor', 'x2').replace('x', '')),
+                "creativity": round(float(request.form.get('creativity', '30')) / 100.0, 4),
+                "resemblance": round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4),
+                "dynamic": round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
             }
         
-        else:
-            return jsonify({'error': 'Неизвестный режим работы'}), 400
-
-        if not REPLICATE_API_TOKEN: raise Exception("REPLICATE_API_TOKEN не настроен.")
-
+        webhook_url = f"{SITE_BASE_URL.rstrip('/')}{url_for('replicate_webhook', generation_id=new_generation.id)}"
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-        post_payload = {"version": model_version_id, "input": replicate_input}
-        
-        print(f"!!! Replicate Payload: {post_payload}")
+        post_payload = {
+            "version": model_version_id,
+            "input": replicate_input,
+            "webhook": webhook_url,
+            "webhook_events_filter": ["completed"]
+        }
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
 
         prediction_data = start_response.json()
-        prediction_url = prediction_data["urls"]["get"]
-        
-        output_url = poll_replicate_for_result(prediction_url)
-
-        current_user.token_balance -= token_cost
+        new_generation.replicate_id = prediction_data.get('id')
         db.session.commit()
 
-        return jsonify({'output_url': output_url, 'new_token_balance': current_user.token_balance})
+        return jsonify({
+            'status': 'processing', 
+            'generation_id': new_generation.id,
+            'new_token_balance': current_user.token_balance
+        })
 
     except Exception as e:
-        print(f"!!! ОБЩАЯ ОШИБКА в process_image:\n{e}")
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
+        if new_generation: # Если задача была создана, но Replicate не ответил
+            db.session.delete(new_generation)
+        current_user.token_balance += token_cost # Возвращаем токены
+        db.session.commit()
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
 with app.app_context():
