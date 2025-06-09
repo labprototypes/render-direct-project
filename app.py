@@ -1367,7 +1367,7 @@ def process_image():
 
         elif mode == 'upscale':
             # Возвращаемся к нашему тестовому запросу
-            model_version_id = "92565b24b3c4333b28b76c4be672e81197992e59129524e94119853501f6874c"
+            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             replicate_input = {
                 "image": s3_url,
                 "prompt": "masterpiece, best quality, highres, <lora:more_details:0.5> <lora:SDXLrender_v2.0:1>"
