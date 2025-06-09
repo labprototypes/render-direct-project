@@ -1456,10 +1456,17 @@ def process_image():
                 if 'image2' not in request.files:
                     return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
                 s3_url_2 = upload_file_to_s3(request.files['image2'])
+                
+                # FIX 4: Revert to the user-specified model and use its correct input parameters.
                 model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
-                final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the style of the second image with the content of the first image"
+                final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the two images"
                 final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-                replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt}
+                # Use the correct input keys for this model: 'input_image_1' and 'input_image_2'
+                replicate_input = {
+                    "input_image_1": s3_url, 
+                    "input_image_2": s3_url_2, 
+                    "prompt": final_prompt
+                }
             
             elif edit_mode == 'autofix':
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
@@ -1535,7 +1542,6 @@ def process_image():
 
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
-    # FIX 2: Add specific handling for RecursionError before the general Exception.
     except RecursionError:
         error_message = "A recursion error occurred on the server. This can happen with gevent and SSL operations."
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (RecursionError): {error_message}")
@@ -1555,7 +1561,6 @@ def process_image():
             pass
         return jsonify({'error': f'Ошибка API Replicate: {error_to_show}'}), 500
     except Exception as e:
-        # The general exception handler remains as a catch-all.
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
