@@ -161,10 +161,35 @@ INDEX_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Changer AI</title>
     <style>
+        /* --- НАСТРОЙКА ШРИФТОВ --- */
         @font-face {
-            font-family: 'ChangerFont';
-            src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
-            font-weight: normal;
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
+            font-weight: 300;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2');
+            font-weight: 500;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_black.woff2') }}") format('woff2');
+            font-weight: 900;
             font-style: normal;
         }
 
@@ -173,14 +198,14 @@ INDEX_HTML = """
             --accent-glow: rgba(217, 244, 122, 0.7);
             --base-bg-color: #0c0d10;
             --surface-color: #1c1c1f;
-            --surface-glass: rgba(35, 35, 38, 0.5);
+            --surface-glass: rgba(28, 28, 31, 0.4); /* --- Цвет для эффекта стекла --- */
             --primary-text-color: #EAEAEA;
             --secondary-text-color: #888888;
             --accent-text-color: #1A1A1A;
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
 
-            --blur-intensity: 20px;
+            --blur-intensity: 22px; /* --- Интенсивность размытия для "стекла" --- */
             --content-border-radius: 24px;
             --element-border-radius: 16px;
             --button-border-radius: 14px;
@@ -190,7 +215,8 @@ INDEX_HTML = """
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'ChangerFont', sans-serif;
+            font-family: 'Norms', sans-serif;
+            font-weight: 400; /* --- Базовый вес Regular --- */
             color: var(--primary-text-color);
             background-color: var(--base-bg-color); 
             display: flex;
@@ -199,12 +225,11 @@ INDEX_HTML = """
             overflow: hidden;
             position: relative;
             
-            /* --- НОВЫЙ ФОН С ИЗОБРАЖЕНИЕМ ДЛЯ ДЕСКТОПА --- */
             background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
-            background-attachment: fixed; /* Эффект параллакса при скролле */
+            background-attachment: fixed;
         }
         
         .app-container {
@@ -242,12 +267,14 @@ INDEX_HTML = """
         .mode-btn {
             background-color: transparent; border: none; padding: 8px 20px;
             border-radius: 10px; cursor: pointer;
-            font-family: 'ChangerFont', sans-serif; font-size: 0.9rem;
+            font-family: 'Norms', sans-serif; font-size: 0.9rem;
+            font-weight: 500; /* --- Medium для кнопок режимов --- */
             color: var(--secondary-text-color);
             transition: all var(--transition-speed) ease;
         }
         .mode-btn.active {
             background-color: var(--accent-color); color: var(--accent-text-color);
+            font-weight: 700; /* --- Bold для активной кнопки --- */
             box-shadow: 0 0 15px var(--accent-glow);
         }
         .mode-btn:not(.active):hover { color: var(--primary-text-color); }
@@ -261,7 +288,7 @@ INDEX_HTML = """
         }
         .token-display {
             display: flex; align-items: center; color: var(--primary-text-color);
-            font-size: 1rem; font-weight: normal;
+            font-size: 1rem; font-weight: 500; /* --- Medium для баланса --- */
         }
         .token-coin {
             width: 18px; height: 18px; background-color: var(--accent-color);
@@ -292,11 +319,14 @@ INDEX_HTML = """
         }
         .dropdown-menu.open { opacity: 1; visibility: visible; transform: translateY(0); }
         .dropdown-header { padding: 5px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-        .dropdown-user-email { color: var(--primary-text-color); font-size: 0.9rem; font-weight: bold; }
+        .dropdown-user-email { 
+            color: var(--primary-text-color); font-size: 0.9rem; font-weight: 500; /* --- Medium для email --- */
+        }
         .dropdown-menu ul { list-style: none; }
         .dropdown-menu li a {
             display: block; padding: 10px 5px; color: var(--primary-text-color); text-decoration: none;
-            font-size: 0.95rem; transition: all var(--transition-speed) ease;
+            font-size: 0.95rem; font-weight: 400; /* --- Regular для пунктов меню --- */
+            transition: all var(--transition-speed) ease;
             border-radius: 8px;
         }
         .dropdown-menu li a:hover { color: var(--accent-color); background-color: rgba(255,255,255,0.05);}
@@ -305,12 +335,12 @@ INDEX_HTML = """
             display: flex; align-items: center; gap: 15px;
         }
         .user-controls-loggedout .auth-button {
-            color: var(--primary-text-color); text-decoration: none; font-size: 0.9rem; font-weight: normal;
+            color: var(--primary-text-color); text-decoration: none; font-size: 0.9rem; font-weight: 500; /* --- Medium для кнопок входа --- */
             transition: color var(--transition-speed) ease; padding: 10px 18px;
             border: 1px solid var(--border-color); border-radius: var(--button-border-radius);
             background-color: rgba(255,255,255,0.05);
         }
-        .user-controls-loggedout .auth-button:hover { color: var(--accent-text-color); background-color: var(--accent-color); border-color: var(--accent-color); }
+        .user-controls-loggedout .auth-button:hover { color: var(--accent-text-color); background-color: var(--accent-color); border-color: var(--accent-color); font-weight: 700; }
 
         .content-wrapper {
             width: 100%; max-width: 440px; padding: 25px;
@@ -346,7 +376,9 @@ INDEX_HTML = """
         .drop-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; }
         .drop-placeholder-icon { width: 40px; height: 40px; color: var(--secondary-text-color); transition: color var(--transition-speed) ease; }
         .image-drop-area:hover .drop-placeholder-icon { color: var(--accent-color); }
-        .drop-placeholder-text { color: var(--secondary-text-color); font-size: 0.9rem; }
+        .drop-placeholder-text { 
+            color: var(--secondary-text-color); font-size: 0.9rem; font-weight: 400; /* --- Regular для плейсхолдера --- */
+        }
         .image-drop-area .image-preview-img {
             display: none; width: 100%; height: 100%; object-fit: cover;
             border-radius: inherit; position: absolute; z-index: 1;
@@ -396,7 +428,8 @@ INDEX_HTML = """
         #prompt {
             flex-grow: 1; border: none; padding: 10px 15px; font-size: 0.9rem;
             background-color: transparent; outline: none; color: var(--primary-text-color);
-            font-family: 'ChangerFont', sans-serif;
+            font-family: 'Norms', sans-serif;
+            font-weight: 400; /* --- Regular для поля ввода --- */
         }
         #prompt::placeholder { color: var(--secondary-text-color); opacity: 1; }
         
@@ -406,10 +439,12 @@ INDEX_HTML = """
         .submit-button-element {
             width: 100%; background-color: transparent; color: var(--accent-color);
             border: 1px solid var(--accent-color); cursor: pointer; padding: 16px;
-            border-radius: var(--button-border-radius); font-size: 1rem;
-            font-family: 'ChangerFont', sans-serif;
+            border-radius: var(--button-border-radius); font-size: 1.1rem; /* --- Увеличен шрифт --- */
+            font-family: 'Norms', sans-serif;
+            font-weight: 700; /* --- Bold для главной кнопки --- */
             transition: all var(--transition-speed) ease-out;
             position: relative; overflow: hidden;
+            letter-spacing: 0.5px; /* --- Небольшой интервал --- */
         }
         .submit-button-element:hover {
             transform: translateY(-3px);
@@ -421,7 +456,8 @@ INDEX_HTML = """
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
         .control-group > label {
-            font-size: 0.9rem; color: var(--primary-text-color); margin-bottom: 0; padding-left: 5px; font-weight: bold;
+            font-size: 0.95rem; color: var(--primary-text-color); margin-bottom: 0; padding-left: 5px; 
+            font-weight: 700; /* --- Bold для заголовков групп --- */
         }
         .edit-mode-selector, .resolution-selector {
             display: flex; gap: 10px; width: 100%; background-color: rgba(0,0,0,0.25);
@@ -434,8 +470,9 @@ INDEX_HTML = """
             flex: 1; padding: 12px;
             border-radius: 10px;
             border: none; background-color: transparent;
-            color: var(--secondary-text-color); cursor: pointer; font-family: 'ChangerFont', sans-serif;
-            font-size: 0.85rem; transition: all var(--transition-speed) ease; text-align: center;
+            color: var(--secondary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
+            font-size: 0.85rem; font-weight: 500; /* --- Medium для подрежимов --- */
+            transition: all var(--transition-speed) ease; text-align: center;
         }
         .edit-mode-btn:hover, .resolution-btn:hover {
             color: var(--primary-text-color); background-color: rgba(255,255,255,0.05);
@@ -443,14 +480,16 @@ INDEX_HTML = """
         .edit-mode-btn.active, .resolution-btn.active {
             background-color: var(--accent-color); border-color: var(--accent-color);
             color: var(--accent-text-color); box-shadow: 0 0 15px var(--accent-glow);
+            font-weight: 700; /* --- Bold для активного подрежима --- */
         }
 
         .template-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 8px; padding: 15px; border-radius: var(--element-border-radius);
             border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
-            color: var(--primary-text-color); cursor: pointer; font-family: 'ChangerFont', sans-serif;
-            font-size: 0.85rem; transition: all var(--transition-speed) ease; text-align: center;
+            color: var(--primary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
+            font-size: 0.85rem; font-weight: 500; /* --- Medium для шаблонов --- */
+            transition: all var(--transition-speed) ease; text-align: center;
         }
         .template-btn:hover {
              border-color: var(--accent-color); transform: translateY(-3px);
@@ -459,6 +498,7 @@ INDEX_HTML = """
         .template-btn.active {
             border-color: var(--accent-color); background-color: rgba(217, 244, 122, 0.15);
             box-shadow: 0 0 15px rgba(217, 244, 122, 0.2); color: var(--accent-color);
+            font-weight: 700; /* --- Bold для активного шаблона --- */
         }
         .template-btn svg { width: 24px; height: 24px; margin-bottom: 5px; color: var(--secondary-text-color); transition: all var(--transition-speed) ease; }
         .template-btn:hover svg, .template-btn.active svg { color: var(--accent-color); }
@@ -466,12 +506,13 @@ INDEX_HTML = """
         .mode-description {
             font-size: 0.85rem; color: var(--secondary-text-color); text-align: center;
             width: 100%; padding: 0 10px; line-height: 1.5; min-height: 2.5em;
+            font-weight: 300; /* --- Light для описаний --- */
         }
 
         .slider-container { width: 100%; padding: 10px; background-color: rgba(0,0,0,0.25); border-radius: var(--element-border-radius); border: 1px solid var(--border-color);}
         .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .slider-container label { font-weight: normal; color: var(--primary-text-color); font-size: 0.9rem; }
-        .slider-value { font-weight: bold; color: var(--primary-text-color); }
+        .slider-container label { font-weight: 500; /* --- Medium для лейблов слайдеров --- */ color: var(--primary-text-color); font-size: 0.9rem; }
+        .slider-value { font-weight: 700; /* --- Bold для значения слайдера --- */ color: var(--primary-text-color); }
         .slider-container input[type="range"] {
             -webkit-appearance: none; appearance: none;
             width: 100%; height: 4px; background: var(--border-color);
@@ -496,7 +537,7 @@ INDEX_HTML = """
         
         .token-cost {
             display: flex; justify-content: center; align-items: center; gap: 8px;
-            font-size: 0.9rem; color: var(--secondary-text-color);
+            font-size: 0.9rem; color: var(--secondary-text-color); font-weight: 500; /* --- Medium --- */
         }
         .token-cost .token-coin { width: 14px; height: 14px; margin-left: 0; background-color: var(--secondary-text-color); box-shadow: none; }
 
@@ -509,6 +550,7 @@ INDEX_HTML = """
             width: auto; max-width: 480px; z-index: 105; text-align: center;
             box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
             transition: all var(--transition-speed) ease;
+            font-weight: 500;
         }
         
         @media (max-width: 992px) {
@@ -527,10 +569,9 @@ INDEX_HTML = """
             .page-header-inner { align-items: flex-start; }
             .content-wrapper { max-width: 100%; }
 
-            /* --- ФОН ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ --- */
             body {
                 background-image: url("{{ url_for('static', filename='images/mobile_background.webp') }}");
-                background-attachment: scroll; /* На мобильных fixed может работать некорректно */
+                background-attachment: scroll;
             }
         }
     </style>
@@ -1024,6 +1065,38 @@ def buy_tokens_page():
             <meta charset="UTF-8">
             <title>Buy Tokens</title>
             <style>
+                /* --- КОПИЯ НАСТРОЕК ШРИФТОВ ДЛЯ ЕДИНООБРАЗИЯ --- */
+                @font-face {
+                    font-family: 'Norms';
+                    src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
+                    font-weight: 300;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Norms';
+                    src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
+                    font-weight: 400;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Norms';
+                    src: url("{{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2');
+                    font-weight: 500;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Norms';
+                    src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
+                    font-weight: 700;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Norms';
+                    src: url("{{ url_for('static', filename='fonts/norms_black.woff2') }}") format('woff2');
+                    font-weight: 900;
+                    font-style: normal;
+                }
+
                 :root {
                     --accent-color: #D9F47A;
                     --accent-glow: rgba(217, 244, 122, 0.7);
@@ -1038,7 +1111,7 @@ def buy_tokens_page():
                     --content-border-radius: 24px;
                 }
                 body {
-                    font-family: 'ChangerFont', sans-serif;
+                    font-family: 'Norms', sans-serif;
                     background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
                     color: var(--primary-text-color);
                     display: flex;
@@ -1046,6 +1119,7 @@ def buy_tokens_page():
                     justify-content: center;
                     min-height: 100vh;
                     margin: 0;
+                    font-weight: 400;
                 }
                 .container {
                     max-width: 600px;
@@ -1057,8 +1131,12 @@ def buy_tokens_page():
                     text-align: center;
                     border: 1px solid var(--border-color);
                 }
-                h1 { color: var(--primary-text-color); margin-bottom: 20px; }
-                p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-text-color); }
+                h1 { 
+                    color: var(--primary-text-color); 
+                    margin-bottom: 20px; 
+                    font-weight: 700; /* --- Bold заголовок --- */
+                }
+                p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-text-color); font-weight: 400; /* --- Regular для параграфов --- */ }
                 .balance {
                     font-size: 1.2rem;
                     color: var(--accent-text-color);
@@ -1068,6 +1146,7 @@ def buy_tokens_page():
                     display: inline-block;
                     margin: 10px 0 20px;
                     box-shadow: 0 0 15px var(--accent-glow);
+                    font-weight: 700; /* --- Bold для баланса --- */
                 }
                 .button {
                     display: inline-block;
@@ -1078,7 +1157,7 @@ def buy_tokens_page():
                     border-radius: 12px;
                     text-decoration: none;
                     margin-top: 25px;
-                    font-weight: bold;
+                    font-weight: 700; /* --- Bold для кнопки --- */
                     font-size: 1.1rem;
                     transition: all 0.3s ease;
                 }
