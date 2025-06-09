@@ -5,23 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>{% block title %}Changer AI{% endblock %}</title>
     <style>
+        /* FIX: Replaced old fonts with the 'Norms' font family from the main app */
         @font-face {
-            font-family: 'ChangerFont';
-            src: url("{{ url_for('static', filename='fonts/FONT_TEXT.woff2') }}") format('woff2');
-            font-weight: normal;
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
+            font-weight: 300;
             font-style: normal;
         }
-        :root {
-            --text-accent-color: #D9F47A;
-            --controls-bg-color: #F8F8F8;
-            --controls-bg-color-transparent: rgba(248, 248, 248, 0.8);
-            --blur-intensity: 10px;
-            --text-main-color: #333333;
-            --header-border-radius: 22px;
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
+            font-weight: 400;
+            font-style: normal;
         }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2');
+            font-weight: 500;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_black.woff2') }}") format('woff2');
+            font-weight: 900;
+            font-style: normal;
+        }
+
+        /* FIX: Replaced all variables with the dark theme from the main app */
+        :root {
+            --accent-color: #D9F47A;
+            --accent-glow: rgba(217, 244, 122, 0.7);
+            --base-bg-color: #0c0d10;
+            --surface-color: #1c1c1f;
+            --primary-text-color: #EAEAEA;
+            --secondary-text-color: #888888;
+            --accent-text-color: #1A1A1A;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --content-border-radius: 24px;
+            --element-border-radius: 16px;
+            --button-border-radius: 14px;
+        }
+
+        /* FIX: Updated body styles to match the main app */
         body {
-            font-family: 'ChangerFont', sans-serif;
-            background-image: url("{{ url_for('static', filename='images/DESK_BACK.png') }}");
+            font-family: 'Norms', sans-serif;
+            font-weight: 400;
+            background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -31,78 +67,98 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            color: var(--text-main-color);
+            color: var(--primary-text-color);
         }
-        .security-popup-container {
-            background-color: var(--controls-bg-color-transparent);
-            backdrop-filter: blur(var(--blur-intensity));
-            -webkit-backdrop-filter: blur(var(--blur-intensity));
+
+        /* FIX: Renamed and restyled the main container */
+        .auth-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
             padding: 30px 40px;
-            border-radius: var(--header-border-radius);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            border-radius: var(--content-border-radius);
+            box-shadow: 0 10px 40px var(--shadow-color);
             width: 100%;
             max-width: 450px;
             position: relative;
             text-align: center;
         }
-        .security-popup-container h2 {
-            font-family: 'ChangerFont', sans-serif;
-            color: var(--text-main-color);
+        .auth-container h2 {
+            color: var(--primary-text-color);
             margin-bottom: 25px;
             font-size: 1.8rem;
+            font-weight: 700;
         }
-        .security-popup-container form label {
-            display: block;
+
+        /* FIX: Restyled form elements to match the main app */
+        .form-group {
+            margin-bottom: 20px;
             text-align: left;
+        }
+        .form-group label {
+            display: block;
             font-size: 0.9rem;
             margin-bottom: 8px;
-            font-weight: normal;
-            color: #495057;
+            font-weight: 500;
+            color: var(--primary-text-color);
         }
-        .security-popup-container .form-control {
-            font-family: 'ChangerFont', sans-serif;
-            width: calc(100% - 20px);
-            padding: 12px 10px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 8px;
-            background-color: rgba(255,255,255,0.7);
-            color: var(--text-main-color);
-            font-size: 0.9rem;
+        .form-control {
+            font-family: 'Norms', sans-serif;
+            font-weight: 400;
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--button-border-radius);
+            background-color: rgba(0,0,0,0.25);
+            color: var(--primary-text-color);
+            font-size: 0.95rem;
             box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
-        .security-popup-container .btn {
-            font-family: 'ChangerFont', sans-serif;
-            background-color: var(--text-accent-color);
-            color: var(--text-main-color);
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(217, 244, 122, 0.3);
+        }
+
+        /* FIX: Restyled buttons to match the main app */
+        .btn {
+            font-family: 'Norms', sans-serif;
+            font-weight: 700;
+            background-color: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            padding: 14px 20px;
+            border-radius: var(--button-border-radius);
             cursor: pointer;
             font-size: 1rem;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
             width: 100%;
-            max-width: 200px;
-            display: inline-block;
-            text-decoration: none;
             margin-top: 10px;
+            letter-spacing: 0.5px;
         }
-        .security-popup-container .btn:hover {
-            background-color: #c8e070;
+        .btn:hover {
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px var(--accent-glow);
         }
-        .security-popup-container .links {
-             margin-top: 20px;
+
+        /* FIX: Restyled links */
+        .links {
+             margin-top: 25px;
+             font-size: 0.9rem;
         }
-        .security-popup-container .links a {
-            font-family: 'ChangerFont', sans-serif;
-            color: var(--text-main-color);
+        .links p {
+            margin-bottom: 5px;
+            color: var(--secondary-text-color);
+        }
+        .links a {
+            color: var(--accent-color);
             text-decoration: none;
-            font-size: 0.85rem;
-            opacity: 0.8;
+            font-weight: 500;
         }
-        .security-popup-container .links a:hover {
+        .links a:hover {
             text-decoration: underline;
-            opacity: 1;
         }
         .close-popup-btn {
             position: absolute;
@@ -112,68 +168,63 @@
             border: none;
             cursor: pointer;
             padding: 5px;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+        .close-popup-btn:hover {
+            opacity: 1;
         }
         .close-popup-btn svg {
             width: 18px;
             height: 18px;
-            stroke: var(--text-main-color);
+            stroke: var(--primary-text-color);
             stroke-width: 8;
             stroke-linecap: round;
         }
         .help-block {
             display: block;
-            margin-top: -10px;
-            margin-bottom: 10px;
+            margin-top: 5px;
             font-size: 0.8rem;
-            color: #dc3545;
+            color: #E53E3E;
             text-align: left;
             padding-left: 5px;
         }
+        /* FIX: Restyled flash messages for the dark theme */
         .flash-messages {
             list-style-type: none;
             padding: 0;
-            margin-bottom: 15px;
+            margin: 0 0 20px 0;
         }
         .flash-messages li {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
+            background-color: rgba(229, 62, 62, 0.3);
+            color: #FED7D7;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(229, 62, 62, 0.5);
         }
-         /* Меняем цвет ссылок в попапе */
-        .security-popup-container a {
-            color: var(--text-accent-color);
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .security-popup-container a:hover {
-            text-decoration: underline;
-        }
-
-        /* Контейнер для чекбокса и текста */
+        
+        /* FIX: Restyled checkboxes for the dark theme */
         .custom-checkbox-container {
             display: flex;
-            align-items: center; /* Выравнивание по центру по вертикали */
+            align-items: center;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
             text-align: left;
+            margin-bottom: 5px;
         }
-
-        /* Скрываем стандартный чекбокс */
         .custom-checkbox-container input[type="checkbox"] {
             position: absolute;
             opacity: 0;
             width: 0;
             height: 0;
         }
-
-        /* Создаем кастомный вид для чекбокса */
         .custom-checkbox-container label {
             position: relative;
-            padding-left: 28px; /* Место для кастомной галочки */
+            padding-left: 30px;
+            cursor: pointer;
         }
-
         .custom-checkbox-container label::before {
             content: '';
             position: absolute;
@@ -182,19 +233,15 @@
             transform: translateY(-50%);
             width: 18px;
             height: 18px;
-            border: 2px solid var(--text-main-color);
-            border-radius: 4px;
-            background-color: #fff;
-            transition: background-color 0.2s, border-color 0.2s;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: rgba(0,0,0,0.2);
+            transition: all 0.2s;
         }
-
-        /* Стили для кастомного чекбокса в активном состоянии */
         .custom-checkbox-container input[type="checkbox"]:checked + label::before {
-            background-color: #D9F47A; /* Ваш цвет D9F47A */
-            border-color: #D9F47A;
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
         }
-
-        /* Рисуем саму галочку (крестик) */
         .custom-checkbox-container label::after {
             content: '';
             position: absolute;
@@ -202,27 +249,27 @@
             top: 50%;
             width: 5px;
             height: 10px;
-            border: solid black; /* Цвет галочки - черный */
+            border: solid var(--accent-text-color);
             border-width: 0 3px 3px 0;
             transform: translateY(-60%) rotate(45deg);
-            opacity: 0; /* Скрыта по умолчанию */
+            opacity: 0;
             transition: opacity 0.2s;
         }
-
-        /* Показываем галочку, когда чекбокс выбран */
         .custom-checkbox-container input[type="checkbox"]:checked + label::after {
             opacity: 1;
         }
-
-        /* Общий контейнер для всех чекбоксов */
         .checkbox-wrapper {
             margin-top: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        .checkbox-wrapper .custom-checkbox-container a {
+             color: var(--primary-text-color);
+             font-weight: 500;
         }
     </style>
 </head>
 <body>
-    <div class="security-popup-container">
+    <div class="auth-container">
         <a href="{{ url_for('index') }}" class="close-popup-btn" aria-label="Закрыть">
             <svg viewBox="0 0 80 80">
                 <line x1="20" y1="20" x2="60" y2="60"/>
