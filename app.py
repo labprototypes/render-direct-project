@@ -24,7 +24,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:/
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # FIX 1: Add SQLAlchemy Engine Options for database connection stability
-# This helps prevent 'psycopg2.OperationalError' by testing connections before use.
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 280,
@@ -1059,8 +1058,8 @@ INDEX_HTML = """
             try {
                 const pollResponse = await fetch(`/get-result/${predictionId}`);
                 if (!pollResponse.ok) {
-                    const errorData = await pollResponse.json();
-                    throw new Error(errorData.error || `Polling failed: ${pollResponse.statusText}`);
+                    const errorData = await pollResponse.json().catch(() => ({error: `Polling failed with status: ${pollResponse.statusText}`}));
+                    throw new Error(errorData.error);
                 }
                 const pollData = await pollResponse.json();
 
@@ -1363,21 +1362,51 @@ def get_result(prediction_id):
     if not prediction or prediction.user_id != current_user.id:
         return jsonify({'error': 'Prediction not found or access denied'}), 404
 
+    # If status is already completed in our DB, just return the result.
     if prediction.status == 'completed':
         return jsonify({
             'status': 'completed',
             'output_url': prediction.output_url,
             'new_token_balance': current_user.token_balance
         })
-    elif prediction.status == 'failed':
-        # The balance is already updated by the webhook, so just report it.
+    
+    # If status is already marked as failed, report it.
+    if prediction.status == 'failed':
         return jsonify({
             'status': 'failed',
             'error': 'Generation failed. Your tokens have been refunded.',
             'new_token_balance': User.query.get(current_user.id).token_balance
         })
-    else: # pending
-        return jsonify({'status': 'pending'})
+
+    # If status is 'pending', check with Replicate directly to see if it has failed.
+    # This handles cases where the 'failed' webhook isn't supported or doesn't arrive.
+    if prediction.status == 'pending' and prediction.replicate_id:
+        try:
+            headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+            poll_url = f"https://api.replicate.com/v1/predictions/{prediction.replicate_id}"
+            get_response = requests.get(poll_url, headers=headers)
+            get_response.raise_for_status()
+            status_data = get_response.json()
+
+            if status_data.get("status") == "failed":
+                print(f"!!! Polling detected failed prediction {prediction.id}. Refunding tokens.")
+                prediction.status = 'failed'
+                user = User.query.get(prediction.user_id)
+                if user:
+                    user.token_balance += prediction.token_cost
+                db.session.commit()
+                return jsonify({
+                    'status': 'failed',
+                    'error': f"Generation failed: {status_data.get('error', 'Unknown error')}. Your tokens have been refunded.",
+                    'new_token_balance': user.token_balance if user else None
+                })
+        except requests.exceptions.RequestException as e:
+            print(f"!!! Error polling Replicate status for {prediction.id}: {e}")
+            # Don't fail the user's request, just let them continue polling.
+            # The 'completed' webhook might still arrive.
+
+    # If none of the above, the process is still genuinely pending.
+    return jsonify({'status': 'pending'})
 
 
 @app.route('/replicate-webhook', methods=['POST'])
@@ -1401,17 +1430,10 @@ def replicate_webhook():
         prediction.output_url = output[0] if isinstance(output, list) else str(output)
         db.session.commit()
         print(f"!!! Webhook: Prediction {prediction.id} completed successfully.")
-
-    elif status == 'failed':
-        prediction.status = 'failed'
-        user = User.query.get(prediction.user_id)
-        if user:
-            # Refund tokens on failure
-            token_cost_to_refund = prediction.token_cost
-            user.token_balance += token_cost_to_refund
-            print(f"!!! Webhook: Prediction {prediction.id} failed. Refunding {token_cost_to_refund} tokens to user {user.id}.")
-        db.session.commit()
     
+    # We no longer listen for the 'failed' webhook, as it's not a valid option.
+    # Failure is now handled by the /get-result polling endpoint.
+
     return jsonify({'status': 'ok'}), 200
 
 @app.route('/process-image', methods=['POST'])
@@ -1497,11 +1519,14 @@ def process_image():
         db.session.commit()
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+        
+        # FIX 2: Correct the webhook_events_filter to use a valid value.
+        # The value "failed" is not supported by the Replicate API.
         post_payload = {
             "version": model_version_id,
             "input": replicate_input,
             "webhook": url_for('replicate_webhook', _external=True),
-            "webhook_events_filter": ["completed", "failed"]
+            "webhook_events_filter": ["completed"]
         }
         
         print(f"!!! Replicate Payload: {post_payload}")
@@ -1518,7 +1543,6 @@ def process_image():
 
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
-    # FIX 2: Enhanced exception handling to capture detailed API errors
     except requests.exceptions.HTTPError as e:
         error_details = "No details in response."
         if e.response is not None:
@@ -1530,7 +1554,7 @@ def process_image():
         try:
             error_json = e.response.json()
             error_to_show = error_json.get('detail', error_details)
-        except ValueError: # If response is not JSON
+        except ValueError:
             pass
         return jsonify({'error': f'Ошибка API Replicate: {error_to_show}'}), 500
     except Exception as e:
