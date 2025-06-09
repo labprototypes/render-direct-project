@@ -120,17 +120,15 @@ def register():
 
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
 
-        # Проверяем, указал ли пользователь username. Если нет, сохраняем None.
         username_value = form.username.data if form.username.data and form.username.data.strip() else None
 
-        # Дополнительно: проверяем, не занято ли имя пользователя, если оно было указано
         if username_value and User.query.filter_by(username=username_value).first():
             flash('Это имя пользователя уже занято. Пожалуйста, выберите другое.', 'error')
             return redirect(url_for('register'))
 
         new_user = User(
             email=form.email.data,
-            username=username_value, # Используем исправленное значение
+            username=username_value,
             password=hashed_password,
             marketing_consent=form.marketing_consent.data
         )
@@ -730,7 +728,7 @@ INDEX_HTML = """
                                     Consistent character
                                 </button>
                                 <button class="template-btn" data-prompt="virtual try-on, wearing the new clothing item from the second image">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404 4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1012 10.125A2.625 2.625 0 0012 4.875z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c-1.39-1.39-2.834-2.404-4.416-2.525C4.94 2.228 2.25 4.43 2.25 7.5c0 4.015 3.86 5.625 6.444 8.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.875c1.39-1.39 2.834-2.404-4.416-2.525C19.06 2.228 21.75 4.43 21.75 7.5c0 4.015-3.86 5.625-6.444 8.25" /></svg>
                                     Try-on
                                 </button>
                                 <button class="template-btn" data-prompt="apply the artistic style of the second image to the first image">
@@ -1136,7 +1134,6 @@ def index():
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
-    # This page remains unchanged as per the instructions
     return render_template_string("""
         <!DOCTYPE html>
         <html lang="ru">
@@ -1339,16 +1336,14 @@ def process_image():
         if mode == 'edit':
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
-            final_prompt = prompt
-
+            
             if edit_mode == 'remix':
                 if 'image2' not in request.files:
                     return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
                 s3_url_2 = upload_file_to_s3(request.files['image2'])
                 model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
                 final_prompt = improve_prompt_with_openai(prompt) if prompt and not prompt.isspace() else "blend the style of the second image with the content of the first image"
-                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-                replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt}
+                replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": final_prompt.replace('\n', ' ').strip()}
             
             elif edit_mode == 'autofix':
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
@@ -1366,38 +1361,30 @@ def process_image():
                     ], max_tokens=150
                 )
                 final_prompt = response.choices[0].message.content.strip()
-                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
                 print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
-                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt.replace('\n', ' ').strip()}
 
             else: # Standard Edit mode
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 final_prompt = improve_prompt_with_openai(prompt)
-                final_prompt = final_prompt.replace('\n', ' ').replace('\r', ' ').strip()
-                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt.replace('\n', ' ').strip()}
 
         elif mode == 'upscale':
-            # ШАГ 1: Указываем правильный ID версии для модели clarity-upscaler
+            # --- Логика Upscale, написанная с нуля ---
+            # 1. Задаем ID нужной модели
             model_version_id = "a792c3a9d955745f43de32de2a265671c66c4c4e78d18b320c29f270591f4a18"
             
-            # ШАГ 2: Получаем значения из формы и приводим их к правильному формату и диапазону
+            # 2. Получаем значения из формы и приводим их к ПРАВИЛЬНЫМ ТИПАМ
             
-            # Коэффициент увеличения остается как есть
+            # API требует ЦЕЛОЕ число (integer)
             scale_factor = int(request.form.get('scale_factor', 'x2').replace('x', ''))
             
-            # Приводим значение Creativity (0-100) к диапазону (0.0-1.0)
-            creativity = round(int(request.form.get('creativity', '30')) / 100.0, 4)
-            
-            # Приводим значение Resemblance (0-100) к диапазону (0.0-1.0)
-            # Убрана некорректная операция умножения на 3.0
-            resemblance = round(int(request.form.get('resemblance', '20')) / 100.0, 4)
-            
-            # Приводим значение HDR (0-100) к диапазону (0.0-1.0)
-            # Убрана некорректная операция умножения на 50.0
-            hdr_value = round(int(request.form.get('hdr', '10')) / 100.0, 4)
+            # API требует ДЕСЯТИЧНОЕ число (float) в диапазоне от 0.0 до 1.0
+            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
+            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0, 4)
+            hdr_value = round(float(request.form.get('hdr', '10')) / 100.0, 4)
 
-            # ШАГ 3: Формируем словарь replicate_input с правильными ключами
-            # Ключ 'dynamic' заменен на 'hdr' в соответствии со схемой модели.
+            # 3. Формируем словарь `input` с правильными ключами и значениями
             replicate_input = {
                 "image": s3_url,
                 "scale_factor": scale_factor,
