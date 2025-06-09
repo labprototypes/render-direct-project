@@ -87,8 +87,10 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
+    openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 else:
-    print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов не будет работать.")
+    openai_client = None
+    print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
 
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
 
@@ -253,7 +255,7 @@ INDEX_HTML = """
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border-bottom: 1px solid var(--border-color);
-            box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1); /* --- Объем для подложки --- */
+            box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1);
         }
         .page-header-inner {
             width: 100%; max-width: 1200px; padding: 0 25px;
@@ -704,7 +706,7 @@ INDEX_HTML = """
                                     Remove
                                 </button>
                                 <button class="template-btn" data-prompt="change background to a detailed city street">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 3.94A2.25 2.25 0 0 1 12 2.25a2.25 2.25 0 0 1 1.66.94m-3.32 0A2.25 2.25 0 0 0 12 2.25a2.25 2.25 0 0 0 1.66.94m0 0a2.25 2.25 0 0 1 2.25 2.25v5.169a2.25 2.25 0 0 1-2.25 2.25H8.34a2.25 2.25 0 0 1-2.25-2.25V6.44a2.25 2.25 0 0 1 2.25-2.25m6.062 0a2.25 2.25 0 0 0-1.66-.94m-3.32 0a2.25 2.25 0 0 1-1.66.94m12.334 10.035a2.25 2.25 0 0 1-2.25 2.25h-5.169a2.25 2.25 0 0 1-2.25-2.25v-5.169a2.25 2.25 0 0 1 2.25-2.25h5.169a2.25 2.25 0 0 1 2.25 2.25v5.169z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.87a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25z" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 3.94A2.25 2.25 0 0 1 12 2.25a2.25 2.25 0 0 1 1.66.94m-3.32 0A2.25 2.25 0 0 0 12 2.25a2.25 2.25 0 0 0 1.66.94m0 0a2.25 2.25 0 0 1 2.25 2.25v5.169a2.25 2.25 0 0 1-2.25-2.25H8.34a2.25 2.25 0 0 1-2.25-2.25V6.44a2.25 2.25 0 0 1 2.25-2.25m6.062 0a2.25 2.25 0 0 0-1.66-.94m-3.32 0a2.25 2.25 0 0 1-1.66.94m12.334 10.035a2.25 2.25 0 0 1-2.25 2.25h-5.169a2.25 2.25 0 0 1-2.25-2.25v-5.169a2.25 2.25 0 0 1 2.25-2.25h5.169a2.25 2.25 0 0 1 2.25 2.25v5.169z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.87a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25z" /></svg>
                                     Change
                                 </button>
                             </div>
@@ -768,27 +770,27 @@ INDEX_HTML = """
                          <div class="slider-container">
                             <div class="slider-header">
                                 <label for="creativity-slider">Creativity</label>
-                                <span class="slider-value" id="creativity-value">70</span>
+                                <span class="slider-value" id="creativity-value">30</span>
                             </div>
-                            <input type="range" id="creativity-slider" min="0" max="100" value="70" class="custom-slider">
+                            <input type="range" id="creativity-slider" min="0" max="100" value="30" class="custom-slider">
                         </div>
                     </div>
                     <div class="control-group">
                          <div class="slider-container">
                              <div class="slider-header">
                                 <label for="resemblance-slider">Resemblance</label>
-                                <span class="slider-value" id="resemblance-value">80</span>
+                                <span class="slider-value" id="resemblance-value">20</span>
                             </div>
-                            <input type="range" id="resemblance-slider" min="0" max="100" value="80" class="custom-slider">
+                            <input type="range" id="resemblance-slider" min="0" max="100" value="20" class="custom-slider">
                         </div>
                     </div>
                     <div class="control-group">
                          <div class="slider-container">
                              <div class="slider-header">
                                 <label for="hdr-slider">HDR</label>
-                                <span class="slider-value" id="hdr-value">50</span>
+                                <span class="slider-value" id="hdr-value">10</span>
                             </div>
-                            <input type="range" id="hdr-slider" min="0" max="100" value="50" class="custom-slider">
+                            <input type="range" id="hdr-slider" min="0" max="100" value="10" class="custom-slider">
                         </div>
                     </div>
                 </div>
@@ -975,8 +977,8 @@ INDEX_HTML = """
                 loader.remove();
             }
         }
-        if (resultAreaRight.children.length === 1 && resultAreaRight.contains(historyPlaceholder)) {
-             if (historyPlaceholder) historyPlaceholder.style.display = 'flex';
+        if (resultAreaRight.childElementCount === 0 && historyPlaceholder) {
+             historyPlaceholder.style.display = 'flex';
         }
         currentLoaderId = null;
     }
@@ -1033,42 +1035,46 @@ INDEX_HTML = """
         upscaleImageInput.value = '';
     }
 
-    async function handleImageProcessing(submitButton) {
+    async function handleImageProcessing() {
         const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
         startLoading();
         const formData = new FormData();
-        let url = '';
+        formData.append('mode', currentMode);
 
         if (currentMode === 'edit') {
             const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
+            formData.append('edit_mode', editMode);
+            
             if (!imageFileInputEdit1.files[0]) {
                 showError("Please select an image to " + editMode + ".");
                 stopLoading(null); return;
             }
-            url = "{{ url_for('process_image') }}";
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
+
             if (editMode === 'remix' && imageFileInputEdit2.files[0]) {
                 formData.append('image2', imageFileInputEdit2.files[0]);
             }
         } else if (currentMode === 'upscale') {
-            showError("Upscale functionality is not yet connected.");
-            stopLoading(null);
-            return;
+            if (!upscaleImageInput.files[0]) {
+                showError("Please select an image to upscale.");
+                stopLoading(null); return;
+            }
+            formData.append('image', upscaleImageInput.files[0]);
+            formData.append('scale_factor', document.querySelector('.resolution-btn.active').dataset.value);
+            formData.append('creativity', document.getElementById('creativity-slider').value);
+            formData.append('resemblance', document.getElementById('resemblance-slider').value);
+            formData.append('hdr', document.getElementById('hdr-slider').value);
         }
 
         try {
-            const response = await fetch(url, {
+            const response = await fetch("{{ url_for('process_image') }}", {
                 method: 'POST',
                 body: formData
             });
             const data = await response.json();
             if (!response.ok) {
-                let errorDetail = data.error || data.detail || 'Unknown server error';
-                if (response.status === 403) {
-                     errorDetail = 'Not enough tokens. Please top up your balance.';
-                }
-                throw new Error(errorDetail);
+                throw new Error(data.error || 'Unknown server error');
             }
             
             const tempImg = new Image();
@@ -1091,12 +1097,12 @@ INDEX_HTML = """
 
     document.getElementById('submit-button-edit').addEventListener('click', (e) => {
         e.preventDefault();
-        handleImageProcessing(e.currentTarget);
+        handleImageProcessing();
     });
     
     document.getElementById('submit-button-upscale').addEventListener('click', (e) => {
         e.preventDefault();
-        handleImageProcessing(e.currentTarget);
+        handleImageProcessing();
     });
 
     document.querySelector('.app-logo-link').addEventListener('click', (e) => {
@@ -1118,6 +1124,7 @@ def index():
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
+    # This page remains unchanged as per the instructions
     return render_template_string("""
         <!DOCTYPE html>
         <html lang="ru">
@@ -1240,115 +1247,136 @@ def buy_tokens_page():
         </html>
     """, current_user=current_user)
 
+def upload_file_to_s3(file_to_upload):
+    if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
+        raise Exception("Ошибка конфигурации сервера для загрузки изображений.")
 
-def improve_prompt_with_openai(user_prompt):
-    if not OPENAI_API_KEY:
-        print("OpenAI API ключ не настроен, возвращаем оригинальный промпт.")
-        return user_prompt
-    try:
-        completion = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.5, max_tokens=100
-        )
-        improved_prompt = completion.choices[0].message.content.strip()
-        print(f"!!! Оригинальный промпт: {user_prompt}")
-        print(f"!!! Улучшенный промпт: {improved_prompt}")
-        return improved_prompt
-    except Exception as e:
-        print(f"Ошибка при обращении к OpenAI: {e}")
-        return user_prompt
+    s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+    _, f_ext = os.path.splitext(file_to_upload.filename)
+    object_name = f"uploads/{uuid.uuid4()}{f_ext}"
+    
+    s3_client.upload_fileobj(file_to_upload.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': file_to_upload.content_type})
+    
+    hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
+    print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
+    return hosted_image_url
+
+def poll_replicate_for_result(prediction_url):
+    headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+    max_retries, retries = 60, 0
+    while retries < max_retries:
+        time.sleep(2)
+        get_response = requests.get(prediction_url, headers=headers)
+        get_response.raise_for_status() # Will raise an exception for 4xx/5xx status
+        
+        status_data = get_response.json()
+        print(f"Статус генерации Replicate: {status_data['status']}")
+
+        if status_data["status"] == "succeeded":
+            return status_data["output"][0] if isinstance(status_data["output"], list) else str(status_data["output"])
+        elif status_data["status"] in ["failed", "canceled"]:
+            raise Exception(f"Генерация Replicate не удалась: {status_data.get('error', 'неизвестная ошибка Replicate')}")
+        
+        retries += 1
+    raise Exception("Генерация Replicate заняла слишком много времени.")
 
 @app.route('/process-image', methods=['POST'])
 @login_required
 def process_image():
-    if current_user.token_balance < 1:
+    mode = request.form.get('mode')
+    
+    # Determine token cost
+    token_cost = 5 if mode == 'upscale' else 1
+    if current_user.token_balance < token_cost:
         return jsonify({'error': 'Недостаточно токенов'}), 403
 
-    if 'image' not in request.files or 'prompt' not in request.form:
-        return jsonify({'error': 'Отсутствует изображение или промпт'}), 400
-
-    image_file = request.files['image']
-    original_prompt_text = request.form['prompt']
-    final_prompt_text = improve_prompt_with_openai(original_prompt_text)
-
-    model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+    if 'image' not in request.files:
+        return jsonify({'error': 'Отсутствует изображение'}), 400
 
     try:
-        if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
-            print("!!! ОШИБКА: Не все переменные AWS S3 настроены.")
-            return jsonify({'error': 'Ошибка конфигурации сервера для загрузки изображений.'}), 500
+        s3_url = upload_file_to_s3(request.files['image'])
+        replicate_input = {}
+        model_version_id = ""
 
-        s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-        _, f_ext = os.path.splitext(image_file.filename)
-        object_name = f"uploads/{uuid.uuid4()}{f_ext}"
+        if mode == 'edit':
+            edit_mode = request.form.get('edit_mode')
+            prompt = request.form.get('prompt', '')
 
-        s3_client.upload_fileobj(image_file.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': image_file.content_type})
+            if edit_mode == 'remix':
+                if 'image2' not in request.files:
+                    return jsonify({'error': 'Для режима Remix нужно второе изображение'}), 400
+                s3_url_2 = upload_file_to_s3(request.files['image2'])
+                model_version_id = "flux-kontext-apps/multi-image-kontext-max:07a1361c469f64e2311855a4358a9842a2d7575459397985773b400902f37752"
+                replicate_input = {"image_a": s3_url, "image_b": s3_url_2, "prompt": prompt}
+            
+            else: # Handles 'edit' and 'autofix'
+                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+                final_prompt = prompt
+                
+                if edit_mode == 'autofix':
+                    if not openai_client:
+                        raise Exception("OpenAI API не настроен для Autofix.")
+                    
+                    print("!!! Запрос к OpenAI Vision API для Autofix...")
+                    response = openai_client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are an AI assistant that analyzes images for visual artifacts, flaws, or imperfections (like extra fingers, bad lighting, poor composition). Your task is to generate a concise, descriptive prompt for another AI image editor to fix these issues. Describe only the desired final state. For example, if there are 6 fingers on a hand, your output prompt should be 'Correct the hand to have five fingers, realistic anatomy'. Only output the corrective prompt itself, with no additional text or explanations."
+                            },
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": "Analyze this image and provide a prompt to fix its flaws."},
+                                    {"type": "image_url", "image_url": {"url": s3_url}},
+                                ],
+                            }
+                        ],
+                        max_tokens=100
+                    )
+                    final_prompt = response.choices[0].message.content.strip()
+                    print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
 
-        hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
-        print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
+        elif mode == 'upscale':
+            model_version_id = "philz1337x/clarity-upscaler:060422da195242273e57d19793540c11739818ca2101349a1714150a498b9a14"
+            
+            # --- Конвертация значений со слайдеров ---
+            scale_factor = int(request.form.get('scale_factor', 'x2').replace('x', ''))
+            creativity = float(request.form.get('creativity', '30')) / 100.0
+            resemblance = float(request.form.get('resemblance', '20')) / 100.0 * 3.0
+            hdr = float(request.form.get('hdr', '10')) / 100.0 * 50.0
+
+            replicate_input = {
+                "image": s3_url,
+                "scale_factor": scale_factor,
+                "creativity": creativity,
+                "resemblance": resemblance,
+                "dynamic": hdr
+            }
+        
+        else:
+            return jsonify({'error': 'Неизвестный режим работы'}), 400
+
+        # --- Запуск и ожидание Replicate ---
         if not REPLICATE_API_TOKEN:
-            print("!!! ОШИБКА: REPLICATE_API_TOKEN не найден.")
-            return jsonify({'error': 'Ошибка конфигурации сервера для генерации изображений.'}), 500
+            raise Exception("REPLICATE_API_TOKEN не настроен.")
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-        post_payload = {
-            "version": model_version_id,
-            "input": {"input_image": hosted_image_url, "prompt": final_prompt_text}
-        }
-
+        post_payload = {"version": model_version_id, "input": replicate_input}
+        
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-
-        if start_response.status_code >= 400:
-            print(f"!!! Ошибка от Replicate при запуске предсказания: {start_response.status_code} - {start_response.text}")
-            try:
-                error_data = start_response.json()
-                detail = error_data.get("detail", start_response.text)
-                return jsonify({'error': f'Ошибка API Replicate: {detail}'}), start_response.status_code
-            except ValueError:
-                 return jsonify({'error': f'Ошибка API Replicate: {start_response.text}'}), start_response.status_code
+        start_response.raise_for_status()
 
         prediction_data = start_response.json()
-        get_url = prediction_data["urls"]["get"]
+        prediction_url = prediction_data["urls"]["get"]
+        
+        output_url = poll_replicate_for_result(prediction_url)
 
-        output_url = None
-        max_retries = 60
-        retries = 0
-        while retries < max_retries:
-            time.sleep(2)
-            get_response = requests.get(get_url, headers=headers)
-            if get_response.status_code >= 400:
-                print(f"!!! Ошибка от Replicate при получении статуса: {get_response.status_code} - {get_response.text}")
-                try:
-                    error_data = get_response.json()
-                    detail = error_data.get("detail", get_response.text)
-                    raise Exception(f"Ошибка API Replicate при проверке статуса: {detail}")
-                except ValueError:
-                    raise Exception(f"Ошибка API Replicate при проверке статуса: {get_response.text}")
-
-            status_data = get_response.json()
-            print(f"Статус генерации Replicate: {status_data['status']}")
-
-            if status_data["status"] == "succeeded":
-                if isinstance(status_data["output"], list):
-                    output_url = status_data["output"][0]
-                else:
-                    output_url = str(status_data["output"])
-
-                current_user.token_balance -= 1
-                db.session.commit()
-                break
-            elif status_data["status"] in ["failed", "canceled"]:
-                error_detail = status_data.get('error', 'неизвестная ошибка Replicate')
-                raise Exception(f"Генерация Replicate не удалась: {error_detail}")
-            retries += 1
-
-        if not output_url:
-            return jsonify({'error': 'Генерация Replicate заняла слишком много времени или не вернула результат.'}), 500
+        current_user.token_balance -= token_cost
+        db.session.commit()
 
         return jsonify({'output_url': output_url, 'new_token_balance': current_user.token_balance})
 
