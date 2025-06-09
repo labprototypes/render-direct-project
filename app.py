@@ -1376,7 +1376,7 @@ def process_image():
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
             dynamic = round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
 
-            # FIX: Using correct parameter names from user's schema and removing optional ones
+            # FINAL FIX: Sending ONLY the parameters controlled by the UI, with correct keys from schema.
             replicate_input = {
                 "image": s3_url,
                 "scale_factor": scale_factor,
