@@ -198,62 +198,15 @@ INDEX_HTML = """
             min-height: 100vh;
             overflow: hidden;
             position: relative;
+            
+            /* --- НОВЫЙ ФОН С ИЗОБРАЖЕНИЕМ ДЛЯ ДЕСКТОПА --- */
+            background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed; /* Эффект параллакса при скролле */
         }
         
-        /* --- НОВЫЙ ПРЕМИУМ-ФОН --- */
-        
-        /* 1. Глубокий радиальный градиент */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(ellipse at center, #0a0a0a 0%, #0c0d10 60%, #050607 100%);
-            z-index: -3;
-        }
-
-        /* 2. Слой с шумом */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjEwIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI25vaXNlKSIvPjwvc3ZnPg==');
-            opacity: 0.03;
-            z-index: -2;
-            pointer-events: none;
-        }
-
-        /* 3. Слой со световыми ореолами */
-        .halos-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .halos-container::before, .halos-container::after {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.08;
-        }
-        .halos-container::before {
-            width: 500px;
-            height: 500px;
-            background: var(--accent-color);
-            top: -250px;
-            left: -250px;
-        }
-        .halos-container::after {
-            width: 400px;
-            height: 400px;
-            background: #4A90E2; /* Добавим второй цвет для глубины */
-            bottom: -200px;
-            right: -200px;
-        }
-        /* --- КОНЕЦ СТИЛЕЙ ДЛЯ ФОНА --- */
-
-
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
             padding: 100px 25px 25px;
@@ -573,12 +526,16 @@ INDEX_HTML = """
             .header-left-group { flex-direction: column; align-items: flex-start; gap: 15px; }
             .page-header-inner { align-items: flex-start; }
             .content-wrapper { max-width: 100%; }
+
+            /* --- ФОН ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ --- */
+            body {
+                background-image: url("{{ url_for('static', filename='images/mobile_background.webp') }}");
+                background-attachment: scroll; /* На мобильных fixed может работать некорректно */
+            }
         }
     </style>
 </head>
 <body>
-    <div class="halos-container"></div>
-
     <div class="page-header-container">
         <div class="page-header-inner">
             <div class="header-left-group">
