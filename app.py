@@ -1371,26 +1371,22 @@ def process_image():
 
         elif mode == 'upscale':
             # --- Логика Upscale, написанная с нуля ---
-            # 1. Задаем ID нужной модели
-            model_version_id = "a792c3a9d955745f43de32de2a265671c66c4c4e78d18b320c29f270591f4a18"
+            # 1. Задаем ID нужной модели из документации
+            model_version_id = "dfad41707589d68eccdcc1dfa680d55a268f9310748be4bfe35b4a6291453d5e"
             
-            # 2. Получаем значения из формы и приводим их к ПРАВИЛЬНЫМ ТИПАМ
-            
-            # API требует ЦЕЛОЕ число (integer)
+            # 2. Получаем значения из формы и приводим их к ПРАВИЛЬНЫМ ТИПАМ и ДИАПАЗОНАМ
             scale_factor = int(request.form.get('scale_factor', 'x2').replace('x', ''))
+            creativity = round(float(request.form.get('creativity', '35')) / 100.0, 4) # Default 0.35
+            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4) # UI (0-100) -> API (0.0-3.0), default 0.6
+            dynamic = 1.0 + round(float(request.form.get('hdr', '10')) / 100.0 * 49.0, 4) # UI (0-100) -> API (1.0-50.0), default 6
             
-            # API требует ДЕСЯТИЧНОЕ число (float) в диапазоне от 0.0 до 1.0
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0, 4)
-            hdr_value = round(float(request.form.get('hdr', '10')) / 100.0, 4)
-
             # 3. Формируем словарь `input` с правильными ключами и значениями
             replicate_input = {
                 "image": s3_url,
                 "scale_factor": scale_factor,
                 "creativity": creativity,
                 "resemblance": resemblance,
-                "hdr": hdr_value 
+                "dynamic": dynamic,
             }
         
         else:
