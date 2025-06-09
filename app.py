@@ -1,4 +1,4 @@
-# FIX 1: Explicitly apply gevent monkey-patching at the very top of the file.
+# FIX: Explicitly apply gevent monkey-patching at the very top of the file.
 # This MUST be the first piece of code to run to prevent RecursionError with networking libraries.
 from gevent import monkey
 monkey.patch_all()
@@ -9,13 +9,16 @@ import uuid
 import requests
 import time
 import openai
-from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
+import stripe # FIX: Import stripe
+
+from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
+from functools import wraps # FIX: Import wraps for decorators
 
 # --- Настройки ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -32,6 +35,19 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 280,
 }
+
+# --- Stripe Configuration ---
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+# VVVVVV   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   VVVVVV
+PLAN_PRICES = {
+    'taste': 'price_1PQRg5DEQaroqD5eyoYqS2kH', # ID для €9/mo - ЗАМЕНИТЬ
+    'best':  'price_1PQRgnDEQaroqD5eLgrf22z4',  # ID для €19/mo - ЗАМЕНИТЬ
+    'pro':   'price_1PQRhLDEQaroqD5eYtWp1D9f',   # ID для €35/mo - ЗАМЕНИТЬ
+}
+TOKEN_PRICE_ID = 'price_1PQRiBDEQaroqD5e8jYd9sQ1' # ID для разовой покупки токенов - ЗАМЕНИТЬ
+# ^^^^^^   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   ^^^^^^
 
 
 db = SQLAlchemy(app)
@@ -53,12 +69,14 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
-    token_balance = db.Column(db.Integer, default=10, nullable=False)
+    token_balance = db.Column(db.Integer, default=10, nullable=False) # Начальные токены для триала
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
-    subscription_status = db.Column(db.String(50), default='inactive', nullable=False)
+    # FIX: Changed default status to 'trial' for new users
+    subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='free') # Например, free, taste, best, pro
+    # FIX: Changed default plan to 'trial'
+    current_plan = db.Column(db.String(50), nullable=True, default='trial') 
 
     @property
     def is_active(self):
@@ -115,6 +133,18 @@ else:
     openai_client = None
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
 
+# --- Декоратор для проверки подписки ---
+def subscription_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if current_user.subscription_status not in ['active', 'trial']:
+            flash('Your plan does not allow access to this feature. Please subscribe.', 'warning')
+            return redirect(url_for('billing'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -129,6 +159,7 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('Неверный email или пароль.', 'error')
+    # Используем старый шаблон для логина
     return render_template('custom_login_user.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -143,16 +174,23 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+        
+        # Создаем клиента в Stripe для нового пользователя
+        stripe_customer = stripe.Customer.create(email=form.email.data)
+        
         new_user = User(
             email=form.email.data,
             username=form.username.data,
             password=hashed_password,
-            marketing_consent=form.marketing_consent.data
+            marketing_consent=form.marketing_consent.data,
+            stripe_customer_id=stripe_customer.id # Сохраняем ID клиента Stripe
         )
         db.session.add(new_user)
         db.session.commit()
         login_user(new_user)
-        return redirect(url_for('index'))
+        # FIX: Redirect to the plan selection page after registration
+        return redirect(url_for('choose_plan'))
+    # Используем старый шаблон для регистрации
     return render_template('custom_register_user.html', form=form)
 
 @app.route('/change-password', methods=['GET', 'POST'])
@@ -168,6 +206,7 @@ def change_password():
         db.session.commit()
         flash('Ваш пароль успешно изменен!', 'success')
         return redirect(url_for('index'))
+    # Используем старый шаблон для смены пароля
     return render_template('custom_change_password.html', form=form)
 
 @app.route('/logout')
@@ -274,7 +313,6 @@ INDEX_HTML = """
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            /* FIX 2: Removed background-color to make the header transparent */
             background-color: transparent;
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
@@ -338,8 +376,6 @@ INDEX_HTML = """
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
         .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
         .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
-
-        /* FIX 3: Corrected burger menu animation for a centered cross */
         .burger-menu-btn.open .burger-icon .line1 { transform: translateY(34px) rotate(45deg); }
         .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
         .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-34px) rotate(-45deg); }
@@ -961,8 +997,8 @@ INDEX_HTML = """
         const item = document.createElement('div');
         item.className = 'history-item';
         item.innerHTML = `
-            <img src="${url}" alt="Generated Image" class="history-item-image">
-            <a href="${url}" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
+            <img src="<span class="math-inline">\{url\}" alt\="Generated Image" class\="history\-item\-image"\>
+<a href\="</span>{url}" class="download-action-link" download="generated_image.png" target="_blank" rel="noopener noreferrer">
                 <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
             </a>`;
         return item;
@@ -1105,7 +1141,6 @@ INDEX_HTML = """
             formData.append('image', imageFileInputEdit1.files[0]);
             formData.append('prompt', promptInput.value);
 
-            // FIX 1: Logic for second image (remix) is no longer needed
             
         } else if (currentMode === 'upscale') {
             if (!upscaleImageInput.files[0]) {
@@ -1166,12 +1201,14 @@ INDEX_HTML = """
 """
 
 @app.route('/')
+@login_required
 def index():
     return render_template_string(INDEX_HTML)
 
 @app.route('/buy-tokens')
 @login_required
 def buy_tokens_page():
+    # This page remains unchanged as per the instructions
     return render_template_string("""
         <!DOCTYPE html>
         <html lang="ru">
@@ -1427,7 +1464,6 @@ def process_image():
             prompt = request.form.get('prompt', '')
             final_prompt = prompt
 
-            # FIX 1: Removed Remix logic block entirely
             if edit_mode == 'autofix':
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
@@ -1530,3 +1566,9 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
+}
+Проанализируйте этот код и скажите, есть ли в нем проблемы, которые могут привести к неправильной работе или ошибкам.
+
+Убедитесь, что вы внимательно изучили весь код, включая HTML и JavaScript, встроенные в основной файл.
+
+Если вы найдете какие-либо проблемы, перечислите их и предложите исправления.
