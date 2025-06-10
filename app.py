@@ -8,7 +8,7 @@ import uuid
 import requests
 import time
 import openai
-import stripe # FIX: Import stripe
+import stripe
 
 from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -17,7 +17,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
-from functools import wraps # FIX: Import wraps for decorators
+from functools import wraps
 
 # --- Настройки ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -68,13 +68,11 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
-    token_balance = db.Column(db.Integer, default=10, nullable=False) # Начальные токены для триала
+    token_balance = db.Column(db.Integer, default=10, nullable=False) 
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
-    # FIX: Default status is now 'trial' to allow new users access
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    # FIX: Default plan is now 'trial' for consistency
     current_plan = db.Column(db.String(50), nullable=True, default='trial') 
 
     @property
@@ -173,7 +171,6 @@ def register():
 
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
         
-        # FIX: Create a Stripe Customer when a new user registers
         try:
             stripe_customer = stripe.Customer.create(email=form.email.data)
         except Exception as e:
@@ -185,12 +182,11 @@ def register():
             username=form.username.data,
             password=hashed_password,
             marketing_consent=form.marketing_consent.data,
-            stripe_customer_id=stripe_customer.id # Сохраняем ID клиента Stripe
+            stripe_customer_id=stripe_customer.id
         )
         db.session.add(new_user)
         db.session.commit()
         login_user(new_user)
-        # FIX: Redirect to the plan selection page after registration
         return redirect(url_for('choose_plan'))
     return render_template('custom_register_user.html', form=form)
 
@@ -215,8 +211,279 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# --- Главная страница и API ---
+# --- Функции-помощники ---
 
+def upload_file_to_s3(file_to_upload):
+    if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
+        raise Exception("Ошибка конфигурации сервера для загрузки изображений.")
+    s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+    _, f_ext = os.path.splitext(file_to_upload.filename)
+    object_name = f"uploads/{uuid.uuid4()}{f_ext}"
+    file_to_upload.stream.seek(0)
+    s3_client.upload_fileobj(file_to_upload.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': file_to_upload.content_type})
+    hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
+    print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
+    return hosted_image_url
+
+def improve_prompt_with_openai(user_prompt):
+    if not openai_client:
+        print("!!! OpenAI API не настроен, возвращаем оригинальный промпт.")
+        return user_prompt
+    if not user_prompt or user_prompt.isspace():
+        return "A vibrant, hyperrealistic, high-detail image"
+    try:
+        completion = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert prompt engineer..."},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.5, max_tokens=100
+        )
+        improved_prompt = completion.choices[0].message.content.strip()
+        print(f"!!! Оригинальный промпт: {user_prompt}")
+        print(f"!!! Улучшенный промпт: {improved_prompt}")
+        return improved_prompt
+    except Exception as e:
+        print(f"!!! Ошибка при обращении к OpenAI для улучшения промпта: {e}")
+        return user_prompt
+
+def handle_checkout_session(session):
+    customer_id = session.get('customer')
+    user = User.query.filter_by(stripe_customer_id=customer_id).first()
+    if not user: return
+
+    if session.get('subscription'):
+        subscription_id = session.get('subscription')
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        user.stripe_subscription_id = subscription_id
+        user.subscription_status = subscription.status
+        price_id = subscription.items.data[0].price.id
+        user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
+        handle_successful_payment(invoice=None, subscription=subscription)
+    
+    elif session.get('payment_intent'):
+        user.token_balance += 1000
+
+    db.session.commit()
+
+def handle_subscription_change(subscription):
+    customer_id = subscription.get('customer')
+    user = User.query.filter_by(stripe_customer_id=customer_id).first()
+    if not user: return
+    
+    user.subscription_status = subscription.status
+    if subscription.status != 'active':
+        user.current_plan = 'inactive'
+    db.session.commit()
+
+def handle_successful_payment(invoice=None, subscription=None):
+    if invoice:
+        subscription_id = invoice.get('subscription')
+    elif subscription:
+        subscription_id = subscription.id
+    else:
+        return
+
+    if not subscription_id: return
+
+    user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+    if not user: return
+
+    if not subscription:
+        subscription = stripe.Subscription.retrieve(subscription_id)
+    price_id = subscription.items.data[0].price.id
+
+    if price_id == PLAN_PRICES.get('taste'):
+        user.token_balance += 1500
+    elif price_id == PLAN_PRICES.get('best'):
+        user.token_balance += 4000
+    elif price_id == PLAN_PRICES.get('pro'):
+        user.token_balance += 10000
+    
+    db.session.commit()
+
+# --- Маршруты для биллинга и Stripe ---
+
+@app.route('/choose-plan')
+@login_required
+def choose_plan():
+    if current_user.subscription_status == 'active':
+        return redirect(url_for('billing'))
+    return render_template('choose_plan.html')
+
+@app.route('/billing')
+@login_required
+def billing():
+    return render_template('billing.html')
+
+@app.route('/create-checkout-session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    price_id = request.form.get('price_id')
+    mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            customer=current_user.stripe_customer_id,
+            payment_method_types=['card'],
+            line_items=[{'price': price_id, 'quantity': 1}],
+            mode=mode,
+            automatic_tax={'enabled': True},
+            customer_update={'address': 'auto'},
+            success_url=url_for('billing', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=url_for('billing', _external=True),
+        )
+        return redirect(checkout_session.url, code=303)
+    except Exception as e:
+        flash(f'Stripe error: {str(e)}', 'error')
+        return redirect(url_for('billing'))
+
+@app.route('/create-portal-session', methods=['POST'])
+@login_required
+def create_portal_session():
+    if not current_user.stripe_customer_id:
+        flash('Stripe customer not found.', 'error')
+        return redirect(url_for('billing'))
+    portal_session = stripe.billing_portal.Session.create(
+        customer=current_user.stripe_customer_id,
+        return_url=url_for('billing', _external=True),
+    )
+    return redirect(portal_session.url, code=303)
+
+@app.route('/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        return 'Invalid payload or signature', 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        handle_checkout_session(session)
+    if event['type'] in ['customer.subscription.updated', 'customer.subscription.deleted']:
+        subscription = event['data']['object']
+        handle_subscription_change(subscription)
+    if event['type'] == 'invoice.payment_succeeded':
+        invoice = event['data']['object']
+        handle_successful_payment(invoice=invoice)
+
+    return 'OK', 200
+
+# --- Маршруты API и обработки изображений ---
+
+@app.route('/get-result/<string:prediction_id>', methods=['GET'])
+@login_required
+def get_result(prediction_id):
+    prediction = Prediction.query.get(prediction_id)
+    if not prediction or prediction.user_id != current_user.id:
+        return jsonify({'error': 'Prediction not found or access denied'}), 404
+    if prediction.status == 'completed':
+        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
+    if prediction.status == 'failed':
+        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': User.query.get(current_user.id).token_balance})
+
+    if prediction.status == 'pending' and prediction.replicate_id:
+        try:
+            headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+            poll_url = f"https://api.replicate.com/v1/predictions/{prediction.replicate_id}"
+            get_response = requests.get(poll_url, headers=headers)
+            get_response.raise_for_status()
+            status_data = get_response.json()
+            if status_data.get("status") == "failed":
+                print(f"!!! Polling detected failed prediction {prediction.id}. Refunding tokens.")
+                prediction.status = 'failed'
+                user = User.query.get(prediction.user_id)
+                if user:
+                    user.token_balance += prediction.token_cost
+                db.session.commit()
+                return jsonify({'status': 'failed', 'error': f"Generation failed: {status_data.get('error', 'Unknown error')}. Your tokens have been refunded.", 'new_token_balance': user.token_balance if user else None})
+        except requests.exceptions.RequestException as e:
+            print(f"!!! Error polling Replicate status for {prediction.id}: {e}")
+
+    return jsonify({'status': 'pending'})
+
+@app.route('/process-image', methods=['POST'])
+@login_required
+@subscription_required
+def process_image():
+    mode = request.form.get('mode')
+    token_cost = 5 if mode == 'upscale' else 1
+    if current_user.token_balance < token_cost:
+        return jsonify({'error': 'Недостаточно токенов'}), 403
+    if 'image' not in request.files:
+        return jsonify({'error': 'Отсутствует изображение'}), 400
+
+    try:
+        s3_url = upload_file_to_s3(request.files['image'])
+        replicate_input = {}
+        model_version_id = ""
+
+        if mode == 'edit':
+            edit_mode = request.form.get('edit_mode')
+            prompt = request.form.get('prompt', '')
+            if edit_mode == 'autofix':
+                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+                if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
+                print("!!! Запрос к OpenAI Vision API для Autofix...")
+                response = openai_client.chat.completions.create(model="gpt-4o", messages=[{"role": "system", "content": "You are an expert prompt engineer..."}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}], max_tokens=150)
+                final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+                print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+            else:
+                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+                final_prompt = improve_prompt_with_openai(prompt).replace('\n', ' ').replace('\r', ' ').strip()
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+        elif mode == 'upscale':
+            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
+            scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
+            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
+            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
+            dynamic = round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
+            replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
+        else:
+            return jsonify({'error': 'Неизвестный режим работы'}), 400
+
+        if not REPLICATE_API_TOKEN: raise Exception("REPLICATE_API_TOKEN не настроен.")
+
+        new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
+        db.session.add(new_prediction)
+        db.session.commit()
+
+        headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
+        print(f"!!! Replicate Payload: {post_payload}")
+        start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
+        start_response.raise_for_status()
+        prediction_data = start_response.json()
+        replicate_prediction_id = prediction_data.get('id')
+        new_prediction.replicate_id = replicate_prediction_id
+        current_user.token_balance -= token_cost
+        db.session.commit()
+        return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
+    except RecursionError:
+        error_message = "A recursion error occurred on the server..."
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image (RecursionError): {error_message}")
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {error_message}'}), 500
+    except requests.exceptions.HTTPError as e:
+        error_details = "No details in response."
+        if e.response is not None:
+            error_details = e.response.text
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image (HTTPError): {e}\nReplicate Response: {error_details}")
+        error_to_show = error_details
+        try:
+            error_json = e.response.json()
+            error_to_show = error_json.get('detail', error_details)
+        except ValueError:
+            pass
+        return jsonify({'error': f'Ошибка API Replicate: {error_to_show}'}), 500
+    except Exception as e:
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
+
+# --- FIX: Moved the main INDEX_HTML and its route to the end of the file ---
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -1212,6 +1479,7 @@ def choose_plan():
 @login_required
 def billing():
     return render_template('billing.html')
+
 
 @app.route('/')
 @login_required
