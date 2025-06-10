@@ -10,10 +10,14 @@
     
     {% if predictions %}
         <div class="archive-grid">
+            {# FIX: Loop through predictions to create grid items with download icons #}
             {% for prediction in predictions %}
-                <a href="{{ prediction.output_url }}" target="_blank" class="archive-item" title="Created on {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}">
+                <div class="archive-item" title="Created on {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}">
                     <img src="{{ prediction.output_url }}" alt="Generated image" loading="lazy">
-                </a>
+                    <a href="{{ prediction.output_url }}" class="download-action-link" download target="_blank" rel="noopener noreferrer">
+                        <img src="{{ url_for('static', filename='images/Download.png') }}" alt="Download" class="download-button-icon">
+                    </a>
+                </div>
             {% endfor %}
         </div>
     {% else %}
@@ -26,7 +30,7 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block page_scripts %}
 <script>
 // Скрипты с главной страницы здесь не нужны, но блок оставляем на случай будущего расширения.
 document.addEventListener('DOMContentLoaded', () => {
