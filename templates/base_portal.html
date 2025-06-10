@@ -9,13 +9,11 @@
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
             font-weight: 400;
-            font-style: normal;
         }
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
             font-weight: 700;
-            font-style: normal;
         }
         :root {
             --accent-color: #D9F47A;
@@ -33,14 +31,11 @@
             background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
             background-size: cover; background-position: center; background-attachment: fixed;
             color: var(--primary-text-color); margin: 0;
+            font-weight: 400;
         }
         .main-header {
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: absolute;
-            top: 0; left: 0; right: 0;
+            padding: 20px 40px; display: flex; justify-content: space-between;
+            align-items: center; position: absolute; top: 0; left: 0; right: 0;
         }
         .logo { height: 38px; }
         .main-header nav a {
@@ -90,11 +85,11 @@
         .btn-disabled { background-color: var(--border-color); color: var(--secondary-text-color); cursor: not-allowed; border: none; }
         .btn-disabled:hover { background-color: var(--border-color); transform: none; box-shadow: none; }
         .bottom-link { margin-top: 40px; }
-        .bottom-link .btn-trial {
+        .bottom-link a {
             background: none; border: 1px solid var(--secondary-text-color); color: var(--secondary-text-color);
-            font-weight: 500; text-decoration: none; padding: 10px 25px;
+            font-weight: 500; text-decoration: none; padding: 10px 25px; border-radius: 14px;
         }
-        .bottom-link .btn-trial:hover { border-color: var(--primary-text-color); color: var(--primary-text-color); }
+        .bottom-link a:hover { border-color: var(--primary-text-color); color: var(--primary-text-color); }
         
         .billing-header {
             display: flex; gap: 30px; width: 100%; max-width: 1100px; 
@@ -104,20 +99,19 @@
             flex-grow: 1; background-color: rgba(0,0,0,0.2); padding: 30px;
             border-radius: 24px; border: 1px solid var(--border-color);
         }
-        .billing-header .plan-card { flex-basis: 350px; flex-shrink: 0; }
+        .billing-header .current-plan-info h1 { font-size: 2.2rem; }
+        .billing-header .current-plan-info p { font-size: 1.1rem; }
+        .billing-header .plan-card { flex-basis: 350px; flex-shrink: 0; margin: 0; }
         
-        .archive-grid {
-            display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; width: 100%; max-width: 1200px;
+        @media (max-width: 992px) { 
+            .plans-grid { grid-template-columns: 1fr; max-width: 450px; } 
+            .billing-header {flex-direction: column;}
         }
-        .archive-item img {
-            width: 100%; height: auto; object-fit: cover; aspect-ratio: 1 / 1;
-            border-radius: 16px; border: 1px solid var(--border-color);
-            transition: transform 0.3s, box-shadow 0.3s;
+        @media (max-width: 768px) {
+            .portal-header h1 { font-size: 2.2rem; } 
+            .main-header { padding: 15px 20px; }
+            .main-header nav a { margin-left: 15px; font-size: 0.9rem; }
         }
-        .archive-item:hover img { transform: scale(1.05); box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
-        
-        @media (max-width: 992px) { .plans-grid { grid-template-columns: 1fr; max-width: 450px; } .billing-header {flex-direction: column;} .archive-grid { grid-template-columns: repeat(4, 1fr); } }
-        @media (max-width: 768px) { .archive-grid { grid-template-columns: repeat(3, 1fr); } .portal-header h1 { font-size: 2.2rem; } }
     </style>
 </head>
 <body>
@@ -134,16 +128,14 @@
     <div class="portal-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <ul class="flash-messages">
+                <ul class="flash-messages" style="list-style: none; padding: 0; margin-bottom: 20px;">
                 {% for category, message in messages %}
                     <li class="{{ category }}">{{ message }}</li>
                 {% endfor %}
                 </ul>
             {% endif %}
         {% endwith %}
-
         {% block portal_content %}{% endblock %}
     </div>
-    {% block scripts %}{% endblock %}
 </body>
 </html>
