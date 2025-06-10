@@ -99,6 +99,7 @@
         .app-logo-link { display: inline-block; transition: transform var(--transition-speed) ease; }
         .app-logo-link:hover { transform: scale(1.05); }
         .logo { height: 38px; cursor: pointer; display: block; }
+        
         .mode-selector {
             display: flex; align-items: center; background-color: rgba(0,0,0,0.2);
             padding: 6px; border-radius: var(--button-border-radius); gap: 6px;
@@ -413,12 +414,10 @@
             transition: all var(--transition-speed) ease;
             font-weight: 500;
         }
-
+        
         .archive-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 15px;
-            width: 100%;
+            display: grid; grid-template-columns: repeat(6, 1fr);
+            gap: 15px; width: 100%; padding-top: 100px;
         }
         .archive-item img {
             width: 100%; height: auto; object-fit: cover; aspect-ratio: 1 / 1;
@@ -429,11 +428,15 @@
             transform: scale(1.05);
             box-shadow: 0 5px 25px rgba(0,0,0,0.5);
         }
-        .archive-placeholder {
-            grid-column: 1 / -1; /* Span all columns */
+        .archive-placeholder-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
+            width: 100%;
+            height: calc(100vh - 100px); /* Full viewport height minus header */
+        }
+        .archive-placeholder {
+            text-align: center;
             background-color: var(--surface-color);
             padding: 50px;
             border-radius: var(--content-border-radius);
@@ -444,7 +447,7 @@
             font-size: 1.2rem;
             font-weight: 500;
         }
-        
+
         @media (max-width: 992px) {
             body { overflow-y: auto; }
             .app-container {
@@ -480,10 +483,6 @@
                     <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
                 </a>
                 {% block mode_selector %}
-                <div class="mode-selector">
-                    <button class="mode-btn active" data-mode="edit">Edit</button>
-                    <button class="mode-btn" data-mode="upscale">Upscale</button>
-                </div>
                 {% endblock %}
             </div>
             <div class="top-right-nav">
