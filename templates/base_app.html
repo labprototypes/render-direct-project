@@ -5,36 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>{% block title %}Changer AI{% endblock %}</title>
     <style>
-        /* FIX: Restored the complete CSS block for the main application design */
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
             font-weight: 300;
-            font-style: normal;
         }
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
             font-weight: 400;
-            font-style: normal;
         }
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_medium.woff2') }}") format('woff2');
             font-weight: 500;
-            font-style: normal;
         }
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
             font-weight: 700;
-            font-style: normal;
         }
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_black.woff2') }}") format('woff2');
             font-weight: 900;
-            font-style: normal;
         }
 
         :root {
@@ -101,12 +95,10 @@
             width: 100%; max-width: 1200px; padding: 0 25px;
             display: flex; justify-content: space-between; align-items: center;
         }
-
         .header-left-group { display: flex; align-items: center; gap: 25px; }
         .app-logo-link { display: inline-block; transition: transform var(--transition-speed) ease; }
         .app-logo-link:hover { transform: scale(1.05); }
         .logo { height: 38px; cursor: pointer; display: block; }
-        
         .mode-selector {
             display: flex; align-items: center; background-color: rgba(0,0,0,0.2);
             padding: 6px; border-radius: var(--button-border-radius); gap: 6px;
@@ -115,22 +107,17 @@
         .mode-btn {
             background-color: transparent; border: none; padding: 8px 20px;
             border-radius: 10px; cursor: pointer;
-            font-family: 'Norms', sans-serif; font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--primary-text-color); 
-            opacity: 0.7; 
+            font-family: 'Norms', sans-serif; font-size: 0.9rem; font-weight: 500;
+            color: var(--primary-text-color); opacity: 0.7; 
             transition: all var(--transition-speed) ease;
         }
         .mode-btn.active {
             background-color: var(--accent-color); color: var(--accent-text-color);
-            font-weight: 700;
-            opacity: 1;
+            font-weight: 700; opacity: 1;
             box-shadow: 0 0 15px var(--accent-glow);
         }
         .mode-btn:not(.active):hover { opacity: 1; color: var(--primary-text-color); }
-
         .top-right-nav { position: relative; display: flex; align-items: center; }
-
         .user-controls-loggedin {
             display: flex; align-items: center; background-color: var(--surface-color);
             padding: 8px 8px 8px 18px; border-radius: var(--content-border-radius); gap: 12px;
@@ -191,7 +178,6 @@
             background-color: rgba(255,255,255,0.05);
         }
         .user-controls-loggedout .auth-button:hover { color: var(--accent-text-color); background-color: var(--accent-color); border-color: var(--accent-color); font-weight: 700; }
-
         .content-wrapper {
             width: 100%; max-width: 440px; padding: 25px;
             background-color: var(--surface-color);
@@ -427,7 +413,7 @@
             transition: all var(--transition-speed) ease;
             font-weight: 500;
         }
-        
+
         .archive-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
@@ -435,19 +421,30 @@
             width: 100%;
         }
         .archive-item img {
-            width: 100%;
-            height: auto;
-            object-fit: cover;
-            aspect-ratio: 1 / 1;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
+            width: 100%; height: auto; object-fit: cover; aspect-ratio: 1 / 1;
+            border-radius: 16px; border: 1px solid var(--border-color);
             transition: transform 0.3s, box-shadow 0.3s;
         }
         .archive-item:hover img {
             transform: scale(1.05);
             box-shadow: 0 5px 25px rgba(0,0,0,0.5);
         }
-
+        .archive-placeholder {
+            grid-column: 1 / -1; /* Span all columns */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--surface-color);
+            padding: 50px;
+            border-radius: var(--content-border-radius);
+            border: 1px solid var(--border-color);
+        }
+        .archive-placeholder p {
+            color: var(--primary-text-color);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
         @media (max-width: 992px) {
             body { overflow-y: auto; }
             .app-container {
@@ -526,6 +523,32 @@
 
     <div id="error-box" class="error-message"></div>
 
-    {% block scripts %}{% endblock %}
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const burgerMenuToggle = document.getElementById('burger-menu-toggle');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+
+        if (burgerMenuToggle) {
+            burgerMenuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = burgerMenuToggle.classList.toggle('open');
+                burgerMenuToggle.setAttribute('aria-expanded', String(isOpen));
+                dropdownMenu.classList.toggle('open');
+            });
+        }
+
+        document.addEventListener('click', (event) => {
+            if (dropdownMenu && dropdownMenu.classList.contains('open')) {
+                if (!dropdownMenu.contains(event.target) && !burgerMenuToggle.contains(event.target)) {
+                    burgerMenuToggle.classList.remove('open');
+                    burgerMenuToggle.setAttribute('aria-expanded', 'false');
+                    dropdownMenu.classList.remove('open');
+                }
+            }
+        });
+    });
+    </script>
+    {% block page_scripts %}{% endblock %}
 </body>
 </html>
