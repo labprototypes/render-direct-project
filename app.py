@@ -473,16 +473,40 @@ def process_image():
             prompt = request.form.get('prompt', '')
             if edit_mode == 'autofix':
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-                if not openai_client: raise Exception("OpenAI API не настроен для Autofix.")
+                if not openai_client:
+                    raise Exception("OpenAI API не настроен для Autofix.")
+
                 print("!!! Запрос к OpenAI Vision API для Autofix...")
-                response = openai_client.chat.completions.create(model="gpt-4o", messages=[{"role": "system", "content": "You are an expert prompt engineer..."}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}], max_tokens=150)
+
+                # Новый, специализированный системный промпт для задачи "Автофикс"
+                autofix_system_prompt = (
+                    "You are an AI image analysis and correction expert. Your goal is to analyze an image, "
+                    "identify the most significant visual artifact or quality issue, and then generate a technical, "
+                    "ENGLISH-language prompt for the 'Kontext' image editing model to fix that single issue."
+                    "\n\nFollow these steps:"
+                    "\n1. Silently analyze the image to find the main flaw. Common flaws include: distorted faces or hands, "
+                    "unnatural textures, strange object blending, poor lighting, or low resolution in a specific area."
+                    "\n2. Determine the corrective action (e.g., 'reconstruct the hand', 'smoothen the skin texture', 'improve the lighting on the face')."
+                    "\n3. Create a concise prompt that applies this fix while preserving everything else. "
+                    "Example: If a hand is distorted, the prompt should be: 'reconstruct the distorted left hand to be anatomically correct, "
+                    "while preserving the person's face, clothing, and the background'."
+                    "\n\nIf the image has NO obvious flaws, generate a prompt for general quality enhancement, like: "
+                    "'Enhance the overall image quality, making it sharper and more detailed, while preserving the original composition and subject'."
+                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text."
+                )
+
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": autofix_system_prompt},
+                        {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
+                    ],
+                    max_tokens=150
+                )
                 final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
                 print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt}
-            else:
-                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-                final_prompt = improve_prompt_with_openai(prompt).replace('\n', ' ').replace('\r', ' ').strip()
-                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+                
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
