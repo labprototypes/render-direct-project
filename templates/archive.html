@@ -1,22 +1,29 @@
-{% extends "base_portal.html" %}
+{% extends "base_app.html" %}
 
 {% block title %}Archive{% endblock %}
 
-{% block portal_content %}
-<div class="portal-header">
-    <h1>Your Archive</h1>
-    <p>All your previous generations in one place.</p>
+{% block mode_selector %}{% endblock %} {% block content %}
+<div style="width: 100%; padding: 0 25px; text-align: center;">
+    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px;">Generation Archive</h1>
+    <div class="archive-grid">
+        {% if predictions %}
+            {% for prediction in predictions %}
+                <a href="{{ prediction.output_url }}" target="_blank" class="archive-item" title="Created on {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}">
+                    <img src="{{ prediction.output_url }}" alt="Generated image" loading="lazy">
+                </a>
+            {% endfor %}
+        {% else %}
+            <p>You don't have any generations yet. Go create something amazing!</p>
+        {% endif %}
+    </div>
 </div>
+{% endblock %}
 
-<div class="archive-grid">
-    {% if predictions %}
-        {% for prediction in predictions %}
-            <a href="{{ prediction.output_url }}" target="_blank" class="archive-item">
-                <img src="{{ prediction.output_url }}" alt="Generated image" loading="lazy">
-            </a>
-        {% endfor %}
-    {% else %}
-        <p>You don't have any generations yet. Go create something amazing!</p>
-    {% endif %}
-</div>
+{% block scripts %}
+<script>
+// Скрипты с главной страницы здесь не нужны, но блок оставляем на случай будущего расширения.
+document.addEventListener('DOMContentLoaded', () => {
+    // Код для этой страницы, если понадобится
+});
+</script>
 {% endblock %}
