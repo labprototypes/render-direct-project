@@ -2,20 +2,27 @@
 
 {% block title %}Archive{% endblock %}
 
-{% block mode_selector %}{% endblock %} {% block content %}
-<div style="width: 100%; padding: 0 25px; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px;">Generation Archive</h1>
-    <div class="archive-grid">
-        {% if predictions %}
+{% block mode_selector %}{% endblock %} 
+
+{% block content %}
+<div class="app-container" style="display: block; text-align: center;">
+    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px;">Generations Archive</h1>
+    
+    {% if predictions %}
+        <div class="archive-grid">
             {% for prediction in predictions %}
                 <a href="{{ prediction.output_url }}" target="_blank" class="archive-item" title="Created on {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}">
                     <img src="{{ prediction.output_url }}" alt="Generated image" loading="lazy">
                 </a>
             {% endfor %}
-        {% else %}
-            <p>You don't have any generations yet. Go create something amazing!</p>
-        {% endif %}
-    </div>
+        </div>
+    {% else %}
+        <div class="archive-placeholder-wrapper">
+            <div class="archive-placeholder">
+                <p>You don't have any generations yet. Go create something amazing!</p>
+            </div>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}
 
