@@ -353,6 +353,47 @@ def stripe_webhook():
 
     return 'OK', 200
 
+@app.route('/replicate-webhook', methods=['POST'])
+def replicate_webhook():
+    """
+    Принимает вебхук от Replicate по завершении генерации.
+    """
+    data = request.json
+    replicate_id = data.get('id')
+    status = data.get('status')
+
+    if not replicate_id:
+        return 'Invalid payload, missing ID', 400
+
+    with app.app_context():
+        prediction = Prediction.query.filter_by(replicate_id=replicate_id).first()
+
+        if not prediction:
+            print(f"!!! Вебхук получен для неизвестного Replicate ID: {replicate_id}")
+            return 'Prediction not found', 404
+
+        if status == 'succeeded':
+            output_url = data.get('output')
+            if output_url and isinstance(output_url, list):
+                prediction.output_url = output_url[0]
+            else:
+                 prediction.output_url = output_url
+
+            prediction.status = 'completed'
+            print(f"!!! Вебхук успешно обработан для Prediction {prediction.id}. Статус: completed.")
+
+        elif status == 'failed':
+            prediction.status = 'failed'
+            # Возвращаем токены пользователю, если генерация не удалась
+            user = User.query.get(prediction.user_id)
+            if user:
+                user.token_balance += prediction.token_cost
+            print(f"!!! Вебхук обработан для Prediction {prediction.id}. Статус: failed. Токены возвращены.")
+
+        db.session.commit()
+
+    return 'Webhook received', 200
+
 # --- Маршруты API и обработки изображений ---
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
 @login_required
