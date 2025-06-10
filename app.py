@@ -39,11 +39,11 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 # VVVVVV   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   VVVVVV
 PLAN_PRICES = {
-    'taste': 'price_xxxxxxxxxxxxxx', # ID для €9/mo - ЗАМЕНИТЬ
-    'best':  'price_xxxxxxxxxxxxxx',  # ID для €19/mo - ЗАМЕНИТЬ
-    'pro':   'price_xxxxxxxxxxxxxx',   # ID для €35/mo - ЗАМЕНИТЬ
+    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE', # ID для €9/mo - ЗАМЕНИТЬ
+    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',  # ID для €19/mo - ЗАМЕНИТЬ
+    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',   # ID для €35/mo - ЗАМЕНИТЬ
 }
-TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов - ЗАМЕНИТЬ
+TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH' # ID для разовой покупки токенов - ЗАМЕНИТЬ
 # ^^^^^^   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   ^^^^^^
 
 
