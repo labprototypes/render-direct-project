@@ -9,6 +9,7 @@ import requests
 import time
 import openai
 import stripe
+
 from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -46,6 +47,7 @@ PLAN_PRICES = {
 TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов - ЗАМЕНИТЬ
 # ^^^^^^   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   ^^^^^^
 
+
 db = SQLAlchemy(app)
 
 # --- Настройка Flask-Login ---
@@ -70,7 +72,7 @@ class User(db.Model, UserMixin):
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='trial') 
+    current_plan = db.Column(db.String(50), nullable=True, default='trial')
 
     @property
     def is_active(self):
@@ -87,6 +89,7 @@ class Prediction(db.Model):
 
     user = db.relationship('User', backref=db.backref('predictions', lazy=True))
 
+
 # --- Формы ---
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -99,8 +102,14 @@ class RegisterForm(FlaskForm):
     username = StringField('Имя пользователя (опционально)')
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
-    accept_tos = BooleanField('Я принимаю условия использования сервиса', validators=[DataRequired(message="Вы должны принять условия использования.")])
-    marketing_consent = BooleanField('Я согласен на получение маркетинговых сообщений', default=True)
+    accept_tos = BooleanField(
+        'Я принимаю условия использования сервиса',
+        validators=[DataRequired(message="Вы должны принять условия использования.")]
+    )
+    marketing_consent = BooleanField(
+        'Я согласен на получение маркетинговых сообщений',
+        default=True
+    )
     submit = SubmitField('Регистрация')
 
 class ChangePasswordForm(FlaskForm):
@@ -188,6 +197,7 @@ def change_password():
         if not check_password_hash(current_user.password, form.old_password.data):
             flash('Неверный текущий пароль.', 'error')
             return redirect(url_for('change_password'))
+
         current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
         db.session.commit()
         flash('Ваш пароль успешно изменен!', 'success')
@@ -215,8 +225,10 @@ def upload_file_to_s3(file_to_upload):
     return hosted_image_url
 
 def improve_prompt_with_openai(user_prompt):
-    if not openai_client: return user_prompt
-    if not user_prompt or user_prompt.isspace(): return "A vibrant, hyperrealistic, high-detail image"
+    if not openai_client:
+        return user_prompt
+    if not user_prompt or user_prompt.isspace():
+        return "A vibrant, hyperrealistic, high-detail image"
     try:
         completion = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -235,6 +247,7 @@ def handle_checkout_session(session):
     customer_id = session.get('customer')
     user = User.query.filter_by(stripe_customer_id=customer_id).first()
     if not user: return
+
     if session.get('subscription'):
         subscription_id = session.get('subscription')
         subscription = stripe.Subscription.retrieve(subscription_id)
@@ -243,14 +256,17 @@ def handle_checkout_session(session):
         price_id = subscription.items.data[0].price.id
         user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
         handle_successful_payment(invoice=None, subscription=subscription)
+    
     elif session.get('payment_intent'):
         user.token_balance += 1000
+
     db.session.commit()
 
 def handle_subscription_change(subscription):
     customer_id = subscription.get('customer')
     user = User.query.filter_by(stripe_customer_id=customer_id).first()
     if not user: return
+    
     user.subscription_status = subscription.status
     if subscription.status != 'active':
         user.current_plan = 'inactive'
@@ -263,21 +279,27 @@ def handle_successful_payment(invoice=None, subscription=None):
         subscription_id = subscription.id
     else:
         return
+
     if not subscription_id: return
+
     user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
     if not user: return
+
     if not subscription:
         subscription = stripe.Subscription.retrieve(subscription_id)
     price_id = subscription.items.data[0].price.id
+
     if price_id == PLAN_PRICES.get('taste'):
         user.token_balance += 1500
     elif price_id == PLAN_PRICES.get('best'):
         user.token_balance += 4000
     elif price_id == PLAN_PRICES.get('pro'):
         user.token_balance += 10000
+    
     db.session.commit()
 
 # --- Маршруты для биллинга и Stripe ---
+
 @app.route('/choose-plan')
 @login_required
 def choose_plan():
@@ -345,6 +367,7 @@ def stripe_webhook():
     return 'OK', 200
 
 # --- Маршруты API и обработки изображений ---
+
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
 @login_required
 def get_result(prediction_id):
@@ -454,6 +477,7 @@ def process_image():
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
+
 
 # --- FIX: Moved the main INDEX_HTML and its route to the end of the file ---
 INDEX_HTML = """
@@ -1438,17 +1462,13 @@ INDEX_HTML = """
 </body>
 </html>
 """
-@app.route('/choose-plan')
-@login_required
-def choose_plan():
-    if current_user.subscription_status == 'active':
-        return redirect(url_for('billing'))
-    return render_template('choose_plan.html')
 
-@app.route('/billing')
+
+@app.route('/')
 @login_required
-def billing():
-    return render_template('billing.html')
+@subscription_required # Protect the main app
+def index():
+    return render_template_string(INDEX_HTML)
 
 
 # --- Stripe Routes and Webhooks ---
@@ -1575,12 +1595,6 @@ def handle_successful_payment(invoice):
         user.token_balance += 10000
     
     db.session.commit()
-
-@app.route('/')
-@login_required
-@subscription_required # Protect the main app
-def index():
-    return render_template_string(INDEX_HTML)
 
 
 # ... (остальной код process_image, get_result, upload_file_to_s3, etc. без изменений)
