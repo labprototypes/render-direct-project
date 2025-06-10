@@ -4,8 +4,8 @@
 
 {% block portal_content %}
 <div class="portal-header">
-    <h1>Choose Your Plan</h1>
-    <p>Made flexible for a better experience. Now with never expiring credits.</p>
+    <h1>Choose your plan</h1>
+    <p style="color: #fff;">flexible plans for your creative freedom</p>
 </div>
 
 <div class="plans-grid">
@@ -14,13 +14,17 @@
         <p class="plan-description">For those who wants to start</p>
         <div class="plan-price">&euro;9<span>/mo</span></div>
         <ul class="plan-includes">
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>for 1,500 credits</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 90 images monthly</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Generation</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>1,500 credits</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 90 images monthly</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Generation</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
+            <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Artifacts autofix mode</li>
+            <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Credit Top-Up</li>
+            <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
         </ul>
-        <form action="/create-checkout-session" method="POST">
-            <input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_€9" />
+        <form action="{{ url_for('create_checkout_session') }}" method="POST">
+            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}" />
             <button type="submit" class="btn">Choose A Taste Of It</button>
         </form>
     </div>
@@ -30,35 +34,41 @@
         <p class="plan-description">Best for full-time creators</p>
         <div class="plan-price">&euro;19<span>/mo</span></div>
         <ul class="plan-includes">
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>for 4,000 credits</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>2K resolution (1440p)</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>up to 2x Upscaler</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Access to LAB command</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4,500 credits</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 270 images monthly</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
+            <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
         </ul>
-        <form action="/create-checkout-session" method="POST">
-            <input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_€19" />
+        <form action="{{ url_for('create_checkout_session') }}" method="POST">
+            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.best }}" />
             <button type="submit" class="btn">Choose The Best Pick</button>
         </form>
     </div>
 
     <div class="plan-card">
-        <h3 class="plan-name">Pick&Flip Pro</h3>
-        <p class="plan-description">Best for full-time creators</p>
+        <h3 class="plan-name">Pick&Flip PRO</h3>
+        <p class="plan-description">Teams and advanced creators</p>
         <div class="plan-price">&euro;35<span>/mo</span></div>
         <ul class="plan-includes">
-             <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>for 10,000 credits</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4K resolution (2160p)</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>up to 8x Upscaler</li>
-            <li><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Access to LAB command</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>15,000 credits</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 900 images monthly</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Early Access to New Features</li>
         </ul>
-        <form action="/create-checkout-session" method="POST">
-            <input type="hidden" name="price_id" value="ЦЕНА_ID_ДЛЯ_€35" />
-            <button type="submit" class="btn">Choose Pick&Flip Pro</button>
+        <form action="{{ url_for('create_checkout_session') }}" method="POST">
+            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}" />
+            <button type="submit" class="btn">Choose Pick&Flip PRO</button>
         </form>
     </div>
 </div>
 
 <div class="bottom-link">
-    <a href="{{ url_for('index') }}">I just want to try</a>
+    <a href="{{ url_for('index') }}" class="btn btn-trial">Start Free Trial</a>
 </div>
 {% endblock %}
