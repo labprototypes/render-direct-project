@@ -9,7 +9,6 @@ import requests
 import time
 import openai
 import stripe
-
 from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -29,7 +28,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key-for-flask-login')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 280,
@@ -41,13 +39,12 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 # VVVVVV   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   VVVVVV
 PLAN_PRICES = {
-    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE', # ID для €9/mo - ЗАМЕНИТЬ
-    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',  # ID для €19/mo - ЗАМЕНИТЬ
-    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',   # ID для €35/mo - ЗАМЕНИТЬ
+    'taste': 'price_xxxxxxxxxxxxxx', # ID для €9/mo - ЗАМЕНИТЬ
+    'best':  'price_xxxxxxxxxxxxxx',  # ID для €19/mo - ЗАМЕНИТЬ
+    'pro':   'price_xxxxxxxxxxxxxx',   # ID для €35/mo - ЗАМЕНИТЬ
 }
-TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH' # ID для разовой покупки токенов - ЗАМЕНИТЬ
+TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов - ЗАМЕНИТЬ
 # ^^^^^^   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   ^^^^^^
-
 
 db = SQLAlchemy(app)
 
@@ -73,7 +70,7 @@ class User(db.Model, UserMixin):
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='trial')
+    current_plan = db.Column(db.String(50), nullable=True, default='trial') 
 
     @property
     def is_active(self):
@@ -210,7 +207,6 @@ def change_password():
 def logout():
     logout_user()
     return redirect(url_for('index'))
-
 
 # --- Функции-помощники ---
 
@@ -485,7 +481,8 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
-# FIX: Moved the main INDEX_HTML and its route to the end of the file to prevent BuildError
+
+# --- FIX: Moved the main INDEX_HTML and its route to the end of the file ---
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -1483,13 +1480,6 @@ def billing():
     return render_template('billing.html')
 
 
-@app.route('/')
-@login_required
-@subscription_required # Protect the main app
-def index():
-    return render_template_string(INDEX_HTML)
-
-
 # --- Stripe Routes and Webhooks ---
 
 @app.route('/create-checkout-session', methods=['POST'])
@@ -1615,8 +1605,12 @@ def handle_successful_payment(invoice):
     
     db.session.commit()
 
+@app.route('/')
+@login_required
+@subscription_required # Protect the main app
+def index():
+    return render_template_string(INDEX_HTML)
 
-# ... (остальной код process_image, get_result, upload_file_to_s3, etc. без изменений)
 
 with app.app_context():
     db.create_all()
