@@ -68,12 +68,12 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
-    token_balance = db.Column(db.Integer, default=10, nullable=False) 
+    token_balance = db.Column(db.Integer, default=10, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='trial') 
+    current_plan = db.Column(db.String(50), nullable=True, default='trial')
 
     @property
     def is_active(self):
@@ -211,6 +211,7 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+
 # --- Функции-помощники ---
 
 def upload_file_to_s3(file_to_upload):
@@ -302,6 +303,7 @@ def handle_successful_payment(invoice=None, subscription=None):
         user.token_balance += 10000
     
     db.session.commit()
+
 
 # --- Маршруты для биллинга и Stripe ---
 
@@ -483,7 +485,7 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
-# --- FIX: Moved the main INDEX_HTML and its route to the end of the file ---
+# FIX: Moved the main INDEX_HTML and its route to the end of the file to prevent BuildError
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
