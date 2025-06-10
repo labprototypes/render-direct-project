@@ -6,11 +6,11 @@
 
 {% block content %}
 <div class="app-container" style="display: flex; flex-direction: column; align-items: stretch;">
-    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px; text-align: center; flex-shrink: 0;">Generations Archive</h1>
+    {# FIX: Removed text-align: center to align the heading to the left #}
+    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px; flex-shrink: 0;">Generations Archive</h1>
     
     {% if predictions %}
         <div class="archive-grid">
-            {# FIX: Loop through predictions to create grid items with download icons #}
             {% for prediction in predictions %}
                 <div class="archive-item" title="Created on {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}">
                     <img src="{{ prediction.output_url }}" alt="Generated image" loading="lazy">
