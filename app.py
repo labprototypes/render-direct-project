@@ -9,7 +9,6 @@ import requests
 import time
 import openai
 import stripe
-
 from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -72,7 +71,7 @@ class User(db.Model, UserMixin):
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='trial')
+    current_plan = db.Column(db.String(50), nullable=True, default='trial') 
 
     @property
     def is_active(self):
@@ -197,7 +196,6 @@ def change_password():
         if not check_password_hash(current_user.password, form.old_password.data):
             flash('Неверный текущий пароль.', 'error')
             return redirect(url_for('change_password'))
-
         current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
         db.session.commit()
         flash('Ваш пароль успешно изменен!', 'success')
@@ -225,10 +223,8 @@ def upload_file_to_s3(file_to_upload):
     return hosted_image_url
 
 def improve_prompt_with_openai(user_prompt):
-    if not openai_client:
-        return user_prompt
-    if not user_prompt or user_prompt.isspace():
-        return "A vibrant, hyperrealistic, high-detail image"
+    if not openai_client: return user_prompt
+    if not user_prompt or user_prompt.isspace(): return "A vibrant, hyperrealistic, high-detail image"
     try:
         completion = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -247,7 +243,6 @@ def handle_checkout_session(session):
     customer_id = session.get('customer')
     user = User.query.filter_by(stripe_customer_id=customer_id).first()
     if not user: return
-
     if session.get('subscription'):
         subscription_id = session.get('subscription')
         subscription = stripe.Subscription.retrieve(subscription_id)
@@ -256,17 +251,14 @@ def handle_checkout_session(session):
         price_id = subscription.items.data[0].price.id
         user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
         handle_successful_payment(invoice=None, subscription=subscription)
-    
     elif session.get('payment_intent'):
         user.token_balance += 1000
-
     db.session.commit()
 
 def handle_subscription_change(subscription):
     customer_id = subscription.get('customer')
     user = User.query.filter_by(stripe_customer_id=customer_id).first()
     if not user: return
-    
     user.subscription_status = subscription.status
     if subscription.status != 'active':
         user.current_plan = 'inactive'
@@ -279,27 +271,21 @@ def handle_successful_payment(invoice=None, subscription=None):
         subscription_id = subscription.id
     else:
         return
-
     if not subscription_id: return
-
     user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
     if not user: return
-
     if not subscription:
         subscription = stripe.Subscription.retrieve(subscription_id)
     price_id = subscription.items.data[0].price.id
-
     if price_id == PLAN_PRICES.get('taste'):
         user.token_balance += 1500
     elif price_id == PLAN_PRICES.get('best'):
         user.token_balance += 4000
     elif price_id == PLAN_PRICES.get('pro'):
         user.token_balance += 10000
-    
     db.session.commit()
 
 # --- Маршруты для биллинга и Stripe ---
-
 @app.route('/choose-plan')
 @login_required
 def choose_plan():
@@ -367,7 +353,6 @@ def stripe_webhook():
     return 'OK', 200
 
 # --- Маршруты API и обработки изображений ---
-
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
 @login_required
 def get_result(prediction_id):
@@ -477,7 +462,6 @@ def process_image():
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
-
 
 # --- FIX: Moved the main INDEX_HTML and its route to the end of the file ---
 INDEX_HTML = """
@@ -1463,142 +1447,14 @@ INDEX_HTML = """
 </html>
 """
 
-
+# FIX: Moved main route to the end of the file
 @app.route('/')
 @login_required
-@subscription_required # Protect the main app
+@subscription_required
 def index():
     return render_template_string(INDEX_HTML)
 
-
-# --- Stripe Routes and Webhooks ---
-
-@app.route('/create-checkout-session', methods=['POST'])
-@login_required
-def create_checkout_session():
-    price_id = request.form.get('price_id')
-    
-    # Определяем, подписка это или разовая покупка
-    mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
-    
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            customer=current_user.stripe_customer_id, # Привязываем к существующему клиенту Stripe
-            payment_method_types=['card'],
-            line_items=[{'price': price_id, 'quantity': 1}],
-            mode=mode,
-            # Включаем автоматический сбор НДС
-            automatic_tax={'enabled': True},
-            customer_update={'address': 'auto'},
-            # URL для редиректа
-            success_url=url_for('billing', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=url_for('billing', _external=True),
-        )
-        return redirect(checkout_session.url, code=303)
-    except Exception as e:
-        flash(f'Stripe error: {str(e)}', 'error')
-        return redirect(url_for('billing'))
-
-@app.route('/create-portal-session', methods=['POST'])
-@login_required
-def create_portal_session():
-    # Создает сессию для портала клиента Stripe, где он может управлять подпиской
-    if not current_user.stripe_customer_id:
-        flash('Stripe customer not found.', 'error')
-        return redirect(url_for('billing'))
-        
-    portal_session = stripe.billing_portal.Session.create(
-        customer=current_user.stripe_customer_id,
-        return_url=url_for('billing', _external=True),
-    )
-    return redirect(portal_session.url, code=303)
-
-
-@app.route('/stripe-webhook', methods=['POST'])
-def stripe_webhook():
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature')
-    
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, STRIPE_WEBHOOK_SECRET
-        )
-    except (ValueError, stripe.error.SignatureVerificationError) as e:
-        return 'Invalid payload or signature', 400
-
-    # Обработка событий
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        handle_checkout_session(session)
-
-    if event['type'] == 'customer.subscription.updated' or event['type'] == 'customer.subscription.deleted':
-        subscription = event['data']['object']
-        handle_subscription_change(subscription)
-    
-    if event['type'] == 'invoice.payment_succeeded':
-        invoice = event['data']['object']
-        handle_successful_payment(invoice)
-
-    return 'OK', 200
-
-# --- Функции-помощники для Stripe Webhook ---
-def handle_checkout_session(session):
-    customer_id = session.get('customer')
-    user = User.query.filter_by(stripe_customer_id=customer_id).first()
-    if not user: return
-
-    # Если это была покупка подписки
-    if session.get('subscription'):
-        subscription_id = session.get('subscription')
-        subscription = stripe.Subscription.retrieve(subscription_id)
-        
-        user.stripe_subscription_id = subscription_id
-        user.subscription_status = subscription.status # 'active'
-        # Находим название плана по Price ID
-        price_id = subscription.items.data[0].price.id
-        user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
-    
-    # Если это была разовая покупка токенов
-    elif session.get('payment_intent'):
-        # Логика начисления токенов
-        user.token_balance += 1000 # Пример
-
-    db.session.commit()
-
-def handle_subscription_change(subscription):
-    customer_id = subscription.get('customer')
-    user = User.query.filter_by(stripe_customer_id=customer_id).first()
-    if not user: return
-    
-    user.subscription_status = subscription.status # e.g., 'active', 'past_due', 'canceled'
-    if subscription.status != 'active':
-        user.current_plan = 'inactive'
-    db.session.commit()
-
-def handle_successful_payment(invoice):
-    # Логика для ежемесячного начисления токенов
-    subscription_id = invoice.get('subscription')
-    if not subscription_id: return
-
-    subscription = stripe.Subscription.retrieve(subscription_id)
-    price_id = subscription.items.data[0].price.id
-
-    user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
-    if not user: return
-
-    # Начисляем кредиты в зависимости от плана
-    if price_id == PLAN_PRICES.get('taste'):
-        user.token_balance += 1500
-    elif price_id == PLAN_PRICES.get('best'):
-        user.token_balance += 4000
-    elif price_id == PLAN_PRICES.get('pro'):
-        user.token_balance += 10000
-    
-    db.session.commit()
-
-
-# ... (остальной код process_image, get_result, upload_file_to_s3, etc. без изменений)
-
+# --- Final app setup ---
 with app.app_context():
     db.create_all()
 
