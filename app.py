@@ -9,6 +9,7 @@ import requests
 import time
 import openai
 import stripe
+
 from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -46,6 +47,7 @@ PLAN_PRICES = {
 TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов - ЗАМЕНИТЬ
 # ^^^^^^   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   ^^^^^^
 
+
 db = SQLAlchemy(app)
 
 # --- Настройка Flask-Login ---
@@ -70,7 +72,7 @@ class User(db.Model, UserMixin):
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='trial') 
+    current_plan = db.Column(db.String(50), nullable=True, default='trial')
 
     @property
     def is_active(self):
@@ -224,17 +226,13 @@ def upload_file_to_s3(file_to_upload):
 
 def improve_prompt_with_openai(user_prompt):
     if not openai_client:
-        print("!!! OpenAI API не настроен, возвращаем оригинальный промпт.")
         return user_prompt
     if not user_prompt or user_prompt.isspace():
         return "A vibrant, hyperrealistic, high-detail image"
     try:
         completion = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an expert prompt engineer..."},
-                {"role": "user", "content": user_prompt}
-            ],
+            messages=[{"role": "system", "content": "You are an expert prompt engineer..."}, {"role": "user", "content": user_prompt}],
             temperature=0.5, max_tokens=100
         )
         improved_prompt = completion.choices[0].message.content.strip()
@@ -299,7 +297,6 @@ def handle_successful_payment(invoice=None, subscription=None):
         user.token_balance += 10000
     
     db.session.commit()
-
 
 # --- Маршруты для биллинга и Stripe ---
 
@@ -1466,7 +1463,6 @@ INDEX_HTML = """
 </html>
 """
 
-# FIX: Add separate routes for billing pages
 @app.route('/choose-plan')
 @login_required
 def choose_plan():
@@ -1478,6 +1474,13 @@ def choose_plan():
 @login_required
 def billing():
     return render_template('billing.html')
+
+
+@app.route('/')
+@login_required
+@subscription_required # Protect the main app
+def index():
+    return render_template_string(INDEX_HTML)
 
 
 # --- Stripe Routes and Webhooks ---
@@ -1605,12 +1608,8 @@ def handle_successful_payment(invoice):
     
     db.session.commit()
 
-@app.route('/')
-@login_required
-@subscription_required # Protect the main app
-def index():
-    return render_template_string(INDEX_HTML)
 
+# ... (остальной код process_image, get_result, upload_file_to_s3, etc. без изменений)
 
 with app.app_context():
     db.create_all()
