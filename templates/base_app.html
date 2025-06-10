@@ -264,13 +264,21 @@
         .download-action-link {
             display: flex; position: absolute; bottom: 15px; right: 15px;
             z-index: 10; cursor: pointer;
-            transition: transform var(--transition-speed) ease;
+            transition: all var(--transition-speed) ease;
             background-color: rgba(0,0,0,0.4);
             backdrop-filter: blur(10px);
             border-radius: 50%;
             padding: 8px;
+            opacity: 0; /* Hidden by default */
+            visibility: hidden;
         }
-        .download-action-link:hover { transform: scale(1.1); }
+        .archive-item:hover .download-action-link,
+        .history-item:hover .download-action-link { 
+            opacity: 1; 
+            visibility: visible;
+            transform: scale(1);
+        }
+        .download-action-link:hover { transform: scale(1.1) !important; }
         .download-button-icon { height: 24px; width: 24px; display: block; }
 
         .loader-container {
@@ -426,13 +434,27 @@
             font-weight: 500;
         }
         
+        /* FIX: Strict 5-column grid for archive */
         .archive-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px; width: 100%;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            width: 100%;
         }
+        
+        /* FIX: Container for archive image and download button */
+        .archive-item {
+            position: relative; /* Needed for the download icon overlay */
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+        
         .archive-item img {
-            width: 100%; height: auto; object-fit: cover; aspect-ratio: 1 / 1;
-            border-radius: 16px; border: 1px solid var(--border-color);
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
             transition: transform 0.3s, box-shadow 0.3s;
         }
         .archive-item:hover img {
@@ -519,7 +541,8 @@
                 margin-bottom: 15px; max-height: 60vh;
             }
             .content-wrapper { overflow-y: visible; }
-            .archive-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+            /* FIX: Adjust grid for mobile */
+            .archive-grid { grid-template-columns: repeat(3, 1fr); }
             .plans-grid { grid-template-columns: 1fr; max-width: 450px; } 
             .billing-header {flex-direction: column;}
         }
@@ -529,6 +552,8 @@
             .header-left-group { flex-direction: column; align-items: flex-start; gap: 15px; }
             .page-header-inner { align-items: flex-start; }
             .content-wrapper { max-width: 100%; }
+            /* FIX: Adjust grid for smaller mobile */
+            .archive-grid { grid-template-columns: repeat(2, 1fr); }
             body {
                 background-image: url("{{ url_for('static', filename='images/mobile_background.webp') }}");
                 background-attachment: scroll;
