@@ -1,0 +1,22 @@
+{% extends "base_portal.html" %}
+
+{% block title %}Archive{% endblock %}
+
+{% block portal_content %}
+<div class="portal-header">
+    <h1>Your Archive</h1>
+    <p>All your previous generations in one place.</p>
+</div>
+
+<div class="archive-grid">
+    {% if predictions %}
+        {% for prediction in predictions %}
+            <a href="{{ prediction.output_url }}" target="_blank" class="archive-item">
+                <img src="{{ prediction.output_url }}" alt="Generated image" loading="lazy">
+            </a>
+        {% endfor %}
+    {% else %}
+        <p>You don't have any generations yet. Go create something amazing!</p>
+    {% endif %}
+</div>
+{% endblock %}
