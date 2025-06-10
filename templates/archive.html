@@ -5,8 +5,8 @@
 {% block mode_selector %}{% endblock %} 
 
 {% block content %}
-<div class="app-container" style="display: block; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px;">Generations Archive</h1>
+<div class="app-container" style="display: flex; flex-direction: column; align-items: stretch;">
+    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px; text-align: center; flex-shrink: 0;">Generations Archive</h1>
     
     {% if predictions %}
         <div class="archive-grid">
