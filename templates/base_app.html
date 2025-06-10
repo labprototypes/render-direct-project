@@ -65,23 +65,33 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow: hidden;
             position: relative;
             background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
             background-attachment: fixed;
+            overflow-y: auto; /* FIX: Allow scrolling by default */
         }
         
+        body.no-scroll {
+            overflow: hidden; /* FIX: Disable scrolling only for specific pages like index */
+        }
+
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
             padding: 100px 25px 40px;
             display: flex; flex-direction: row; align-items: flex-start;
-            gap: 25px; height: 100vh;
+            gap: 25px; 
             position: relative;
             z-index: 2;
+            height: auto; /* FIX: Allow container height to be flexible */
         }
+        
+        body.no-scroll .app-container {
+             height: 100vh; /* FIX: Restore fixed height for no-scroll pages */
+        }
+
 
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
@@ -434,7 +444,7 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            flex-grow: 1; /* FIX: Fills available space */
+            flex-grow: 1; 
         }
         .archive-placeholder {
             text-align: center;
@@ -449,7 +459,6 @@
             font-weight: 500;
         }
 
-        /* --- FIX: Styles for Billing page moved from base_portal.html --- */
         .billing-header {
             display: flex; gap: 30px; width: 100%; max-width: 1100px; 
             align-items: stretch; margin-bottom: 40px;
@@ -495,13 +504,14 @@
         .btn-secondary:hover { background-color: var(--accent-color); color: var(--accent-text-color); }
         .btn-disabled { background-color: var(--border-color); color: var(--secondary-text-color); cursor: not-allowed; border: none; }
         .btn-disabled:hover { background-color: var(--border-color); transform: none; box-shadow: none; }
-        /* --- End of Billing page styles --- */
-
 
         @media (max-width: 992px) {
-            body { overflow-y: auto; }
+            body { 
+                overflow-y: auto !important; /* Ensure scrolling on mobile */
+            } 
             .app-container {
-                flex-direction: column; align-items: center; height: auto;
+                flex-direction: column; align-items: center; 
+                height: auto !important; /* Ensure height is flexible on mobile */
                 overflow-y: visible; padding-top: 100px; padding-bottom: 25px;
             }
              #result-area-right {
@@ -526,7 +536,7 @@
         }
     </style>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <div class="page-header-container">
         <div class="page-header-inner">
             <div class="header-left-group">
@@ -554,7 +564,7 @@
                         <ul>
                             <li><a href="{{ url_for('index') }}">Generate</a></li>
                             <li><a href="{{ url_for('archive') }}">Archive</a></li>
-                            <li><a href="{{ url_for('billing') }}">Billing</a></li>
+                            <li><a href="{{ url_for('billing') }}">Manage plan</a></li>
                             <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
                             <li><a href="{{ url_for('logout') }}">Logout</a></li>
                         </ul>
