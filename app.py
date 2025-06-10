@@ -40,11 +40,11 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 # VVVVVV   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   VVVVVV
 PLAN_PRICES = {
-    'taste': 'price_xxxxxxxxxxxxxx', # ID для €9/mo
-    'best':  'price_xxxxxxxxxxxxxx',  # ID для €19/mo
-    'pro':   'price_xxxxxxxxxxxxxx',   # ID для €35/mo
+    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE', # ID для €9/mo
+    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',  # ID для €19/mo
+    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',   # ID для €35/mo
 }
-TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов
+TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH' # ID для разовой покупки токенов
 # ^^^^^^   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   ^^^^^^
 
 db = SQLAlchemy(app)
