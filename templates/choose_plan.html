@@ -16,7 +16,9 @@
         <ul class="plan-includes">
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>1,500 credits</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 90 images monthly</li>
-            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Generation</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
             <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Artifacts autofix mode</li>
@@ -24,7 +26,7 @@
             <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
         </ul>
         <form action="{{ url_for('create_checkout_session') }}" method="POST">
-            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}" />
+            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
             <button type="submit" class="btn">Choose A Taste Of It</button>
         </form>
     </div>
@@ -36,6 +38,9 @@
         <ul class="plan-includes">
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4,500 credits</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 270 images monthly</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
@@ -43,7 +48,7 @@
             <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
         </ul>
         <form action="{{ url_for('create_checkout_session') }}" method="POST">
-            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.best }}" />
+            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.best }}">
             <button type="submit" class="btn">Choose The Best Pick</button>
         </form>
     </div>
@@ -55,6 +60,9 @@
         <ul class="plan-includes">
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>15,000 credits</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 900 images monthly</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
@@ -62,13 +70,13 @@
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Early Access to New Features</li>
         </ul>
         <form action="{{ url_for('create_checkout_session') }}" method="POST">
-            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}" />
+            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}">
             <button type="submit" class="btn">Choose Pick&Flip PRO</button>
         </form>
     </div>
 </div>
 
 <div class="bottom-link">
-    <a href="{{ url_for('index') }}" class="btn btn-trial">Start Free Trial</a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary btn-trial">Start Free Trial</a>
 </div>
 {% endblock %}
