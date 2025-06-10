@@ -9,6 +9,7 @@ import requests
 import time
 import openai
 import stripe
+
 from flask import Flask, request, jsonify, render_template, render_template_string, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -37,15 +38,14 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
-# VVVVVV   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   VVVVVV
+# VVVVVV   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   VVVVVV
 PLAN_PRICES = {
-    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE', # ID для €9/mo - ЗАМЕНИТЬ
-    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',  # ID для €19/mo - ЗАМЕНИТЬ
-    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',   # ID для €35/mo - ЗАМЕНИТЬ
+    'taste': 'price_xxxxxxxxxxxxxx', # ID для €9/mo
+    'best':  'price_xxxxxxxxxxxxxx',  # ID для €19/mo
+    'pro':   'price_xxxxxxxxxxxxxx',   # ID для €35/mo
 }
-TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH' # ID для разовой покупки токенов - ЗАМЕНИТЬ
-# ^^^^^^   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   ^^^^^^
-
+TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов
+# ^^^^^^   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   ^^^^^^
 
 db = SQLAlchemy(app)
 
@@ -88,7 +88,6 @@ class Prediction(db.Model):
 
     user = db.relationship('User', backref=db.backref('predictions', lazy=True))
 
-
 # --- Формы ---
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -101,14 +100,8 @@ class RegisterForm(FlaskForm):
     username = StringField('Имя пользователя (опционально)')
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
-    accept_tos = BooleanField(
-        'Я принимаю условия использования сервиса',
-        validators=[DataRequired(message="Вы должны принять условия использования.")]
-    )
-    marketing_consent = BooleanField(
-        'Я согласен на получение маркетинговых сообщений',
-        default=True
-    )
+    accept_tos = BooleanField('Я принимаю условия использования сервиса', validators=[DataRequired(message="Вы должны принять условия использования.")])
+    marketing_consent = BooleanField('Я согласен на получение маркетинговых сообщений', default=True)
     submit = SubmitField('Регистрация')
 
 class ChangePasswordForm(FlaskForm):
@@ -118,7 +111,6 @@ class ChangePasswordForm(FlaskForm):
     submit = SubmitField('Сменить пароль')
 
 app.static_folder = 'static'
-
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
@@ -128,7 +120,6 @@ else:
     openai_client = None
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
 
-# --- Декоратор для проверки подписки ---
 def subscription_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -141,7 +132,6 @@ def subscription_required(f):
     return decorated_function
 
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -209,7 +199,6 @@ def logout():
     return redirect(url_for('index'))
 
 # --- Функции-помощники ---
-
 def upload_file_to_s3(file_to_upload):
     if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
         raise Exception("Ошибка конфигурации сервера для загрузки изображений.")
@@ -226,11 +215,7 @@ def improve_prompt_with_openai(user_prompt):
     if not openai_client: return user_prompt
     if not user_prompt or user_prompt.isspace(): return "A vibrant, hyperrealistic, high-detail image"
     try:
-        completion = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "You are an expert prompt engineer..."}, {"role": "user", "content": user_prompt}],
-            temperature=0.5, max_tokens=100
-        )
+        completion = openai_client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role": "system", "content": "You are an expert prompt engineer..."}, {"role": "user", "content": user_prompt}], temperature=0.5, max_tokens=100)
         improved_prompt = completion.choices[0].message.content.strip()
         print(f"!!! Оригинальный промпт: {user_prompt}")
         print(f"!!! Улучшенный промпт: {improved_prompt}")
@@ -269,23 +254,25 @@ def handle_successful_payment(invoice=None, subscription=None):
         subscription_id = invoice.get('subscription')
     elif subscription:
         subscription_id = subscription.id
-    else:
-        return
+    else: return
     if not subscription_id: return
     user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
     if not user: return
     if not subscription:
         subscription = stripe.Subscription.retrieve(subscription_id)
     price_id = subscription.items.data[0].price.id
+    
+    # FIX: Correct token amounts based on new plan details
     if price_id == PLAN_PRICES.get('taste'):
         user.token_balance += 1500
     elif price_id == PLAN_PRICES.get('best'):
-        user.token_balance += 4000
+        user.token_balance += 4500
     elif price_id == PLAN_PRICES.get('pro'):
-        user.token_balance += 10000
+        user.token_balance += 15000
+    
     db.session.commit()
 
-# --- Маршруты для биллинга и Stripe ---
+# --- Маршруты для биллинга, Stripe и новых страниц ---
 @app.route('/choose-plan')
 @login_required
 def choose_plan():
@@ -297,6 +284,14 @@ def choose_plan():
 @login_required
 def billing():
     return render_template('billing.html')
+    
+# FIX: Added new route for Archive page
+@app.route('/archive')
+@login_required
+@subscription_required
+def archive():
+    predictions = Prediction.query.filter_by(user_id=current_user.id, status='completed').order_by(Prediction.created_at.desc()).all()
+    return render_template('archive.html', predictions=predictions)
 
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
@@ -426,11 +421,9 @@ def process_image():
             return jsonify({'error': 'Неизвестный режим работы'}), 400
 
         if not REPLICATE_API_TOKEN: raise Exception("REPLICATE_API_TOKEN не настроен.")
-
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
         db.session.commit()
-
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
         print(f"!!! Replicate Payload: {post_payload}")
@@ -463,7 +456,8 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
-# --- FIX: Moved the main INDEX_HTML and its route to the end of the file ---
+# --- Главный HTML шаблон и маршрут ---
+
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -1447,12 +1441,12 @@ INDEX_HTML = """
 </html>
 """
 
-# FIX: Moved main route to the end of the file
 @app.route('/')
 @login_required
-@subscription_required
+@subscription_required # Protect the main app
 def index():
     return render_template_string(INDEX_HTML)
+
 
 # --- Final app setup ---
 with app.app_context():
