@@ -261,16 +261,23 @@
             width: 100%; height: auto; object-fit: contain; border-radius: var(--element-border-radius);
             box-shadow: 0 10px 40px var(--shadow-color); display: block;
         }
+
+        /* FIX: Adjusted styles for download icon */
         .download-action-link {
-            display: flex; position: absolute; bottom: 15px; right: 15px;
-            z-index: 10; cursor: pointer;
+            display: flex;
+            position: absolute;
+            bottom: 10px; /* Adjusted position */
+            right: 10px;  /* Adjusted position */
+            z-index: 10;
+            cursor: pointer;
             transition: all var(--transition-speed) ease;
             background-color: rgba(0,0,0,0.4);
             backdrop-filter: blur(10px);
             border-radius: 50%;
-            padding: 8px;
-            opacity: 0; /* Hidden by default */
+            padding: 6px; /* Adjusted padding */
+            opacity: 0;
             visibility: hidden;
+            transform: scale(0.8);
         }
         .archive-item:hover .download-action-link,
         .history-item:hover .download-action-link { 
@@ -279,7 +286,11 @@
             transform: scale(1);
         }
         .download-action-link:hover { transform: scale(1.1) !important; }
-        .download-button-icon { height: 24px; width: 24px; display: block; }
+        .download-button-icon {
+            height: 20px; /* Adjusted size */
+            width: 20px;  /* Adjusted size */
+            display: block;
+        }
 
         .loader-container {
             width: 100%; padding: 40px 0; justify-content: center; align-items: center; z-index: 101; display: flex;
@@ -434,7 +445,6 @@
             font-weight: 500;
         }
         
-        /* FIX: Strict 5-column grid for archive */
         .archive-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -442,9 +452,8 @@
             width: 100%;
         }
         
-        /* FIX: Container for archive image and download button */
         .archive-item {
-            position: relative; /* Needed for the download icon overlay */
+            position: relative;
             width: 100%;
             aspect-ratio: 1 / 1;
         }
@@ -541,7 +550,6 @@
                 margin-bottom: 15px; max-height: 60vh;
             }
             .content-wrapper { overflow-y: visible; }
-            /* FIX: Adjust grid for mobile */
             .archive-grid { grid-template-columns: repeat(3, 1fr); }
             .plans-grid { grid-template-columns: 1fr; max-width: 450px; } 
             .billing-header {flex-direction: column;}
@@ -552,7 +560,6 @@
             .header-left-group { flex-direction: column; align-items: flex-start; gap: 15px; }
             .page-header-inner { align-items: flex-start; }
             .content-wrapper { max-width: 100%; }
-            /* FIX: Adjust grid for smaller mobile */
             .archive-grid { grid-template-columns: repeat(2, 1fr); }
             body {
                 background-image: url("{{ url_for('static', filename='images/mobile_background.webp') }}");
