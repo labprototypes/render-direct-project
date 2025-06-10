@@ -39,11 +39,11 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 # VVVVVV   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   VVVVVV
 PLAN_PRICES = {
-    'taste': 'price_xxxxxxxxxxxxxx', # ID для €9/mo
-    'best':  'price_xxxxxxxxxxxxxx',  # ID для €19/mo
-    'pro':   'price_xxxxxxxxxxxxxx',   # ID для €35/mo
+    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE', # ID для €9/mo
+    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',  # ID для €19/mo
+    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',   # ID для €35/mo
 }
-TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов
+TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH' # ID для разовой покупки токенов
 # ^^^^^^   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   ^^^^^^
 
 
@@ -215,15 +215,41 @@ def upload_file_to_s3(file_to_upload):
 def improve_prompt_with_openai(user_prompt):
     if not openai_client: return user_prompt
     if not user_prompt or user_prompt.isspace(): return "A vibrant, hyperrealistic, high-detail image"
+
+    # Новый, продвинутый системный промпт, основанный на инструкции Replicate Kontext
+    system_prompt = (
+        "You are an expert prompt engineer for the 'Kontext' AI image editing model. "
+        "Your role is to translate a user's request, which can be in ANY language, into a concise and effective technical prompt in ENGLISH. "
+        "Follow these rules strictly:"
+        "\n\n"
+        "1.  **Core Principle: Preserve Everything Else.** Your main goal is to identify the user's specific change and aggressively preserve the rest of the image. "
+        "If the user says 'remove the watch on his wrist', the prompt must be: 'a man's wrist, preserving the original skin tone, arm position, and background, but with the watch removed'. "
+        "If the user says 'change background to a forest', the prompt must be: 'change the background to a dense, photorealistic forest, while keeping the person in the foreground in the exact same position and style'."
+        "\n\n"
+        "2.  **Be Specific, Not General.** Translate vague requests into concrete details. 'Make it look better' is a bad prompt. 'Enhance the image to be sharper, with more vibrant colors and higher contrast' is a good prompt."
+        "\n\n"
+        "3.  **Identify Subjects Directly.** Refer to objects by their description. Prompt should say 'the woman with short black hair' instead of 'her'."
+        "\n\n"
+        "4.  **Handle Text Editing.** If the request is to change text, use quotation marks. Example: 'change the text on the sign from \"OPEN\" to \"CLOSED\"'."
+        "\n\n"
+        "5.  **Handle Style Transfers.** If the user asks for a style change (e.g., 'сделай в стиле аниме'), apply it to the whole image but preserve the content. Example: 'in the style of a 90s anime screenshot, preserving the original composition and characters'."
+        "\n\n"
+        "6.  **Output Format.** Your output MUST be ONLY the final, rewritten English prompt. Do not add any conversational text, greetings, or explanations."
+    )
+
     try:
         completion = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "You are an expert prompt engineer..."}, {"role": "user", "content": user_prompt}],
-            temperature=0.5, max_tokens=100
+            model="gpt-4o", # Рекомендую использовать gpt-4o для более точного следования инструкциям
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.4,
+            max_tokens=150
         )
         improved_prompt = completion.choices[0].message.content.strip()
         print(f"!!! Оригинальный промпт: {user_prompt}")
-        print(f"!!! Улучшенный промпт: {improved_prompt}")
+        print(f"!!! Улучшенный промпт (Kontext-ready): {improved_prompt}")
         return improved_prompt
     except Exception as e:
         print(f"!!! Ошибка при обращении к OpenAI для улучшения промпта: {e}")
