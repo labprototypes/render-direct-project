@@ -9,7 +9,6 @@ import requests
 import time
 import openai
 import stripe
-
 from flask import Flask, request, jsonify, render_template, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -38,14 +37,14 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
-# VVVVVV   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   VVVVVV
+# VVVVVV   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   VVVVVV
 PLAN_PRICES = {
     'taste': 'price_xxxxxxxxxxxxxx', # ID для €9/mo
     'best':  'price_xxxxxxxxxxxxxx',  # ID для €19/mo
     'pro':   'price_xxxxxxxxxxxxxx',   # ID для €35/mo
 }
 TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов
-# ^^^^^^   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   ^^^^^^
+# ^^^^^^   ВАЖНО: ЗАМЕНИТЕ ЭТИ ID НА ВАШИ РЕАЛЬНЫЕ ID ИЗ STRIPE DASHBOARD   ^^^^^^
 
 
 db = SQLAlchemy(app)
@@ -157,15 +156,12 @@ def register():
         if existing_user:
             flash('Пользователь с таким email уже существует.', 'error')
             return redirect(url_for('register'))
-
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
-        
         try:
             stripe_customer = stripe.Customer.create(email=form.email.data)
         except Exception as e:
             flash(f'Error creating customer in Stripe: {e}', 'error')
             return render_template('custom_register_user.html', form=form)
-            
         new_user = User(
             email=form.email.data,
             username=form.username.data,
@@ -231,28 +227,30 @@ def improve_prompt_with_openai(user_prompt):
 
 def handle_checkout_session(session):
     customer_id = session.get('customer')
-    user = User.query.filter_by(stripe_customer_id=customer_id).first()
-    if not user: return
-    if session.get('subscription'):
-        subscription_id = session.get('subscription')
-        subscription = stripe.Subscription.retrieve(subscription_id)
-        user.stripe_subscription_id = subscription_id
-        user.subscription_status = subscription.status
-        price_id = subscription.items.data[0].price.id
-        user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
-        handle_successful_payment(invoice=None, subscription=subscription)
-    elif session.get('payment_intent'):
-        user.token_balance += 1000
-    db.session.commit()
+    with app.app_context():
+        user = User.query.filter_by(stripe_customer_id=customer_id).first()
+        if not user: return
+        if session.get('subscription'):
+            subscription_id = session.get('subscription')
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            user.stripe_subscription_id = subscription_id
+            user.subscription_status = subscription.status
+            price_id = subscription.items.data[0].price.id
+            user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
+            handle_successful_payment(invoice=None, subscription=subscription)
+        elif session.get('payment_intent'):
+            user.token_balance += 1000
+        db.session.commit()
 
 def handle_subscription_change(subscription):
     customer_id = subscription.get('customer')
-    user = User.query.filter_by(stripe_customer_id=customer_id).first()
-    if not user: return
-    user.subscription_status = subscription.status
-    if subscription.status != 'active':
-        user.current_plan = 'inactive'
-    db.session.commit()
+    with app.app_context():
+        user = User.query.filter_by(stripe_customer_id=customer_id).first()
+        if not user: return
+        user.subscription_status = subscription.status
+        if subscription.status != 'active':
+            user.current_plan = 'inactive'
+        db.session.commit()
 
 def handle_successful_payment(invoice=None, subscription=None):
     if invoice:
@@ -261,18 +259,19 @@ def handle_successful_payment(invoice=None, subscription=None):
         subscription_id = subscription.id
     else: return
     if not subscription_id: return
-    user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
-    if not user: return
-    if not subscription:
-        subscription = stripe.Subscription.retrieve(subscription_id)
-    price_id = subscription.items.data[0].price.id
-    if price_id == PLAN_PRICES.get('taste'):
-        user.token_balance += 1500
-    elif price_id == PLAN_PRICES.get('best'):
-        user.token_balance += 4500
-    elif price_id == PLAN_PRICES.get('pro'):
-        user.token_balance += 15000
-    db.session.commit()
+    with app.app_context():
+        user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+        if not user: return
+        if not subscription:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+        price_id = subscription.items.data[0].price.id
+        if price_id == PLAN_PRICES.get('taste'):
+            user.token_balance += 1500
+        elif price_id == PLAN_PRICES.get('best'):
+            user.token_balance += 4500
+        elif price_id == PLAN_PRICES.get('pro'):
+            user.token_balance += 15000
+        db.session.commit()
 
 # --- Маршруты для биллинга, Stripe и новых страниц ---
 @app.route('/choose-plan')
@@ -335,17 +334,17 @@ def stripe_webhook():
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.error.SignatureVerificationError) as e:
         return 'Invalid payload or signature', 400
+    
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        handle_checkout_session(session)
+    if event['type'] in ['customer.subscription.updated', 'customer.subscription.deleted']:
+        subscription = event['data']['object']
+        handle_subscription_change(subscription)
+    if event['type'] == 'invoice.payment_succeeded':
+        invoice = event['data']['object']
+        handle_successful_payment(invoice=invoice)
 
-    with app.app_context():
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            handle_checkout_session(session)
-        if event['type'] in ['customer.subscription.updated', 'customer.subscription.deleted']:
-            subscription = event['data']['object']
-            handle_subscription_change(subscription)
-        if event['type'] == 'invoice.payment_succeeded':
-            invoice = event['data']['object']
-            handle_successful_payment(invoice=invoice)
     return 'OK', 200
 
 # --- Маршруты API и обработки изображений ---
@@ -462,6 +461,7 @@ def process_image():
 @login_required
 @subscription_required
 def index():
+    # FIX: Moved the main HTML to a template file
     return render_template('index.html')
 
 # --- Final app setup ---
