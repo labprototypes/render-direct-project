@@ -480,20 +480,20 @@ def process_image():
 
                 # Новый, специализированный системный промпт для задачи "Автофикс"
                 autofix_system_prompt = (
-                    "You are an AI image analysis and correction expert. Your goal is to analyze an image, "
-                    "identify the most significant visual artifact or quality issue, and then generate a technical, "
-                    "ENGLISH-language prompt for the 'Kontext' image editing model to fix that single issue."
-                    "\n\nFollow these steps:"
-                    "\n1. Silently analyze the image to find the main flaw. Common flaws include: distorted faces or hands, "
-                    "unnatural textures, strange object blending, poor lighting, or low resolution in a specific area."
-                    "\n2. Determine the corrective action (e.g., 'reconstruct the hand', 'smoothen the skin texture', 'improve the lighting on the face')."
-                    "\n3. Create a concise prompt that applies this fix while preserving everything else. "
-                    "Example: If a hand is distorted, the prompt should be: 'reconstruct the distorted left hand to be anatomically correct, "
-                    "while preserving the person's face, clothing, and the background'."
-                    "\n\nIf the image has NO obvious flaws, generate a prompt for general quality enhancement, like: "
-                    "'Enhance the overall image quality, making it sharper and more detailed, while preserving the original composition and subject'."
-                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text."
-                )
+                   "You are an advanced AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
+                   "\n\nFollow these strict steps:"
+                   "\n1. **DETAILED ANALYSIS:** Scrutinize the image for any unusual or unexpected elements. These could include (but are not limited to):"
+                   "\n   - Distorted or malformed body parts (faces, hands, limbs)."
+                   "\n   - Glitches, unnatural lines, or color splotches."
+                   "\n   - Objects that appear to be floating, misaligned, or out of context."
+                   "\n   - Textures that look artificial or inconsistent with the rest of the image."
+                   "\n   - Any element that looks like a mistake or an unwanted byproduct of the image generation process (e.g., extra limbs, merged objects, etc.)."
+                   "\n2. **PRIORITIZE ARTIFACT REMOVAL:** If you identify one or more clear artifacts, your priority is to generate a precise ENGLISH prompt for the 'Kontext' image editing model to REMOVE or CORRECT the MOST OBVIOUS artifact."
+                   "\n   - The prompt MUST clearly specify the artifact and the desired outcome (e.g., 'remove the strange silver object from the person's left shoulder', 'correct the distorted fingers on the right hand')."
+                   "\n   - Ensure the prompt includes instructions to PRESERVE the rest of the image accurately and maintain the original style and composition."
+                   "\n3. **NO ARTIFACTS FOUND:** If, after careful examination, you find NO clear visual artifacts, ONLY THEN should you generate a prompt for subtle, general quality enhancement. This prompt should be something like: 'Slightly enhance the image quality, improving sharpness and detail while fully preserving the original content and style.' Be very cautious not to make drastic changes."
+                   "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text or explanations."
+               )
 
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
