@@ -59,7 +59,10 @@
             {% if current_user.current_plan == 'taste' %}
                 <button class="btn-disabled">Your Current Plan</button>
             {% else %}
-                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn btn-secondary">Change Plan</button></form>
+                <form action="{{ url_for('create_portal_session') }}" method="POST">
+                    {# FIX: Removed 'btn-secondary' to make the button style consistent #}
+                    <button type="submit" class="btn">Change Plan</button>
+                </form>
             {% endif %}
         </div>
 
