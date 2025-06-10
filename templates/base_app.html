@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>{% block title %}Changer AI{% endblock %}</title>
+    <style>
+        /* All CSS from your main page's INDEX_HTML goes here */
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_light.woff2') }}") format('woff2');
+            font-weight: 300;
+        }
+        /* ... (include all other @font-face rules for Norms) ... */
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
+            font-weight: 700;
+        }
+
+        :root {
+            --accent-color: #D9F47A;
+            --base-bg-color: #0c0d10;
+            --surface-color: #1c1c1f;
+            --primary-text-color: #EAEAEA;
+            --secondary-text-color: #888888;
+            --accent-text-color: #1A1A1A;
+            --border-color: rgba(255, 255, 255, 0.1);
+            /* ... (all other variables) ... */
+        }
+        /* ... (all other CSS rules from your original INDEX_HTML) ... */
+        body {
+            font-family: 'Norms', sans-serif;
+            background-color: var(--base-bg-color);
+            color: var(--primary-text-color);
+            background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
+            /* ... etc ... */
+        }
+        .archive-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 20px;
+        }
+        .archive-item img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            aspect-ratio: 1 / 1;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .archive-item:hover img {
+            transform: scale(1.05);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        }
+        @media (max-width: 992px) {
+            .archive-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .archive-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header-container">
+        <div class="page-header-inner">
+            <div class="header-left-group">
+                <a href="{{ url_for('index') }}" class="app-logo-link">
+                    <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
+                </a>
+                {% block mode_selector %}
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="edit">Edit</button>
+                    <button class="mode-btn" data-mode="upscale">Upscale</button>
+                </div>
+                {% endblock %}
+            </div>
+            <div class="top-right-nav">
+                {% if current_user.is_authenticated %}
+                    <div class="user-controls-loggedin">
+                        <span class="token-display">
+                            <span id="token-balance-display">{{ current_user.token_balance }}</span>
+                            <span class="token-coin"></span>
+                        </span>
+                        <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
+                            <svg class="burger-icon" viewBox="0 0 100 80"><rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect><rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect><rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect></svg>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu">
+                        <div class="dropdown-header">
+                             <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
+                        </div>
+                        <ul>
+                            <li><a href="{{ url_for('index') }}">Generate</a></li>
+                            <li><a href="{{ url_for('archive') }}">Archive</a></li>
+                            <li><a href="{{ url_for('billing') }}">Billing</a></li>
+                            <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
+                            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="user-controls-loggedout">
+                        <a href="{{ url_for('login') }}" class="auth-button">Login</a>
+                        <a href="{{ url_for('register') }}" class="auth-button">Sign Up</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% block content %}{% endblock %}
+
+    <div id="error-box" class="error-message"></div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
