@@ -1,5 +1,5 @@
 {% extends "base_app.html" %}
-{% block body_class %}no-scroll{% endblock %}
+{# FIX: Removed the no-scroll block to enable scrolling on this page #}
 
 {% block title %}Changer AI - Generate{% endblock %}
 
@@ -96,7 +96,6 @@
         const editModeButtons = document.querySelectorAll('.edit-mode-btn');
         const editModeDescription = document.getElementById('edit-mode-description');
         const editControlsContainer = document.getElementById('edit-controls-container');
-        const templatesForEdit = document.getElementById('templates-for-edit');
         
         const allTemplateButtons = document.querySelectorAll('.template-btn');
         const promptInput = document.getElementById('prompt');
@@ -205,6 +204,7 @@
         function updateUpscaleView() {
             if (!upscaleOriginalWidth || !upscaleOriginalHeight) {
                 finalSizeDisplay.textContent = '';
+                finalSizeDisplay.style.display = 'none';
                 resolutionLimitWarning.style.display = 'none';
                 upscaleSubmitButton.disabled = false;
                 upscaleTokenCost.style.display = 'flex';
@@ -219,10 +219,12 @@
 
             const limit = 9000;
             if (finalWidth > limit || finalHeight > limit) {
+                finalSizeDisplay.style.display = 'none';
                 resolutionLimitWarning.style.display = 'block';
                 upscaleTokenCost.style.display = 'none';
                 upscaleSubmitButton.disabled = true;
             } else {
+                finalSizeDisplay.style.display = 'block';
                 resolutionLimitWarning.style.display = 'none';
                 upscaleTokenCost.style.display = 'flex';
                 upscaleSubmitButton.disabled = false;
