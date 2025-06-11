@@ -140,6 +140,10 @@ class UsedTrialEmail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
 
+class DeleteAccountForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Delete My Account Permanently')
+
 app.static_folder = 'static'
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
@@ -236,6 +240,50 @@ def change_password():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+@app.route('/delete-account', methods=['GET', 'POST'])
+@login_required
+def delete_account():
+    form = DeleteAccountForm()
+    if form.validate_on_submit():
+        # 1. Проверяем пароль пользователя
+        if not check_password_hash(current_user.password, form.password.data):
+            flash('Incorrect password.', 'error')
+            return redirect(url_for('delete_account'))
+
+        # 2. Отменяем подписку Stripe (чтобы она не продлилась)
+        if current_user.stripe_subscription_id:
+            try:
+                stripe.Subscription.modify(
+                    current_user.stripe_subscription_id,
+                    cancel_at_period_end=True
+                )
+                flash('Your subscription has been scheduled for cancellation at the end of the current period.', 'info')
+            except stripe.error.StripeError as e:
+                flash(f'Could not cancel subscription with Stripe: {e}', 'error')
+                return redirect(url_for('delete_account'))
+
+        # 3. Запоминаем email, чтобы не давать ему триал в будущем
+        used_email = UsedTrialEmail.query.filter_by(email=current_user.email).first()
+        if not used_email:
+            used_email_record = UsedTrialEmail(email=current_user.email)
+            db.session.add(used_email_record)
+
+        # 4. Удаляем все генерации пользователя
+        Prediction.query.filter_by(user_id=current_user.id).delete()
+
+        # 5. Удаляем самого пользователя
+        user_to_delete = User.query.get(current_user.id)
+        logout_user() # Выходим из системы перед удалением
+        db.session.delete(user_to_delete)
+        
+        # 6. Сохраняем все изменения в БД
+        db.session.commit()
+
+        flash('Your account and all associated data have been deleted.', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('delete_account.html', form=form)
 
 # Важно: добавьте datetime в ваш основной импорт из стандартных библиотек вверху файла
 from datetime import datetime 
