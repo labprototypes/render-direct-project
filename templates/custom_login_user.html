@@ -32,6 +32,14 @@
 
     {{ form.submit(class="btn", value="Login") }}
 </form>
+
+<div style="text-align: center; margin: 20px 0; color: #888;">OR</div>
+
+<a href="{{ url_for('google_login') }}" class="btn btn-google">
+    <img src="{{ url_for('static', filename='images/google-logo.svg') }}" alt="Google logo" style="width: 18px; height: 18px; margin-right: 10px;">
+    Continue with Google
+</a>
+
 <div class="links">
     <p>Don't have an account? <a href="{{ url_for('register') }}">Sign Up</a></p>
 </div>
