@@ -1,9 +1,9 @@
 {% extends "base_security.html" %}
 
-{% block title %}Регистрация{% endblock %}
+{% block title %}Sign Up{% endblock %}
 
 {% block content %}
-<h2>Регистрация</h2>
+<h2>Sign Up</h2>
 <form method="POST" action="{{ url_for('register') }}" novalidate>
     {{ form.hidden_tag() }}
 
@@ -18,7 +18,7 @@
     <div class="form-group">
         {{ form.username.label(style="display: none;") }}
         {# FIX: Убрали "(опционально)" из плейсхолдера #}
-        {{ form.username(class="form-control", placeholder="Имя пользователя") }}
+        {{ form.username(class="form-control", placeholder="Username") }}
         {% for error in form.username.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
@@ -26,7 +26,7 @@
 
     <div class="form-group">
         {{ form.password.label(style="display: none;") }}
-        {{ form.password(class="form-control", placeholder="Придумайте пароль") }}
+        {{ form.password(class="form-control", placeholder="Create a password") }}
         {% for error in form.password.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
@@ -34,7 +34,7 @@
     
     <div class="form-group">
         {{ form.password_confirm.label(style="display: none;") }}
-        {{ form.password_confirm(class="form-control", placeholder="Подтвердите пароль") }}
+        {{ form.password_confirm(class="form-control", placeholder="Confirm password") }}
         {% for error in form.password_confirm.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
@@ -44,7 +44,7 @@
         <div class="custom-checkbox-container">
             {{ form.accept_tos(id="accept_tos") }}
             <label for="accept_tos">
-                Я принимаю <a href="/terms" target="_blank">условия использования</a>
+                I accept the <a href="/terms" target="_blank">Terms of Service</a>
             </label>
         </div>
         {% for error in form.accept_tos.errors %}
@@ -60,6 +60,6 @@
     {{ form.submit(class="btn") }}
 </form>
 <div class="links">
-    <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+    <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
 </div>
 {% endblock %}
