@@ -1,9 +1,9 @@
 {% extends "base_security.html" %}
 
-{% block title %}Вход{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% block content %}
-<h2>Вход</h2>
+<h2>Login</h2>
 <form method="POST" action="{{ url_for('login') }}" novalidate>
     {{ form.hidden_tag() }}
 
@@ -17,7 +17,7 @@
 
     <div class="form-group">
         {{ form.password.label(style="display: none;") }}
-        {{ form.password(class="form-control", placeholder="Пароль") }}
+        {{ form.password(class="form-control", placeholder="Password") }}
         {% for error in form.password.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
@@ -30,9 +30,9 @@
         </div>
     </div>
 
-    {{ form.submit(class="btn", value="Войти") }}
+    {{ form.submit(class="btn", value="Login") }}
 </form>
 <div class="links">
-    <p>Нет аккаунта? <a href="{{ url_for('register') }}">Создать</a></p>
+    <p>Don't have an account? <a href="{{ url_for('register') }}">Sign Up</a></p>
 </div>
 {% endblock %}
