@@ -149,10 +149,10 @@
             padding: 0; cursor: pointer; width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
             transition: all var(--transition-speed) ease; position: relative;
+            color: #FFFFFF; /* FIX: Set icon color to white */
         }
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
         
-        /* FIX: Styles for Burger/Close Icon Toggle */
         .icon-burger, .icon-close {
             transition: opacity 0.2s ease-in-out;
         }
@@ -274,7 +274,6 @@
             box-shadow: 0 10px 40px var(--shadow-color); display: block;
         }
 
-        /* FIX: Adjusted styles for a smaller, neater download icon */
         .download-action-link {
             display: flex;
             align-items: center;
@@ -282,18 +281,18 @@
             position: absolute;
             bottom: 8px;
             right: 8px;
-            width: 32px; /* Set fixed width */
-            height: 32px; /* Set fixed height */
+            width: 32px;
+            height: 32px;
             z-index: 10;
             cursor: pointer;
             transition: all var(--transition-speed) ease;
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
-            border-radius: 50%;
-            padding: 0; /* Remove padding */
             opacity: 0;
             visibility: hidden;
             transform: scale(0.8);
+            /* FIX: Removed background styles */
+            background-color: transparent;
+            backdrop-filter: none;
+            border-radius: 0;
         }
         .archive-item:hover .download-action-link,
         .history-item:hover .download-action-link { 
@@ -303,8 +302,8 @@
         }
         .download-action-link:hover { transform: scale(1.1) !important; }
         .download-button-icon {
-            height: 16px; /* Adjusted icon size */
-            width: 16px;  /* Adjusted icon size */
+            height: 22px; /* A slightly larger icon now that there's no background */
+            width: 22px;
             display: block;
         }
 
@@ -602,8 +601,7 @@
                             <span class="token-coin"></span>
                         </span>
                         <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
-                            {# FIX: Replaced transform-based icons with two separate, perfectly aligned SVGs #}
-                            <svg class="icon-burger" viewBox="0 0 100 80"><rect y="0" width="100" height="12" rx="6"></rect><rect y="34" width="100" height="12" rx="6"></rect><rect y="68" width="100" height="12" rx="6"></rect></svg>
+                            <svg class="icon-burger" viewBox="0 0 100 80"><rect y="0" width="100" height="12" rx="6" fill="currentColor"></rect><rect y="34" width="100" height="12" rx="6" fill="currentColor"></rect><rect y="68" width="100" height="12" rx="6" fill="currentColor"></rect></svg>
                             <svg class="icon-close" viewBox="0 0 80 80"><line x1="20" y1="20" x2="60" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/><line x1="60" y1="20" x2="20" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/></svg>
                         </button>
                     </div>
