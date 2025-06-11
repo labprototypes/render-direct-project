@@ -99,6 +99,7 @@
         
         const allTemplateButtons = document.querySelectorAll('.template-btn');
         const promptInput = document.getElementById('prompt');
+        const editForm = document.getElementById('edit-form');
         
         const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
         const upscaleImageInput = document.getElementById('image-file-upscale');
@@ -415,7 +416,12 @@
         setupDragAndDrop(document.getElementById('image-drop-area-upscale'), upscaleImageInput);
 
         appModeButtons[0].click();
-        document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
+        // FIX: Added submit event listener to the form
+if (editForm) {
+    editForm.addEventListener('submit', (e) => {
+        e.preventDefault(); // Это предотвращает перезагрузку страницы
+        handleImageProcessing(); // Это запускает вашу функцию генерации
     });
+}
 </script>
 {% endblock %}
