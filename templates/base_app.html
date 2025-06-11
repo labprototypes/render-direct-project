@@ -71,11 +71,11 @@
             background-position: center center;
             background-repeat: no-repeat;
             background-attachment: fixed;
-            overflow-y: auto; /* FIX: Allow scrolling by default */
+            overflow-y: auto; 
         }
         
         body.no-scroll {
-            overflow: hidden; /* FIX: Disable scrolling only for specific pages like index */
+            overflow: hidden; 
         }
 
         .app-container {
@@ -85,11 +85,11 @@
             gap: 25px; 
             position: relative;
             z-index: 2;
-            height: auto; /* FIX: Allow container height to be flexible */
+            height: auto; 
         }
         
         body.no-scroll .app-container {
-             height: 100vh; /* FIX: Restore fixed height for no-scroll pages */
+             height: 100vh; 
         }
 
 
@@ -151,11 +151,23 @@
             transition: all var(--transition-speed) ease; position: relative;
         }
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
-        .burger-menu-btn svg .line { stroke: var(--primary-text-color); stroke-width:10; stroke-linecap:round; transition: transform 0.3s 0.05s ease-in-out, opacity 0.2s ease-in-out; transform-origin: 50% 50%;}
-        .burger-menu-btn .burger-icon { width: 16px; height: 12px; }
-        .burger-menu-btn.open .burger-icon .line1 { transform: translateY(34px) rotate(45deg); }
-        .burger-menu-btn.open .burger-icon .line2 { opacity: 0; }
-        .burger-menu-btn.open .burger-icon .line3 { transform: translateY(-34px) rotate(-45deg); }
+        
+        /* FIX: Styles for Burger/Close Icon Toggle */
+        .icon-burger, .icon-close {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .icon-close { 
+            display: none;
+            width: 16px;
+            height: 16px;
+        }
+        .icon-burger {
+            display: block;
+            width: 16px;
+            height: 12px;
+        }
+        .burger-menu-btn.open .icon-close { display: block; }
+        .burger-menu-btn.open .icon-burger { display: none; }
         
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
@@ -262,19 +274,23 @@
             box-shadow: 0 10px 40px var(--shadow-color); display: block;
         }
 
-        /* FIX: Adjusted styles for download icon */
+        /* FIX: Adjusted styles for a smaller, neater download icon */
         .download-action-link {
             display: flex;
+            align-items: center;
+            justify-content: center;
             position: absolute;
-            bottom: 10px; /* Adjusted position */
-            right: 10px;  /* Adjusted position */
+            bottom: 8px;
+            right: 8px;
+            width: 32px; /* Set fixed width */
+            height: 32px; /* Set fixed height */
             z-index: 10;
             cursor: pointer;
             transition: all var(--transition-speed) ease;
-            background-color: rgba(0,0,0,0.4);
-            backdrop-filter: blur(10px);
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
             border-radius: 50%;
-            padding: 6px; /* Adjusted padding */
+            padding: 0; /* Remove padding */
             opacity: 0;
             visibility: hidden;
             transform: scale(0.8);
@@ -287,8 +303,8 @@
         }
         .download-action-link:hover { transform: scale(1.1) !important; }
         .download-button-icon {
-            height: 20px; /* Adjusted size */
-            width: 20px;  /* Adjusted size */
+            height: 16px; /* Adjusted icon size */
+            width: 16px;  /* Adjusted icon size */
             display: block;
         }
 
@@ -538,11 +554,11 @@
 
         @media (max-width: 992px) {
             body { 
-                overflow-y: auto !important; /* Ensure scrolling on mobile */
+                overflow-y: auto !important; 
             } 
             .app-container {
                 flex-direction: column; align-items: center; 
-                height: auto !important; /* Ensure height is flexible on mobile */
+                height: auto !important; 
                 overflow-y: visible; padding-top: 100px; padding-bottom: 25px;
             }
              #result-area-right {
@@ -586,7 +602,9 @@
                             <span class="token-coin"></span>
                         </span>
                         <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
-                            <svg class="burger-icon" viewBox="0 0 100 80"><rect class="line line1" x="0" y="0" width="100" height="12" rx="6"></rect><rect class="line line2" x="0" y="34" width="100" height="12" rx="6"></rect><rect class="line line3" x="0" y="68" width="100" height="12" rx="6"></rect></svg>
+                            {# FIX: Replaced transform-based icons with two separate, perfectly aligned SVGs #}
+                            <svg class="icon-burger" viewBox="0 0 100 80"><rect y="0" width="100" height="12" rx="6"></rect><rect y="34" width="100" height="12" rx="6"></rect><rect y="68" width="100" height="12" rx="6"></rect></svg>
+                            <svg class="icon-close" viewBox="0 0 80 80"><line x1="20" y1="20" x2="60" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/><line x1="60" y1="20" x2="20" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/></svg>
                         </button>
                     </div>
                     <div class="dropdown-menu" id="dropdown-menu">
