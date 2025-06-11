@@ -9,7 +9,8 @@ import requests
 import time
 import openai
 import stripe
-from flask import Flask, request, jsonify, render_template, url_for, redirect, flash
+from datetime import datetime
+from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -197,10 +198,10 @@ def register():
             marketing_consent=form.marketing_consent.data,
             stripe_customer_id=stripe_customer.id
         )
-        db.session.add(new_user)
+         db.session.add(new_user)
         db.session.commit()
-        login_user(new_user)
-        return redirect(url_for('choose_plan'))
+        flash('You have successfully registered! Please log in.', 'success')
+        return redirect(url_for('login')) # <--- Перенаправляем на логин
     return render_template('custom_register_user.html', form=form)
 
 @app.route('/change-password', methods=['GET', 'POST'])
@@ -237,16 +238,21 @@ def google_callback():
     token = oauth.google.authorize_access_token()
     user_info = oauth.google.userinfo()
     
+    # 1. Ищем пользователя в нашей базе данных по email
     user = User.query.filter_by(email=user_info['email']).first()
 
+    # 2. Если пользователь уже существует, просто входим в систему
     if user:
         login_user(user)
         return redirect(url_for('index'))
 
+    # 3. ЕСЛИ ЭТО НОВЫЙ ПОЛЬЗОВАТЕЛЬ:
+    # 3.1. Сохраняем его данные от Google во временную сессию
     session['google_oauth_info'] = {
         'email': user_info['email'],
         'name': user_info.get('name', user_info['email'])
     }
+    # 3.2. Перенаправляем на страницу для принятия соглашений
     return redirect(url_for('google_complete_registration'))
 
 
