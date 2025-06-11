@@ -48,7 +48,7 @@
             </div>
             <div class="submit-action-group">
                 <button type="submit" id="submit-button-edit" class="submit-button-element">Generate</button>
-                <div class="token-cost"><span>Estimated cost: 1</span><span class="token-coin"></span></div>
+                <div class="token-cost"><span>Estimated cost: 65</span><span class="token-coin"></span></div>
             </div>
         </div>
         <div id="upscale-view" style="display: none;">
@@ -207,34 +207,51 @@
         }
 
         function updateUpscaleView() {
-            if (!upscaleOriginalWidth || !upscaleOriginalHeight) {
-                finalSizeDisplay.textContent = '';
-                finalSizeDisplay.style.display = 'none';
-                resolutionLimitWarning.style.display = 'none';
-                upscaleSubmitButton.disabled = false;
-                upscaleTokenCost.style.display = 'flex';
-                return;
-            }
+        // Находим элемент для отображения стоимости
+        const upscaleTokenCostSpan = document.getElementById('token-cost-upscale').querySelector('span');
 
-            const multiplier = parseInt(document.querySelector('.resolution-btn.active').dataset.value, 10);
-            const finalWidth = upscaleOriginalWidth * multiplier;
-            const finalHeight = upscaleOriginalHeight * multiplier;
-            
-            finalSizeDisplay.textContent = `Final size: ${finalWidth} x ${finalHeight}`;
-
-            const limit = 9000;
-            if (finalWidth > limit || finalHeight > limit) {
-                finalSizeDisplay.style.display = 'none';
-                resolutionLimitWarning.style.display = 'block';
-                upscaleTokenCost.style.display = 'none';
-                upscaleSubmitButton.disabled = true;
-            } else {
-                finalSizeDisplay.style.display = 'block';
-                resolutionLimitWarning.style.display = 'none';
-                upscaleTokenCost.style.display = 'flex';
-                upscaleSubmitButton.disabled = false;
-            }
+        if (!upscaleOriginalWidth || !upscaleOriginalHeight) {
+            finalSizeDisplay.textContent = '';
+            finalSizeDisplay.style.display = 'none';
+            resolutionLimitWarning.style.display = 'none';
+            upscaleSubmitButton.disabled = false;
+            // Устанавливаем стоимость по умолчанию, если изображение не выбрано
+            upscaleTokenCostSpan.textContent = 'Estimated cost: 17';
+            upscaleTokenCost.style.display = 'flex';
+            return;
         }
+
+        const multiplier = parseInt(document.querySelector('.resolution-btn.active').dataset.value, 10);
+        const finalWidth = upscaleOriginalWidth * multiplier;
+        const finalHeight = upscaleOriginalHeight * multiplier;
+
+        finalSizeDisplay.textContent = `Final size: ${finalWidth} x ${finalHeight}`;
+
+        // Новая логика расчета стоимости
+        let cost = 0;
+        if (multiplier <= 2) {
+            cost = 17;
+        } else if (multiplier <= 4) {
+            cost = 65;
+        } else { // для multiplier === 8
+            cost = 150;
+        }
+        upscaleTokenCostSpan.textContent = `Estimated cost: ${cost}`;
+
+
+        const limit = 9000;
+        if (finalWidth > limit || finalHeight > limit) {
+            finalSizeDisplay.style.display = 'none';
+            resolutionLimitWarning.style.display = 'block';
+            upscaleTokenCost.style.display = 'none';
+            upscaleSubmitButton.disabled = true;
+        } else {
+            finalSizeDisplay.style.display = 'block';
+            resolutionLimitWarning.style.display = 'none';
+            upscaleTokenCost.style.display = 'flex';
+            upscaleSubmitButton.disabled = false;
+        }
+    }
 
         function setupDragAndDrop(dropArea, fileInputElement) {
             if (!dropArea || !fileInputElement) return;
