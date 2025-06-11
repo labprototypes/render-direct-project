@@ -235,7 +235,7 @@ def google_login():
 def google_callback():
     token = oauth.google.authorize_access_token()
     # Получаем информацию о пользователе от Google
-    user_info = oauth.google.get('openid').json()
+    user_info = oauth.google.userinfo()
     
     # Ищем пользователя в нашей базе данных по email
     user = User.query.filter_by(email=user_info['email']).first()
