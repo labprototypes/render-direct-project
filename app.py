@@ -231,39 +231,49 @@ def google_login():
     redirect_uri = url_for('google_callback', _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
 
-@app.route('/google/callback')
-def google_callback():
-    token = oauth.google.authorize_access_token()
-    user_info = oauth.google.userinfo()
-    
-    user = User.query.filter_by(email=user_info['email']).first()
+# Я добавил комментарии, чтобы показать правильные уровни отступов
 
-    # Если пользователь уже существует, просто входим в систему
-    if user:
-        login_user(user)
-        return redirect(url_for('index'))
-
-    # ===> НОВАЯ ЛОГИКА ДЛЯ НОВЫХ ПОЛЬЗОВАТЕЛЕЙ <===
-    # Сохраняем данные от Google в сессию и перенаправляем на страницу завершения
-    session['google_oauth_info'] = {
-        'email': user_info['email'],
-        'name': user_info.get('name', user_info['email'])
-    }
-    return redirect(url_for('google_complete_registration'))
-            
-        user = User(
-            email=user_info['email'],
-            username=user_info['name'],
-            password=hashed_password,
-            # Поля confirmed и confirmed_on не используются, т.к. мы пропустили этот шаг
-            stripe_customer_id=stripe_customer.id
-        )
-        db.session.add(user)
-        db.session.commit()
+@app.route('/google/create-account', methods=['POST'])  # (0 пробелов от начала)
+    def google_create_account():                            # (4 пробела)
+        if 'google_oauth_info' not in session:              # (8 пробелов)
+            return redirect(url_for('login'))               # (12 пробелов)
     
-    # Входим в систему с найденным или новым пользователем
-    login_user(user)
-    return redirect(url_for('index'))
+    # Эта проверка должна быть на том же уровне, что и предыдущая
+        if 'accept_tos' not in request.form:                # (8 пробелов)
+            flash('You must accept the Terms of Service and Privacy Policy.', 'error') # (12 пробелов)
+            return redirect(url_for('google_complete_registration')) # (12 пробелов)
+
+        google_info = session['google_oauth_info']          # (8 пробелов)
+        email = google_info['email']                        # (8 пробелов)
+
+        if User.query.filter_by(email=email).first():       # (8 пробелов)
+            return redirect(url_for('login'))               # (12 пробелов)
+
+        marketing_consent = 'marketing_consent' in request.form # (8 пробелов)
+
+        hashed_password = generate_password_hash(os.urandom(24).hex(), method='pbkdf2:sha256') # (8 пробелов)
+    
+        try:                                                # (8 пробелов)
+            stripe_customer = stripe.Customer.create(email=email) # (12 пробелов)
+        except Exception as e:                              # (8 пробелов)
+            flash(f'Error creating customer in Stripe: {e}', 'error') # (12 пробелов)
+            return redirect(url_for('google_complete_registration')) # (12 пробелов)
+
+    # Вот та самая строка, на которую указывает ошибка. Проверьте отступы здесь.
+        new_user = User(                                    # (8 пробелов)
+            email=email,                                    # (12 пробелов)
+            username=google_info['name'],                   # (12 пробелов)
+            password=hashed_password,                       # (12 пробелов)
+                stripe_customer_id=stripe_customer.id,          # (12 пробелов)
+        marketing_consent=marketing_consent             # (12 пробелов)
+        )                                                   # (8 пробелов)
+        db.session.add(new_user)                            # (8 пробелов)
+        db.session.commit()                                 # (8 пробелов)
+    
+        session.pop('google_oauth_info', None)              # (8 пробелов)
+        login_user(new_user)                                # (8 пробелов)
+    
+        return redirect(url_for('index'))                   # (8 пробелов)
 
 @app.route('/terms')
 def terms():
