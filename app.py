@@ -313,35 +313,6 @@ def marketing_policy():
 
 # В app.py
 
-# Функция для ПОКАЗА страницы
-@app.route('/google/complete-registration', methods=['GET'])
-def google_complete_registration():  # <--- ИСПРАВЛЕНО
-    if 'google_oauth_info' not in session:
-        return redirect(url_for('login')) 
-    
-    google_info = session['google_oauth_info']
-    return render_template('google_complete.html', name=google_info['name'])
-
-
-# Функция для СОЗДАНИЯ аккаунта (остается без изменений)
-@app.route('/google/create-account', methods=['POST'])
-def google_create_account():
-    # ... здесь код для создания пользователя ...
-    if 'google_oauth_info' not in session:
-        return redirect(url_for('login'))
-    
-    # Проверяем, что пользователь принял Условия
-    if 'accept_tos' not in request.form:
-        flash('You must accept the Terms of Service and Privacy Policy.', 'error')
-        return redirect(url_for('google_complete_registration'))
-
-    google_info = session['google_oauth_info']
-    email = google_info['email']
-
-    # Проверяем еще раз на случай, если пользователь создал аккаунт в другой вкладке
-    if User.query.filter_by(email=email).first():
-        return redirect(url_for('login'))
-
     # Получаем согласие на маркетинг
     marketing_consent = 'marketing_consent' in request.form
 
