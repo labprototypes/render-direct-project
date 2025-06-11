@@ -74,6 +74,10 @@
             overflow-y: auto; 
         }
         
+        body.no-scroll {
+            overflow: hidden; 
+        }
+
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
             padding: 100px 25px 40px;
@@ -84,6 +88,11 @@
             height: auto; 
         }
         
+        body.no-scroll .app-container {
+             height: 100vh; 
+        }
+
+
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
@@ -140,7 +149,7 @@
             padding: 0; cursor: pointer; width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
             transition: all var(--transition-speed) ease; position: relative;
-            color: #FFFFFF;
+            color: #FFFFFF; /* FIX: Set icon color to white */
         }
         .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
         
@@ -238,7 +247,7 @@
         
         #result-area-right {
             flex: 1; 
-            min-height: calc(100vh - 140px);
+            height: calc(100vh - 140px); 
             display: flex; 
             flex-direction: column;
             gap: 20px;
@@ -252,8 +261,8 @@
             display: flex; flex-direction: column; justify-content: center;
             align-items: center; width: 100%; height: 100%; color: var(--secondary-text-color);
             text-align: center; gap: 15px; font-size: 0.9rem;
-            flex-grow: 1;
         }
+        #history-placeholder svg { width: 48px; height: 48px; }
         
         .history-item {
              justify-content: center; display: flex; align-items: center;
@@ -261,15 +270,17 @@
              flex-shrink: 0;
         }
         .history-item-image {
-            max-width: 100%;
-            max-height: 75vh;
-            width: auto;
-            height: auto;
+            /* FIX: Constrain the image size to act as a preview */
+            max-width: 100%;    /* Изображение не будет шире панели результатов */
+            max-height: 75vh;   /* Но и не выше 75% высоты экрана */
+            width: auto;        /* Ширина подстраивается автоматически, сохраняя пропорции */
+            height: auto;       /* Высота подстраивается автоматически, сохраняя пропорции */
             object-fit: contain;
             border-radius: var(--element-border-radius);
             box-shadow: 0 10px 40px var(--shadow-color);
             display: block;
         }
+
         .download-action-link {
             display: flex;
             align-items: center;
@@ -277,7 +288,7 @@
             position: absolute;
             bottom: 8px;
             right: 8px;
-            width: 32px; 
+            width: 32px;
             height: 32px;
             z-index: 10;
             cursor: pointer;
@@ -285,6 +296,7 @@
             opacity: 0;
             visibility: hidden;
             transform: scale(0.8);
+            /* FIX: Removed background styles */
             background-color: transparent;
             backdrop-filter: none;
             border-radius: 0;
@@ -297,20 +309,14 @@
         }
         .download-action-link:hover { transform: scale(1.1) !important; }
         .download-button-icon {
-            height: 22px; 
+            height: 22px; /* A slightly larger icon now that there's no background */
             width: 22px;
             display: block;
         }
-        
+
         .loader-container {
-            width: 100%;
-            padding: 40px 0;
-            justify-content: center;
-            align-items: center;
-            z-index: 101;
-            display: flex;
+            width: 100%; padding: 40px 0; justify-content: center; align-items: center; z-index: 101; display: flex; margin: auto;
             flex-shrink: 0;
-            margin: auto;
         }
         .pulsating-dot {
             width: 80px; height: 80px; background-color: var(--accent-color);
@@ -347,19 +353,13 @@
             position: relative; overflow: hidden;
             letter-spacing: 0.5px;
         }
-        .submit-button-element:hover:not(:disabled) {
+        .submit-button-element:hover {
             transform: translateY(-3px);
             background-color: var(--accent-color);
             color: var(--accent-text-color);
             box-shadow: 0 5px 20px var(--accent-glow);
         }
-        .submit-button-element:active:not(:disabled) { transform: translateY(0); }
-        .submit-button-element:disabled {
-            background-color: var(--disabled-color);
-            border-color: var(--disabled-color);
-            color: var(--secondary-text-color);
-            cursor: not-allowed;
-        }
+        .submit-button-element:active { transform: translateY(0); }
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
         .control-group > label {
