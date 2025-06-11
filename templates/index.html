@@ -86,6 +86,7 @@
 {% block page_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- ОБЪЯВЛЕНИЕ ПЕРЕМЕННЫХ ---
         const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
         const mainContentWrapper = document.getElementById('main-content-wrapper');
         const resultAreaRight = document.getElementById('result-area-right');
@@ -93,27 +94,30 @@
         const editView = document.getElementById('edit-view');
         const upscaleView = document.getElementById('upscale-view');
 
+        // Элементы для режима Edit
         const editModeButtons = document.querySelectorAll('.edit-mode-btn');
         const editModeDescription = document.getElementById('edit-mode-description');
         const editControlsContainer = document.getElementById('edit-controls-container');
-        
         const allTemplateButtons = document.querySelectorAll('.template-btn');
         const promptInput = document.getElementById('prompt');
-        const editForm = document.getElementById('edit-form');
-        
+        const editForm = document.getElementById('edit-form'); // <-- Вот недостающая переменная
         const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
-        const upscaleImageInput = document.getElementById('image-file-upscale');
         
+        // Элементы для режима Upscale
+        const upscaleImageInput = document.getElementById('image-file-upscale');
         const resolutionButtons = document.querySelectorAll('.resolution-btn');
         const finalSizeDisplay = document.getElementById('final-size-display');
         const upscaleSubmitButton = document.getElementById('submit-button-upscale');
         const upscaleTokenCost = document.getElementById('token-cost-upscale');
         const resolutionLimitWarning = document.getElementById('resolution-limit-warning');
+        
+        // Переменные состояния
         let upscaleOriginalWidth = 0;
         let upscaleOriginalHeight = 0;
-
         const historyPlaceholder = document.getElementById('history-placeholder');
         let currentLoaderId = null;
+
+        // --- ОСНОВНЫЕ ФУНКЦИИ ---
 
         function showError(message) {
             const errorBox = document.getElementById('error-box');
@@ -348,6 +352,8 @@
             }
         }
 
+        // --- НАВЕШИВАНИЕ ОБРАБОТЧИКОВ ---
+
         appModeButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const currentMode = button.dataset.mode;
@@ -387,6 +393,13 @@
             allTemplateButtons.forEach(btn => btn.classList.remove('active'));
         });
 
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleImageProcessing();
+            });
+        }
+
         resolutionButtons.forEach(button => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('.resolution-btn').forEach(btn => btn.classList.remove('active'));
@@ -415,13 +428,9 @@
         setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
         setupDragAndDrop(document.getElementById('image-drop-area-upscale'), upscaleImageInput);
 
+        // --- ИНИЦИАЛИЗАЦИЯ ---
         appModeButtons[0].click();
-        // FIX: Added submit event listener to the form
-if (editForm) {
-    editForm.addEventListener('submit', (e) => {
-        e.preventDefault(); // Это предотвращает перезагрузку страницы
-        handleImageProcessing(); // Это запускает вашу функцию генерации
+        document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
     });
-}
 </script>
 {% endblock %}
