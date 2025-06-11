@@ -1,0 +1,29 @@
+{% extends "base_security.html" %}
+
+{% block title %}Complete Registration{% endblock %}
+
+{% block content %}
+<h2>One Last Step</h2>
+<p>Welcome, {{ name }}! To finish creating your account, please review and accept our policies.</p>
+
+<form method="POST" action="{{ url_for('google_create_account') }}">
+    
+    <div class="checkbox-wrapper" style="margin-top: 20px; margin-bottom: 20px;">
+        <div class="custom-checkbox-container">
+            <input type="checkbox" id="accept_tos" name="accept_tos" required>
+            <label for="accept_tos">
+                I accept the <a href="{{ url_for('terms') }}" target="_blank">Terms of Service</a> and have read the <a href="{{ url_for('privacy') }}" target="_blank">Privacy Policy</a>.
+            </label>
+        </div>
+        
+        <div class="custom-checkbox-container" style="margin-top: 10px;">
+            <input type="checkbox" id="marketing_consent" name="marketing_consent" value="true">
+            <label for="marketing_consent">
+                I agree to receive marketing communications as described in the <a href="{{ url_for('marketing_policy') }}" target="_blank">Marketing Policy</a>.
+            </label>
+        </div>
+    </div>
+    
+    <input type="submit" class="btn" value="Complete Registration">
+</form>
+{% endblock %}
