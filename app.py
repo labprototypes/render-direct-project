@@ -104,8 +104,8 @@ class RegisterForm(FlaskForm):
     ])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
-    accept_tos = BooleanField('I accept the Terms of Service', validators=[DataRequired(message="You must accept the Terms of Service.")])
-    marketing_consent = BooleanField('I agree to receive marketing messages', default=True)
+    accept_tos = BooleanField('I accept the Terms of Service and have read the Privacy Policy', validators=[DataRequired(message="You must accept the Terms and Privacy Policy.")])
+    marketing_consent = BooleanField('I agree to receive marketing communications as described in the Marketing Policy', default=True)
     submit = SubmitField('Sign Up')
 
     # FIX: Добавили метод для проверки уникальности имени пользователя
@@ -207,6 +207,18 @@ def change_password():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
+
+@app.route('/marketing-policy')
+def marketing_policy():
+    return render_template('marketing.html')
 
 
 # --- Функции-помощники ---
