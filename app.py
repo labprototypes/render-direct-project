@@ -194,18 +194,27 @@ def register():
         except Exception as e:
             flash(f'Error creating customer in Stripe: {e}', 'error')
             return render_template('custom_register_user.html', form=form)
+        
+        # Проверяем, использовался ли триал
+        trial_used = UsedTrialEmail.query.filter_by(email=form.email.data).first()
+        initial_tokens = 0 if trial_used else 100
             
         new_user = User(
             email=form.email.data,
             username=form.username.data,
             password=hashed_password,
             marketing_consent=form.marketing_consent.data,
-            stripe_customer_id=stripe_customer.id
+            stripe_customer_id=stripe_customer.id,
+            token_balance=initial_tokens
         )
-         db.session.add(new_user)
+        
+        # Все строки ниже должны иметь такой же отступ, как и строка "new_user = User(...)"
+        db.session.add(new_user)
         db.session.commit()
+        
         flash('You have successfully registered! Please log in.', 'success')
-        return redirect(url_for('login')) # <--- Перенаправляем на логин
+        return redirect(url_for('login'))
+        
     return render_template('custom_register_user.html', form=form)
 
 @app.route('/change-password', methods=['GET', 'POST'])
