@@ -41,21 +41,23 @@
     </div>
 
     <div class="checkbox-wrapper">
-        <div class="custom-checkbox-container">
-            {{ form.accept_tos(id="accept_tos") }}
-            <label for="accept_tos">
-                I accept the <a href="/terms" target="_blank">Terms of Service</a>
-            </label>
-        </div>
-        {% for error in form.accept_tos.errors %}
-            <div class="help-block" style="text-align: center; padding: 0;">{{ error }}</div>
-        {% endfor %}
-        
-        <div class="custom-checkbox-container" style="margin-top: 10px;">
-            {{ form.marketing_consent(id="marketing_consent") }}
-            <label for="marketing_consent">{{ form.marketing_consent.label.text }}</label>
-        </div>
+    <div class="custom-checkbox-container">
+        {{ form.accept_tos(id="accept_tos") }}
+        <label for="accept_tos">
+            I accept the <a href="{{ url_for('terms') }}" target="_blank">Terms of Service</a> and have read the <a href="{{ url_for('privacy') }}" target="_blank">Privacy Policy</a>.
+        </label>
     </div>
+    {% for error in form.accept_tos.errors %}
+        <div class="help-block" style="text-align: center; padding: 0;">{{ error }}</div>
+    {% endfor %}
+    
+    <div class="custom-checkbox-container" style="margin-top: 10px;">
+        {{ form.marketing_consent(id="marketing_consent") }}
+        <label for="marketing_consent">
+            I agree to receive marketing communications as described in the <a href="{{ url_for('marketing_policy') }}" target="_blank">Marketing Policy</a>.
+        </label>
+    </div>
+</div>
     
     {{ form.submit(class="btn") }}
 </form>
