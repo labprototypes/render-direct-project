@@ -538,7 +538,7 @@ def process_image():
         db.session.commit()
 
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
+        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
         
         print(f"!!! Replicate Payload: {post_payload}")
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
