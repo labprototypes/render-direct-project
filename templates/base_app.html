@@ -270,8 +270,15 @@
              flex-shrink: 0;
         }
         .history-item-image {
-            width: 100%; height: auto; object-fit: contain; border-radius: var(--element-border-radius);
-            box-shadow: 0 10px 40px var(--shadow-color); display: block;
+            /* FIX: Constrain the image size to act as a preview */
+            max-width: 100%;    /* Изображение не будет шире панели результатов */
+            max-height: 75vh;   /* Но и не выше 75% высоты экрана */
+            width: auto;        /* Ширина подстраивается автоматически, сохраняя пропорции */
+            height: auto;       /* Высота подстраивается автоматически, сохраняя пропорции */
+            object-fit: contain;
+            border-radius: var(--element-border-radius);
+            box-shadow: 0 10px 40px var(--shadow-color);
+            display: block;
         }
 
         .download-action-link {
