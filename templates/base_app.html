@@ -666,12 +666,37 @@
     </script>
     {% block page_scripts %}{% endblock %}
 </body>
-<footer>
+<style>
+    /* Стили для контейнера футера */
+    .footer-container {
+        padding: 20px 40px; /* Отступы сверху/снизу и по бокам */
+        text-align: center; /* Выравнивание по центру */
+        background-color: transparent; /* Прозрачный фон, как на вашем изображении */
+        border-top: 1px solid rgba(255, 255, 255, 0.1); /* Тонкая линия сверху для разделения */
+    }
+
+    /* Стили для ссылок в футере */
+    .footer-links a {
+        color: #FFFFFF; /* ===> ЗАДАЕМ БЕЛЫЙ ЦВЕТ ДЛЯ ССЫЛОК <=== */
+        text-decoration: none; /* Убираем стандартное подчеркивание */
+        margin: 0 15px; /* Добавляем отступы между ссылками для аккуратности */
+        font-size: 0.9rem; /* Немного уменьшим шрифт */
+        transition: color 0.3s ease;
+    }
+
+    /* Добавляем эффект при наведении мыши для лучшего интерактива */
+    .footer-links a:hover {
+        color: #D9F47A; /* Ваш акцентный цвет для наведения */
+    }
+
+</style>
+
+<footer class="footer-container">
     <div class="footer-links">
         <a href="{{ url_for('terms') }}">Terms of Service</a>
         <a href="{{ url_for('privacy') }}">Privacy Policy</a>
         <a href="{{ url_for('marketing_policy') }}">Marketing Policy</a>
     </div>
-    <p>&copy; 2025 Grankin Vladimir. All rights reserved.</p>
-</footer>
+    
+    </footer>
 </html>
