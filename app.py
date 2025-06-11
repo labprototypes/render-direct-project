@@ -311,7 +311,7 @@ def google_create_account():
         username=google_info['name'],
         password=hashed_password,
         stripe_customer_id=stripe_customer.id,
-        marketing_consent=marketing_consent
+        marketing_consent=marketing_consent,
         token_balance=initial_tokens
     )
     db.session.add(new_user)
