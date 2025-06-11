@@ -15,7 +15,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo, Length
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
 from functools import wraps
 
 # --- Настройки ---
@@ -53,7 +53,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
+login_manager.login_message = "Please log in to access this page."
 login_manager.login_message_category = "info"
 
 @login_manager.user_loader
@@ -71,7 +71,7 @@ class User(db.Model, UserMixin):
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='trial') 
+    current_plan = db.Column(db.String(50), nullable=True, default='trial')
 
     @property
     def is_active(self):
@@ -91,34 +91,34 @@ class Prediction(db.Model):
 # --- Формы ---
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Пароль', validators=[DataRequired()])
-    remember = BooleanField('Запомнить меня')
-    submit = SubmitField('Войти')
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember = BooleanField('Remember me')
+    submit = SubmitField('Login')
 
 class RegisterForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     # FIX: Сделали поле username обязательным и добавили валидаторы
-    username = StringField('Имя пользователя', validators=[
-        DataRequired(message="Пожалуйста, введите имя пользователя."), 
-        Length(min=3, max=30, message="Имя пользователя должно содержать от 3 до 30 символов.")
+    username = StringField('Username', validators=[
+        DataRequired(message="Please enter a username."),
+        Length(min=3, max=30, message="Username must be between 3 and 30 characters.")
     ])
-    password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
-    password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
-    accept_tos = BooleanField('Я принимаю условия использования сервиса', validators=[DataRequired(message="Вы должны принять условия использования.")])
-    marketing_consent = BooleanField('Я согласен на получение маркетинговых сообщений', default=True)
-    submit = SubmitField('Регистрация')
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    password_confirm = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
+    accept_tos = BooleanField('I accept the Terms of Service', validators=[DataRequired(message="You must accept the Terms of Service.")])
+    marketing_consent = BooleanField('I agree to receive marketing messages', default=True)
+    submit = SubmitField('Sign Up')
 
     # FIX: Добавили метод для проверки уникальности имени пользователя
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
-            raise ValidationError('Это имя пользователя уже занято. Пожалуйста, выберите другое.')
+            raise ValidationError('This username is already taken. Please choose another.')
 
 class ChangePasswordForm(FlaskForm):
-    old_password = PasswordField('Текущий пароль', validators=[DataRequired()])
-    new_password = PasswordField('Новый пароль', validators=[DataRequired(), Length(min=6)])
-    new_password_confirm = PasswordField('Подтвердите новый пароль', validators=[DataRequired(), EqualTo('new_password', message='Пароли должны совпадать')])
-    submit = SubmitField('Сменить пароль')
+    old_password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
+    new_password_confirm = PasswordField('Confirm New Password', validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
+    submit = SubmitField('Change Password')
 
 app.static_folder = 'static'
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
@@ -153,7 +153,7 @@ def login():
             login_user(user, remember=form.remember.data)
             return redirect(url_for('index'))
         else:
-            flash('Неверный email или пароль.', 'error')
+            flash('Invalid email or password.', 'error')
     return render_template('custom_login_user.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -164,7 +164,7 @@ def register():
     if form.validate_on_submit():
         existing_user = User.query.filter_by(email=form.email.data).first()
         if existing_user:
-            flash('Пользователь с таким email уже существует.', 'error')
+            flash('A user with this email already exists.', 'error')
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
@@ -194,11 +194,11 @@ def change_password():
     form = ChangePasswordForm()
     if form.validate_on_submit():
         if not check_password_hash(current_user.password, form.old_password.data):
-            flash('Неверный текущий пароль.', 'error')
+            flash('Incorrect current password.', 'error')
             return redirect(url_for('change_password'))
         current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
         db.session.commit()
-        flash('Ваш пароль успешно изменен!', 'success')
+        flash('Your password has been changed successfully!', 'success')
         return redirect(url_for('index'))
     return render_template('custom_change_password.html', form=form)
 
@@ -212,7 +212,7 @@ def logout():
 # --- Функции-помощники ---
 def upload_file_to_s3(file_to_upload):
     if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
-        raise Exception("Ошибка конфигурации сервера для загрузки изображений.")
+        raise Exception("Server configuration error for image uploads.")
     s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
@@ -426,9 +426,9 @@ def process_image():
     mode = request.form.get('mode')
     token_cost = 5 if mode == 'upscale' else 1
     if current_user.token_balance < token_cost:
-        return jsonify({'error': 'Недостаточно токенов'}), 403
+        return jsonify({'error': 'Insufficient tokens'}), 403
     if 'image' not in request.files:
-        return jsonify({'error': 'Отсутствует изображение'}), 400
+        return jsonify({'error': 'Image is missing'}), 400
 
     try:
         s3_url = upload_file_to_s3(request.files['image'])
@@ -441,7 +441,7 @@ def process_image():
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
             
             if not openai_client:
-                raise Exception("OpenAI API не настроен.")
+                raise Exception("System error, your tokens have been refunded")
             
             final_prompt = ""
             if edit_mode == 'autofix':
@@ -501,7 +501,7 @@ def process_image():
             raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
 
         if not REPLICATE_API_TOKEN:
-            raise Exception("REPLICATE_API_TOKEN не настроен.")
+            raise Exception("System error, your tokens have been refunded")
 
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
@@ -531,16 +531,10 @@ def process_image():
             except Exception:
                 pass
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (HTTPError): {e}\nReplicate Response: {error_details}")
-        error_to_show = error_details
-        try:
-            error_json = e.response.json()
-            error_to_show = error_json.get('detail', error_details)
-        except (ValueError, AttributeError):
-            pass
-        return jsonify({'error': f'Ошибка API Replicate: {error_to_show}'}), 500
+        return jsonify({'error': 'System error, your tokens have been refunded'}), 500
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
-        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
+        return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
 
 # --- Главный маршрут ---
 @app.route('/')
