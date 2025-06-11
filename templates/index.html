@@ -1,4 +1,5 @@
 {% extends "base_app.html" %}
+{% block body_class %}no-scroll{% endblock %}
 
 {% block title %}Changer AI - Generate{% endblock %}
 
@@ -51,7 +52,7 @@
             </div>
         </div>
         <div id="upscale-view" style="display: none;">
-            <label for="image-file-upscale" class="image-drop-area">
+            <label for="image-file-upscale" id="image-drop-area-upscale" class="image-drop-area">
                 <div class="drop-placeholder">
                     <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
                     <span class="drop-placeholder-text">Drop Image to Upscale</span>
@@ -60,14 +61,16 @@
             </label>
             <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
             <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-                <div class="control-group"><label>Resolution</label><div class="resolution-selector"><button class="resolution-btn active" data-value="x2">x2</button><button class="resolution-btn" data-value="x4">x4</button><button class="resolution-btn" data-value="x8">x8</button></div></div>
+                <div class="control-group"><label>Resolution</label><div class="resolution-selector"><button class="resolution-btn active" data-value="2">x2</button><button class="resolution-btn" data-value="4">x4</button><button class="resolution-btn" data-value="8">x8</button></div></div>
                 <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="creativity-slider">Creativity</label><span class="slider-value" id="creativity-value">30</span></div><input type="range" id="creativity-slider" min="0" max="100" value="30" class="custom-slider"></div></div>
                 <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="resemblance-slider">Resemblance</label><span class="slider-value" id="resemblance-value">20</span></div><input type="range" id="resemblance-slider" min="0" max="100" value="20" class="custom-slider"></div></div>
                 <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="hdr-slider">HDR</label><span class="slider-value" id="hdr-value">10</span></div><input type="range" id="hdr-slider" min="0" max="100" value="10" class="custom-slider"></div></div>
             </div>
             <div class="submit-action-group">
                 <button type="submit" id="submit-button-upscale" class="submit-button-element">Upscale</button>
-                <div class="token-cost"><span>Estimated cost: 5</span><span class="token-coin"></span></div>
+                <div id="final-size-display" class="mode-description" style="min-height: 1.5em; font-weight: 500;"></div>
+                <div id="token-cost-upscale" class="token-cost"><span>Estimated cost: 5</span><span class="token-coin"></span></div>
+                <div id="resolution-limit-warning" class="mode-description" style="color: #E53E3E; font-weight: 500; display: none;">The resulting image size exceeds the 9k resolution limit, please change your settings.</div>
             </div>
         </div>
     </div>
@@ -82,7 +85,6 @@
 
 {% block page_scripts %}
 <script>
-    // This script contains all the logic for the main application page
     document.addEventListener('DOMContentLoaded', () => {
         const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
         const mainContentWrapper = document.getElementById('main-content-wrapper');
@@ -102,6 +104,14 @@
         const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
         const upscaleImageInput = document.getElementById('image-file-upscale');
         
+        const resolutionButtons = document.querySelectorAll('.resolution-btn');
+        const finalSizeDisplay = document.getElementById('final-size-display');
+        const upscaleSubmitButton = document.getElementById('submit-button-upscale');
+        const upscaleTokenCost = document.getElementById('token-cost-upscale');
+        const resolutionLimitWarning = document.getElementById('resolution-limit-warning');
+        let upscaleOriginalWidth = 0;
+        let upscaleOriginalHeight = 0;
+
         const historyPlaceholder = document.getElementById('history-placeholder');
         let currentLoaderId = null;
 
@@ -125,6 +135,10 @@
             upscaleImageInput.value = '';
             promptInput.value = '';
             allTemplateButtons.forEach(btn => btn.classList.remove('active'));
+
+            upscaleOriginalWidth = 0;
+            upscaleOriginalHeight = 0;
+            updateUpscaleView();
         }
 
         function startLoading() {
@@ -169,12 +183,50 @@
             const dropArea = previewElement.parentElement;
             const placeholder = dropArea.querySelector('.drop-placeholder');
             const reader = new FileReader();
+
             reader.onload = (e) => {
                 previewElement.src = e.target.result;
                 previewElement.style.display = 'block';
                 if (placeholder) placeholder.style.display = 'none';
+                
+                if (previewElementId === 'image-preview-upscale') {
+                    const img = new Image();
+                    img.onload = () => {
+                        upscaleOriginalWidth = img.naturalWidth;
+                        upscaleOriginalHeight = img.naturalHeight;
+                        updateUpscaleView();
+                    };
+                    img.src = e.target.result;
+                }
             }
             reader.readAsDataURL(file);
+        }
+
+        function updateUpscaleView() {
+            if (!upscaleOriginalWidth || !upscaleOriginalHeight) {
+                finalSizeDisplay.textContent = '';
+                resolutionLimitWarning.style.display = 'none';
+                upscaleSubmitButton.disabled = false;
+                upscaleTokenCost.style.display = 'flex';
+                return;
+            }
+
+            const multiplier = parseInt(document.querySelector('.resolution-btn.active').dataset.value, 10);
+            const finalWidth = upscaleOriginalWidth * multiplier;
+            const finalHeight = upscaleOriginalHeight * multiplier;
+            
+            finalSizeDisplay.textContent = `Final size: ${finalWidth} x ${finalHeight}`;
+
+            const limit = 9000;
+            if (finalWidth > limit || finalHeight > limit) {
+                resolutionLimitWarning.style.display = 'block';
+                upscaleTokenCost.style.display = 'none';
+                upscaleSubmitButton.disabled = true;
+            } else {
+                resolutionLimitWarning.style.display = 'none';
+                upscaleTokenCost.style.display = 'flex';
+                upscaleSubmitButton.disabled = false;
+            }
         }
 
         function setupDragAndDrop(dropArea, fileInputElement) {
@@ -273,7 +325,6 @@
                 formData.append('scale_factor', document.querySelector('.resolution-btn.active').dataset.value);
                 formData.append('creativity', document.getElementById('creativity-slider').value);
                 formData.append('resemblance', document.getElementById('resemblance-slider').value);
-                // FIX: Correctly named parameter 'dynamic' instead of 'hdr'
                 formData.append('dynamic', document.getElementById('hdr-slider').value);
             }
 
@@ -315,7 +366,7 @@
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 editModeDescription.textContent = e.currentTarget.dataset.description;
-                const showControls = (editMode === 'edit'); // Only show controls for standard edit
+                const showControls = (editMode === 'edit');
                 editControlsContainer.style.display = showControls ? 'flex' : 'none';
             });
         });
@@ -333,10 +384,11 @@
             allTemplateButtons.forEach(btn => btn.classList.remove('active'));
         });
 
-        document.querySelectorAll('.resolution-btn').forEach(button => {
+        resolutionButtons.forEach(button => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('.resolution-btn').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
+                updateUpscaleView();
             });
         });
 
@@ -363,5 +415,5 @@
         appModeButtons[0].click();
         document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
     });
-    </script>
+</script>
 {% endblock %}
