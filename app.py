@@ -97,12 +97,22 @@ class LoginForm(FlaskForm):
 
 class RegisterForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    username = StringField('Имя пользователя (опционально)')
+    # FIX: Сделали поле username обязательным и добавили валидаторы
+    username = StringField('Имя пользователя', validators=[
+        DataRequired(message="Пожалуйста, введите имя пользователя."), 
+        Length(min=3, max=30, message="Имя пользователя должно содержать от 3 до 30 символов.")
+    ])
     password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
     accept_tos = BooleanField('Я принимаю условия использования сервиса', validators=[DataRequired(message="Вы должны принять условия использования.")])
     marketing_consent = BooleanField('Я согласен на получение маркетинговых сообщений', default=True)
     submit = SubmitField('Регистрация')
+
+    # FIX: Добавили метод для проверки уникальности имени пользователя
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('Это имя пользователя уже занято. Пожалуйста, выберите другое.')
 
 class ChangePasswordForm(FlaskForm):
     old_password = PasswordField('Текущий пароль', validators=[DataRequired()])
