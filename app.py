@@ -234,21 +234,22 @@ def google_login():
 @app.route('/google/callback')
 def google_callback():
     token = oauth.google.authorize_access_token()
-    # Получаем информацию о пользователе от Google
     user_info = oauth.google.userinfo()
     
-    # Ищем пользователя в нашей базе данных по email
     user = User.query.filter_by(email=user_info['email']).first()
 
-    if not user:
-        # Если пользователя нет, создаем нового
-        hashed_password = generate_password_hash(os.urandom(24).hex(), method='pbkdf2:sha256')
-        
-        try:
-            stripe_customer = stripe.Customer.create(email=user_info['email'])
-        except Exception as e:
-            flash(f'Error creating customer in Stripe: {e}', 'error')
-            return redirect(url_for('login'))
+    # Если пользователь уже существует, просто входим в систему
+    if user:
+        login_user(user)
+        return redirect(url_for('index'))
+
+    # ===> НОВАЯ ЛОГИКА ДЛЯ НОВЫХ ПОЛЬЗОВАТЕЛЕЙ <===
+    # Сохраняем данные от Google в сессию и перенаправляем на страницу завершения
+    session['google_oauth_info'] = {
+        'email': user_info['email'],
+        'name': user_info.get('name', user_info['email'])
+    }
+    return redirect(url_for('google_complete_registration'))
             
         user = User(
             email=user_info['email'],
@@ -275,6 +276,61 @@ def privacy():
 @app.route('/marketing-policy')
 def marketing_policy():
     return render_template('marketing.html')
+
+# В app.py
+
+@app.route('/google/complete-registration', methods=['GET'])
+def google_complete_registration():
+    if 'google_oauth_info' not in session:
+        return redirect(url_for('login')) # Если данных в сессии нет, отправляем на логин
+    
+    google_info = session['google_oauth_info']
+    return render_template('google_complete.html', name=google_info['name'])
+
+
+@app.route('/google/create-account', methods=['POST'])
+def google_create_account():
+    if 'google_oauth_info' not in session:
+        return redirect(url_for('login'))
+    
+    # Проверяем, что пользователь принял Условия
+    if 'accept_tos' not in request.form:
+        flash('You must accept the Terms of Service and Privacy Policy.', 'error')
+        return redirect(url_for('google_complete_registration'))
+
+    google_info = session['google_oauth_info']
+    email = google_info['email']
+
+    # Проверяем еще раз на случай, если пользователь создал аккаунт в другой вкладке
+    if User.query.filter_by(email=email).first():
+        return redirect(url_for('login'))
+
+    # Получаем согласие на маркетинг
+    marketing_consent = 'marketing_consent' in request.form
+
+    hashed_password = generate_password_hash(os.urandom(24).hex(), method='pbkdf2:sha256')
+    
+    try:
+        stripe_customer = stripe.Customer.create(email=email)
+    except Exception as e:
+        flash(f'Error creating customer in Stripe: {e}', 'error')
+        return redirect(url_for('google_complete_registration'))
+
+    new_user = User(
+        email=email,
+        username=google_info['name'],
+        password=hashed_password,
+        stripe_customer_id=stripe_customer.id,
+        marketing_consent=marketing_consent
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    
+    # Очищаем сессию и входим в систему
+    session.pop('google_oauth_info', None)
+    login_user(new_user)
+    
+    return redirect(url_for('index'))
 
 
 # --- Функции-помощники ---
