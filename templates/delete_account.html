@@ -1,0 +1,34 @@
+{% extends "base_security.html" %}
+
+{% block title %}Delete Account{% endblock %}
+
+{% block content %}
+<h2>Deleting account</h2>
+
+<p class="form-text-info">
+    You are trying to delete your account. All your generated images will be deleted. 
+    <br><strong>This action can't be undone.</strong>
+</p>
+
+<p class="form-text-info" style="margin-bottom: 25px;">
+    Enter your password to delete your account from Pimfy.io
+</p>
+
+<form method="POST" action="{{ url_for('delete_account') }}" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="form-group">
+        {{ form.password.label(style="display: none;") }}
+        {{ form.password(class="form-control", placeholder="Enter your password") }}
+        {% for error in form.password.errors %}
+            <div class="help-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    {{ form.submit(class="btn btn-danger", value="Delete My Account Permanently") }}
+</form>
+
+<div class="links">
+    <p><a href="{{ url_for('billing') }}">Cancel and return to my account</a></p>
+</div>
+{% endblock %}
