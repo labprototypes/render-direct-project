@@ -436,52 +436,58 @@ def process_image():
         model_version_id = ""
 
         if mode == 'edit':
-    edit_mode = request.form.get('edit_mode')
-    prompt = request.form.get('prompt', '')
-    model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            edit_mode = request.form.get('edit_mode')
+            prompt = request.form.get('prompt', '')
+            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            
+            if not openai_client:
+                raise Exception("OpenAI API не настроен.")
+            
+            final_prompt = ""
+            if edit_mode == 'autofix':
+                print("!!! Запрос к OpenAI Vision API для Autofix...")
+                autofix_system_prompt = (
+                    "You are an advanced AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
+                    "\n\nFollow these strict steps:"
+                    "\n1. **DETAILED ANALYSIS:** Scrutinize the image for any unusual or unexpected elements. These could include (but are not limited to):"
+                    "\n   - Distorted or malformed body parts (faces, hands, limbs)."
+                    "\n   - Glitches, unnatural lines, or color splotches."
+                    "\n   - Objects that appear to be floating, misaligned, or out of context."
+                    "\n   - Textures that look artificial or inconsistent with the rest of the image."
+                    "\n   - Any element that looks like a mistake or an unwanted byproduct of the image generation process (e.g., extra limbs, merged objects, etc.)."
+                    "\n2. **PRIORITIZE ARTIFACT REMOVAL:** If you identify one or more clear artifacts, your priority is to generate a precise ENGLISH prompt for the 'Kontext' image editing model to REMOVE or CORRECT the MOST OBVIOUS artifact."
+                    "\n   - The prompt MUST clearly specify the artifact and the desired outcome (e.g., 'remove the strange silver object from the person's left shoulder', 'correct the distorted fingers on the right hand')."
+                    "\n   - Ensure the prompt includes instructions to PRESERVE the rest of the image accurately and maintain the original style and composition."
+                    "\n3. **NO ARTIFACTS FOUND:** If, after careful examination, you find NO clear visual artifacts, ONLY THEN should you generate a prompt for subtle, general quality enhancement. This prompt should be something like: 'Slightly enhance the image quality, improving sharpness and detail while fully preserving the original content and style.' Be very cautious not to make drastic changes."
+                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text or explanations."
+                )
+                messages = [
+                    {"role": "system", "content": autofix_system_prompt},
+                    {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
+                ]
+            else: # Standard 'edit' mode
+                print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
+                edit_system_prompt = (
+                    "You are an AI image analysis and editing expert. Your task is to combine the visual context of an image with a user's text request to generate a precise, technical, English-language prompt for the 'Kontext' image editing model."
+                    "\n\nFollow these rules:"
+                    "\n1. **Analyze Both Inputs:** First, analyze the image to understand its contents (e.g., 'a photo of glasses levitating in a forest'). Then, apply the user's text request to this specific visual context."
+                    "\n2. **Contextual Application:** If the image shows levitating glasses and the user says 'remove the glasses', the prompt must be about removing levitating glasses from a forest, NOT from a person's face. Be literal to the image content."
+                    "\n3. **Preserve Everything Else:** The generated prompt must implicitly or explicitly preserve all other elements of the image that were not mentioned in the user's request. Maintain the original style, composition, and lighting unless asked otherwise."
+                    "\n4. **Language:** The user's request can be in any language. Your output prompt MUST be in English."
+                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text, greetings, or explanations."
+                )
+                messages = [
+                    {"role": "system", "content": edit_system_prompt},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": s3_url}}
+                    ]}
+                ]
 
-    if not openai_client:
-        raise Exception("OpenAI API не настроен.")
-
-    final_prompt = ""
-    if edit_mode == 'autofix':
-        # Логика для Autofix (остается без изменений, так как работает хорошо)
-        print("!!! Запрос к OpenAI Vision API для Autofix...")
-        autofix_system_prompt = (
-            "You are an AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
-            "\n\nFollow these strict steps:"
-            "\n1. **DETAILED ANALYSIS:** Scrutinize the image for any unusual or unexpected elements..." # (Ваш работающий промпт для автофикса)
-            # ... (здесь ваш полный, работающий промпт для автофикса, который мы не меняем)
-            "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text or explanations."
-        )
-        messages = [
-            {"role": "system", "content": autofix_system_prompt},
-            {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
-        ]
-
-    else: # FIX: Новая логика для стандартного режима 'edit'
-        print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
-        edit_system_prompt = (
-            "You are an AI image analysis and editing expert. Your task is to combine the visual context of an image with a user's text request to generate a precise, technical, English-language prompt for the 'Kontext' image editing model."
-            "\n\nFollow these rules:"
-            "\n1. **Analyze Both Inputs:** First, analyze the image to understand its contents (e.g., 'a photo of glasses levitating in a forest'). Then, apply the user's text request to this specific visual context."
-            "\n2. **Contextual Application:** If the image shows levitating glasses and the user says 'remove the glasses', the prompt must be about removing levitating glasses from a forest, NOT from a person's face. Be literal to the image content."
-            "\n3. **Preserve Everything Else:** The generated prompt must implicitly or explicitly preserve all other elements of the image that were not mentioned in the user's request. Maintain the original style, composition, and lighting unless asked otherwise."
-            "\n4. **Language:** The user's request can be in any language. Your output prompt MUST be in English."
-            "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text, greetings, or explanations."
-        )
-        messages = [
-            {"role": "system", "content": edit_system_prompt},
-            {"role": "user", "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": s3_url}}
-            ]}
-        ]
-
-    response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
-    final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
-    print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
-    replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
+            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+            print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
+            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
@@ -491,7 +497,6 @@ def process_image():
             dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
             replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
         
-        # FIX: Added a check to prevent sending invalid data to Replicate
         if not model_version_id or not replicate_input:
             raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
 
