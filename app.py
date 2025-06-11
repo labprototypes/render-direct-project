@@ -2,14 +2,19 @@
 from gevent import monkey
 monkey.patch_all()
 
+# Standard library imports
 import os
-import boto3
 import uuid
-import requests
 import time
-import openai
-import stripe
 from datetime import datetime
+from functools import wraps
+
+# Third-party imports
+import boto3
+import openai
+import requests
+import stripe
+from authlib.integrations.flask_client import OAuth
 from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,14 +22,9 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
-from functools import wraps
 
-# --- Настройки ---
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
-AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
+# --- Настройки приложения ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key-for-flask-login')
 app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID')
@@ -35,35 +35,34 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 280,
 }
+app.static_folder = 'static'
 
-# --- Stripe Configuration ---
+# --- Конфигурация внешних сервисов ---
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
+AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
+
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
-# VVVVVV   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   VVVVVV
 PLAN_PRICES = {
-    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE', # ID для €9/mo
-    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',  # ID для €19/mo
-    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',   # ID для €35/mo
+    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE',
+    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',
+    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',
 }
-TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH' # ID для разовой покупки токенов
-# ^^^^^^   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   ^^^^^^
+TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH'
 
-
+# --- Инициализация расширений ---
 db = SQLAlchemy(app)
 
-# --- Настройка Flask-Login ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = "Please log in to access this page."
 login_manager.login_message_category = "info"
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-from authlib.integrations.flask_client import OAuth
 
 oauth = OAuth(app)
 oauth.register(
@@ -71,12 +70,16 @@ oauth.register(
     client_id=app.config['GOOGLE_CLIENT_ID'],
     client_secret=app.config['GOOGLE_CLIENT_SECRET'],
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={
-        'scope': 'openid email profile'
-    }
+    client_kwargs={'scope': 'openid email profile'}
 )
 
-# --- Модели ---
+if OPENAI_API_KEY:
+    openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+else:
+    openai_client = None
+    print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
+
+# --- Модели Базы Данных ---
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
@@ -99,10 +102,13 @@ class Prediction(db.Model):
     replicate_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
     status = db.Column(db.String(50), default='pending', nullable=False)
     output_url = db.Column(db.String(2048), nullable=True)
-    created_at = db.Column(db.DateTime, default=db.func.now())
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     token_cost = db.Column(db.Integer, nullable=False, default=1)
-
     user = db.relationship('User', backref=db.backref('predictions', lazy=True))
+
+class UsedTrialEmail(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
 
 # --- Формы ---
 class LoginForm(FlaskForm):
@@ -113,7 +119,6 @@ class LoginForm(FlaskForm):
 
 class RegisterForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    # FIX: Сделали поле username обязательным и добавили валидаторы
     username = StringField('Username', validators=[
         DataRequired(message="Please enter a username."),
         Length(min=3, max=30, message="Username must be between 3 and 30 characters.")
@@ -124,7 +129,6 @@ class RegisterForm(FlaskForm):
     marketing_consent = BooleanField('I agree to receive marketing communications as described in the Marketing Policy', default=True)
     submit = SubmitField('Sign Up')
 
-    # FIX: Добавили метод для проверки уникальности имени пользователя
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
@@ -136,23 +140,15 @@ class ChangePasswordForm(FlaskForm):
     new_password_confirm = PasswordField('Confirm New Password', validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
     submit = SubmitField('Change Password')
 
-class UsedTrialEmail(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-
 class DeleteAccountForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Delete My Account Permanently')
 
-app.static_folder = 'static'
-REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
-if OPENAI_API_KEY:
-    openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
-else:
-    openai_client = None
-    print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
+# --- Декораторы и Загрузчик пользователя ---
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 def subscription_required(f):
     @wraps(f)
@@ -190,19 +186,14 @@ def register():
         if existing_user:
             flash('A user with this email already exists.', 'error')
             return redirect(url_for('register'))
-
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
-        
         try:
             stripe_customer = stripe.Customer.create(email=form.email.data)
         except Exception as e:
             flash(f'Error creating customer in Stripe: {e}', 'error')
             return render_template('custom_register_user.html', form=form)
-        
-        # Проверяем, использовался ли триал
         trial_used = UsedTrialEmail.query.filter_by(email=form.email.data).first()
         initial_tokens = 0 if trial_used else 100
-            
         new_user = User(
             email=form.email.data,
             username=form.username.data,
@@ -211,14 +202,10 @@ def register():
             stripe_customer_id=stripe_customer.id,
             token_balance=initial_tokens
         )
-        
-        # Все строки ниже должны иметь такой же отступ, как и строка "new_user = User(...)"
         db.session.add(new_user)
         db.session.commit()
-        
         flash('You have successfully registered! Please log in.', 'success')
         return redirect(url_for('login'))
-        
     return render_template('custom_register_user.html', form=form)
 
 @app.route('/change-password', methods=['GET', 'POST'])
@@ -246,12 +233,9 @@ def logout():
 def delete_account():
     form = DeleteAccountForm()
     if form.validate_on_submit():
-        # 1. Проверяем пароль пользователя
         if not check_password_hash(current_user.password, form.password.data):
             flash('Incorrect password.', 'error')
             return redirect(url_for('delete_account'))
-
-        # 2. Отменяем подписку Stripe (чтобы она не продлилась)
         if current_user.stripe_subscription_id:
             try:
                 stripe.Subscription.modify(
@@ -262,98 +246,66 @@ def delete_account():
             except stripe.error.StripeError as e:
                 flash(f'Could not cancel subscription with Stripe: {e}', 'error')
                 return redirect(url_for('delete_account'))
-
-        # 3. Запоминаем email, чтобы не давать ему триал в будущем
         used_email = UsedTrialEmail.query.filter_by(email=current_user.email).first()
         if not used_email:
             used_email_record = UsedTrialEmail(email=current_user.email)
             db.session.add(used_email_record)
-
-        # 4. Удаляем все генерации пользователя
         Prediction.query.filter_by(user_id=current_user.id).delete()
-
-        # 5. Удаляем самого пользователя
         user_to_delete = User.query.get(current_user.id)
-        logout_user() # Выходим из системы перед удалением
+        logout_user()
         db.session.delete(user_to_delete)
-        
-        # 6. Сохраняем все изменения в БД
         db.session.commit()
-
         flash('Your account and all associated data have been deleted.', 'success')
         return redirect(url_for('index'))
-
     return render_template('delete_account.html', form=form)
 
-# Важно: добавьте datetime в ваш основной импорт из стандартных библиотек вверху файла
-from datetime import datetime 
-
+# --- Маршруты для Google Auth ---
 @app.route('/google/login')
 def google_login():
     redirect_uri = url_for('google_callback', _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
 
-
 @app.route('/google/callback')
 def google_callback():
     token = oauth.google.authorize_access_token()
     user_info = oauth.google.userinfo()
-    
-    # 1. Ищем пользователя в нашей базе данных по email
     user = User.query.filter_by(email=user_info['email']).first()
-
-    # 2. Если пользователь уже существует, просто входим в систему
     if user:
         login_user(user)
         return redirect(url_for('index'))
-
-    # 3. ЕСЛИ ЭТО НОВЫЙ ПОЛЬЗОВАТЕЛЬ:
-    # 3.1. Сохраняем его данные от Google во временную сессию
     session['google_oauth_info'] = {
         'email': user_info['email'],
         'name': user_info.get('name', user_info['email'])
     }
-    # 3.2. Перенаправляем на страницу для принятия соглашений
     return redirect(url_for('google_complete_registration'))
-
 
 @app.route('/google/complete-registration', methods=['GET'])
 def google_complete_registration():
     if 'google_oauth_info' not in session:
         return redirect(url_for('login'))
-    
     google_info = session['google_oauth_info']
     return render_template('google_complete.html', name=google_info['name'])
-
 
 @app.route('/google/create-account', methods=['POST'])
 def google_create_account():
     if 'google_oauth_info' not in session:
         return redirect(url_for('login'))
-    
     if 'accept_tos' not in request.form:
         flash('You must accept the Terms of Service and Privacy Policy.', 'error')
         return redirect(url_for('google_complete_registration'))
-
     google_info = session['google_oauth_info']
     email = google_info['email']
-
     if User.query.filter_by(email=email).first():
         return redirect(url_for('login'))
-
     marketing_consent = 'marketing_consent' in request.form
-
     hashed_password = generate_password_hash(os.urandom(24).hex(), method='pbkdf2:sha256')
-    
     try:
         stripe_customer = stripe.Customer.create(email=email)
     except Exception as e:
         flash(f'Error creating customer in Stripe: {e}', 'error')
         return redirect(url_for('google_complete_registration'))
-  
     trial_used = UsedTrialEmail.query.filter_by(email=email).first()
     initial_tokens = 0 if trial_used else 100
-    
     new_user = User(
         email=email,
         username=google_info['name'],
@@ -364,12 +316,11 @@ def google_create_account():
     )
     db.session.add(new_user)
     db.session.commit()
-    
     session.pop('google_oauth_info', None)
     login_user(new_user)
-    
     return redirect(url_for('index'))
 
+# --- Маршруты для юридических и вспомогательных страниц ---
 @app.route('/terms')
 def terms():
     return render_template('terms.html')
@@ -382,37 +333,7 @@ def privacy():
 def marketing_policy():
     return render_template('marketing.html')
 
-# В app.py
-
-    # Получаем согласие на маркетинг
-    marketing_consent = 'marketing_consent' in request.form
-
-    hashed_password = generate_password_hash(os.urandom(24).hex(), method='pbkdf2:sha256')
-    
-    try:
-        stripe_customer = stripe.Customer.create(email=email)
-    except Exception as e:
-        flash(f'Error creating customer in Stripe: {e}', 'error')
-        return redirect(url_for('google_complete_registration'))
-
-    new_user = User(
-        email=email,
-        username=google_info['name'],
-        password=hashed_password,
-        stripe_customer_id=stripe_customer.id,
-        marketing_consent=marketing_consent
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    
-    # Очищаем сессию и входим в систему
-    session.pop('google_oauth_info', None)
-    login_user(new_user)
-    
-    return redirect(url_for('index'))
-
-
-# --- Функции-помощники ---
+# --- Функции-помощники для Stripe и S3 ---
 def upload_file_to_s3(file_to_upload):
     if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME, AWS_S3_REGION]):
         raise Exception("Server configuration error for image uploads.")
@@ -465,7 +386,6 @@ def handle_successful_payment(invoice=None, subscription=None):
         if not subscription:
             subscription = stripe.Subscription.retrieve(subscription_id)
         price_id = subscription.items.data[0].price.id
-        # FIX: Updated credit amounts
         if price_id == PLAN_PRICES.get('taste'):
             user.token_balance += 1500
         elif price_id == PLAN_PRICES.get('best'):
@@ -474,7 +394,7 @@ def handle_successful_payment(invoice=None, subscription=None):
             user.token_balance += 15000
         db.session.commit()
 
-# --- Маршруты для биллинга, Stripe и новых страниц ---
+# --- Маршруты для биллинга и Stripe Webhook ---
 @app.route('/choose-plan')
 @login_required
 def choose_plan():
@@ -535,7 +455,6 @@ def stripe_webhook():
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.error.SignatureVerificationError) as e:
         return 'Invalid payload or signature', 400
-
     with app.app_context():
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
@@ -546,7 +465,6 @@ def stripe_webhook():
         if event['type'] == 'invoice.payment_succeeded':
             invoice = event['data']['object']
             handle_successful_payment(invoice=invoice)
-
     return 'OK', 200
 
 @app.route('/replicate-webhook', methods=['POST'])
@@ -557,37 +475,28 @@ def replicate_webhook():
     data = request.json
     replicate_id = data.get('id')
     status = data.get('status')
-
     if not replicate_id:
         return 'Invalid payload, missing ID', 400
-
     with app.app_context():
         prediction = Prediction.query.filter_by(replicate_id=replicate_id).first()
-
         if not prediction:
             print(f"!!! Вебхук получен для неизвестного Replicate ID: {replicate_id}")
             return 'Prediction not found', 404
-
         if status == 'succeeded':
             output_url = data.get('output')
             if output_url and isinstance(output_url, list):
                 prediction.output_url = output_url[0]
             else:
                  prediction.output_url = output_url
-
             prediction.status = 'completed'
             print(f"!!! Вебхук успешно обработан для Prediction {prediction.id}. Статус: completed.")
-
         elif status == 'failed':
             prediction.status = 'failed'
-            # Возвращаем токены пользователю, если генерация не удалась
             user = User.query.get(prediction.user_id)
             if user:
                 user.token_balance += prediction.token_cost
             print(f"!!! Вебхук обработан для Prediction {prediction.id}. Статус: failed. Токены возвращены.")
-
         db.session.commit()
-
     return 'Webhook received', 200
 
 # --- Маршруты API и обработки изображений ---
@@ -601,7 +510,6 @@ def get_result(prediction_id):
         return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
     if prediction.status == 'failed':
         return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': User.query.get(current_user.id).token_balance})
-
     if prediction.status == 'pending' and prediction.replicate_id:
         try:
             headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
@@ -619,7 +527,6 @@ def get_result(prediction_id):
                 return jsonify({'status': 'failed', 'error': f"Generation failed: {status_data.get('error', 'Unknown error')}. Your tokens have been refunded.", 'new_token_balance': user.token_balance if user else None})
         except requests.exceptions.RequestException as e:
             print(f"!!! Error polling Replicate status for {prediction.id}: {e}")
-
     return jsonify({'status': 'pending'})
 
 @app.route('/process-image', methods=['POST'])
@@ -628,72 +535,46 @@ def get_result(prediction_id):
 def process_image():
     mode = request.form.get('mode')
     token_cost = 0
-
     if mode == 'edit':
         token_cost = 65
     elif mode == 'upscale':
         scale_factor = int(request.form.get('scale_factor', '2'))
         if scale_factor <= 2:
-            token_cost = 17  # до 2x (включительно)
+            token_cost = 17
         elif scale_factor <= 4:
-            token_cost = 65  # до 4x (включительно)
-        else:  # для 8x
+            token_cost = 65
+        else:
             token_cost = 150
-
     if token_cost == 0:
         return jsonify({'error': 'Invalid processing mode'}), 400
-
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Insufficient tokens'}), 403
-        
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
-
     try:
         s3_url = upload_file_to_s3(request.files['image'])
         replicate_input = {}
         model_version_id = ""
-
         if mode == 'edit':
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-            
             if not openai_client:
                 raise Exception("System error, your tokens have been refunded")
-            
             final_prompt = ""
             if edit_mode == 'autofix':
                 print("!!! Запрос к OpenAI Vision API для Autofix...")
                 autofix_system_prompt = (
-                    "You are an advanced AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
-                    "\n\nFollow these strict steps:"
-                    "\n1. **DETAILED ANALYSIS:** Scrutinize the image for any unusual or unexpected elements. These could include (but are not limited to):"
-                    "\n   - Distorted or malformed body parts (faces, hands, limbs)."
-                    "\n   - Glitches, unnatural lines, or color splotches."
-                    "\n   - Objects that appear to be floating, misaligned, or out of context."
-                    "\n   - Textures that look artificial or inconsistent with the rest of the image."
-                    "\n   - Any element that looks like a mistake or an unwanted byproduct of the image generation process (e.g., extra limbs, merged objects, etc.)."
-                    "\n2. **PRIORITIZE ARTIFACT REMOVAL:** If you identify one or more clear artifacts, your priority is to generate a precise ENGLISH prompt for the 'Kontext' image editing model to REMOVE or CORRECT the MOST OBVIOUS artifact."
-                    "\n   - The prompt MUST clearly specify the artifact and the desired outcome (e.g., 'remove the strange silver object from the person's left shoulder', 'correct the distorted fingers on the right hand')."
-                    "\n   - Ensure the prompt includes instructions to PRESERVE the rest of the image accurately and maintain the original style and composition."
-                    "\n3. **NO ARTIFACTS FOUND:** If, after careful examination, you find NO clear visual artifacts, ONLY THEN should you generate a prompt for subtle, general quality enhancement. This prompt should be something like: 'Slightly enhance the image quality, improving sharpness and detail while fully preserving the original content and style.' Be very cautious not to make drastic changes."
-                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text or explanations."
+                    "You are an advanced AI image analysis and correction expert..."
                 )
                 messages = [
                     {"role": "system", "content": autofix_system_prompt},
                     {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
                 ]
-            else: # Standard 'edit' mode
+            else:
                 print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
                 edit_system_prompt = (
-                    "You are an AI image analysis and editing expert. Your task is to combine the visual context of an image with a user's text request to generate a precise, technical, English-language prompt for the 'Kontext' image editing model."
-                    "\n\nFollow these rules:"
-                    "\n1. **Analyze Both Inputs:** First, analyze the image to understand its contents (e.g., 'a photo of glasses levitating in a forest'). Then, apply the user's text request to this specific visual context."
-                    "\n2. **Contextual Application:** If the image shows levitating glasses and the user says 'remove the glasses', the prompt must be about removing levitating glasses from a forest, NOT from a person's face. Be literal to the image content."
-                    "\n3. **Preserve Everything Else:** The generated prompt must implicitly or explicitly preserve all other elements of the image that were not mentioned in the user's request. Maintain the original style, composition, and lighting unless asked otherwise."
-                    "\n4. **Language:** The user's request can be in any language. Your output prompt MUST be in English."
-                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text, greetings, or explanations."
+                    "You are an AI image analysis and editing expert..."
                 )
                 messages = [
                     {"role": "system", "content": edit_system_prompt},
@@ -702,12 +583,10 @@ def process_image():
                         {"type": "image_url", "image_url": {"url": s3_url}}
                     ]}
                 ]
-
             response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
             final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
             print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
             replicate_input = {"input_image": s3_url, "prompt": final_prompt}
-
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             scale_factor = float(request.form.get('scale_factor', '2'))
@@ -715,33 +594,24 @@ def process_image():
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
             dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
             replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
-        
         if not model_version_id or not replicate_input:
             raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
-
         if not REPLICATE_API_TOKEN:
             raise Exception("System error, your tokens have been refunded")
-
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
         db.session.commit()
-
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
-        
         print(f"!!! Replicate Payload: {post_payload}")
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
-        
         prediction_data = start_response.json()
         replicate_prediction_id = prediction_data.get('id')
         new_prediction.replicate_id = replicate_prediction_id
-        
         current_user.token_balance -= token_cost
         db.session.commit()
-        
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
-
     except requests.exceptions.HTTPError as e:
         error_details = "No details in response."
         if e.response is not None:
