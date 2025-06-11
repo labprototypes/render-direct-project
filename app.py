@@ -66,7 +66,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(255), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
-    token_balance = db.Column(db.Integer, default=10, nullable=False)
+    token_balance = db.Column(db.Integer, default=100, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
@@ -436,9 +436,25 @@ def get_result(prediction_id):
 @subscription_required
 def process_image():
     mode = request.form.get('mode')
-    token_cost = 5 if mode == 'upscale' else 1
+    token_cost = 0
+
+    if mode == 'edit':
+        token_cost = 65
+    elif mode == 'upscale':
+        scale_factor = int(request.form.get('scale_factor', '2'))
+        if scale_factor <= 2:
+            token_cost = 17  # до 2x (включительно)
+        elif scale_factor <= 4:
+            token_cost = 65  # до 4x (включительно)
+        else:  # для 8x
+            token_cost = 150
+
+    if token_cost == 0:
+        return jsonify({'error': 'Invalid processing mode'}), 400
+
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Insufficient tokens'}), 403
+        
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
 
