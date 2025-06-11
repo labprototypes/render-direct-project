@@ -14,7 +14,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, ValidationError
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 from functools import wraps
 
@@ -39,11 +39,11 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 # VVVVVV   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   VVVVVV
 PLAN_PRICES = {
-    'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE', # ID для €9/mo
-    'best':  'price_1RYA2eEAARFPkzEzvWRFgeSm',  # ID для €19/mo
-    'pro':   'price_1RYA3HEAARFPkzEzLQEmRz8Q',   # ID для €35/mo
+    'taste': 'price_xxxxxxxxxxxxxx', # ID для €9/mo
+    'best':  'price_xxxxxxxxxxxxxx',  # ID для €19/mo
+    'pro':   'price_xxxxxxxxxxxxxx',   # ID для €35/mo
 }
-TOKEN_PRICE_ID = 'price_1RYA4BEAARFPkzEzw98ohUMH' # ID для разовой покупки токенов
+TOKEN_PRICE_ID = 'price_xxxxxxxxxxxxxx' # ID для разовой покупки токенов
 # ^^^^^^   ВАЖНО: УБЕДИТЕСЬ, ЧТО ЭТИ ID СООТВЕТСТВУЮТ ЦЕНАМ В STRIPE   ^^^^^^
 
 
@@ -97,7 +97,6 @@ class LoginForm(FlaskForm):
 
 class RegisterForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    # FIX: Сделали поле username обязательным и добавили валидаторы
     username = StringField('Имя пользователя', validators=[
         DataRequired(message="Пожалуйста, введите имя пользователя."), 
         Length(min=3, max=30, message="Имя пользователя должно содержать от 3 до 30 символов.")
@@ -108,7 +107,6 @@ class RegisterForm(FlaskForm):
     marketing_consent = BooleanField('Я согласен на получение маркетинговых сообщений', default=True)
     submit = SubmitField('Регистрация')
 
-    # FIX: Добавили метод для проверки уникальности имени пользователя
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
@@ -222,49 +220,6 @@ def upload_file_to_s3(file_to_upload):
     print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
     return hosted_image_url
 
-def improve_prompt_with_openai(user_prompt):
-    if not openai_client: return user_prompt
-    if not user_prompt or user_prompt.isspace(): return "A vibrant, hyperrealistic, high-detail image"
-
-    # Новый, продвинутый системный промпт, основанный на инструкции Replicate Kontext
-    system_prompt = (
-        "You are an expert prompt engineer for the 'Kontext' AI image editing model. "
-        "Your role is to translate a user's request, which can be in ANY language, into a concise and effective technical prompt in ENGLISH. "
-        "Follow these rules strictly:"
-        "\n\n"
-        "1.  **Core Principle: Preserve Everything Else.** Your main goal is to identify the user's specific change and aggressively preserve the rest of the image. "
-        "If the user says 'remove the watch on his wrist', the prompt must be: 'a man's wrist, preserving the original skin tone, arm position, and background, but with the watch removed'. "
-        "If the user says 'change background to a forest', the prompt must be: 'change the background to a dense, photorealistic forest, while keeping the person in the foreground in the exact same position and style'."
-        "\n\n"
-        "2.  **Be Specific, Not General.** Translate vague requests into concrete details. 'Make it look better' is a bad prompt. 'Enhance the image to be sharper, with more vibrant colors and higher contrast' is a good prompt."
-        "\n\n"
-        "3.  **Identify Subjects Directly.** Refer to objects by their description. Prompt should say 'the woman with short black hair' instead of 'her'."
-        "\n\n"
-        "4.  **Handle Text Editing.** If the request is to change text, use quotation marks. Example: 'change the text on the sign from \"OPEN\" to \"CLOSED\"'."
-        "\n\n"
-        "5.  **Handle Style Transfers.** If the user asks for a style change (e.g., 'сделай в стиле аниме'), apply it to the whole image but preserve the content. Example: 'in the style of a 90s anime screenshot, preserving the original composition and characters'."
-        "\n\n"
-        "6.  **Output Format.** Your output MUST be ONLY the final, rewritten English prompt. Do not add any conversational text, greetings, or explanations."
-    )
-
-    try:
-        completion = openai_client.chat.completions.create(
-            model="gpt-4o", # Рекомендую использовать gpt-4o для более точного следования инструкциям
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.4,
-            max_tokens=150
-        )
-        improved_prompt = completion.choices[0].message.content.strip()
-        print(f"!!! Оригинальный промпт: {user_prompt}")
-        print(f"!!! Улучшенный промпт (Kontext-ready): {improved_prompt}")
-        return improved_prompt
-    except Exception as e:
-        print(f"!!! Ошибка при обращении к OpenAI для улучшения промпта: {e}")
-        return user_prompt
-
 def handle_checkout_session(session):
     customer_id = session.get('customer')
     with app.app_context():
@@ -305,7 +260,6 @@ def handle_successful_payment(invoice=None, subscription=None):
         if not subscription:
             subscription = stripe.Subscription.retrieve(subscription_id)
         price_id = subscription.items.data[0].price.id
-        # FIX: Updated credit amounts
         if price_id == PLAN_PRICES.get('taste'):
             user.token_balance += 1500
         elif price_id == PLAN_PRICES.get('best'):
@@ -325,7 +279,7 @@ def choose_plan():
 @app.route('/billing')
 @login_required
 def billing():
-    return render_template('billing.html', PLAN_PRICES=PLAN_PRICES, TOKEN_PRICE_ID=TOKEN_PRICE_ID)
+    return render_template('billing.html', TOKEN_PRICE_ID=TOKEN_PRICE_ID)
     
 @app.route('/archive')
 @login_required
@@ -391,9 +345,6 @@ def stripe_webhook():
 
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
-    """
-    Принимает вебхук от Replicate по завершении генерации.
-    """
     data = request.json
     replicate_id = data.get('id')
     status = data.get('status')
@@ -414,13 +365,11 @@ def replicate_webhook():
                 prediction.output_url = output_url[0]
             else:
                  prediction.output_url = output_url
-
             prediction.status = 'completed'
             print(f"!!! Вебхук успешно обработан для Prediction {prediction.id}. Статус: completed.")
 
         elif status == 'failed':
             prediction.status = 'failed'
-            # Возвращаем токены пользователю, если генерация не удалась
             user = User.query.get(prediction.user_id)
             if user:
                 user.token_balance += prediction.token_cost
@@ -481,15 +430,16 @@ def process_image():
         if mode == 'edit':
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
-            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4" # FIX: Set model_id for both edit modes here
+            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
             
+            if not openai_client:
+                raise Exception("OpenAI API не настроен.")
+            
+            final_prompt = ""
             if edit_mode == 'autofix':
-                if not openai_client:
-                    raise Exception("OpenAI API не настроен для Autofix.")
-                
                 print("!!! Запрос к OpenAI Vision API для Autofix...")
-                autofix_system_prompt = (
-                    "You are an advanced AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
+                system_prompt = (
+                    "You are an AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
                     "\n\nFollow these strict steps:"
                     "\n1. **DETAILED ANALYSIS:** Scrutinize the image for any unusual or unexpected elements. These could include (but are not limited to):"
                     "\n   - Distorted or malformed body parts (faces, hands, limbs)."
@@ -503,20 +453,35 @@ def process_image():
                     "\n3. **NO ARTIFACTS FOUND:** If, after careful examination, you find NO clear visual artifacts, ONLY THEN should you generate a prompt for subtle, general quality enhancement. This prompt should be something like: 'Slightly enhance the image quality, improving sharpness and detail while fully preserving the original content and style.' Be very cautious not to make drastic changes."
                     "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text or explanations."
                 )
-                response = openai_client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": autofix_system_prompt},
-                        {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
-                    ],
-                    max_tokens=150
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
+                ]
+                print(f"!!! Autofix промпт для OpenAI...")
+
+            else: # Standard 'edit' mode
+                print("!!! Запрос к OpenAI Vision API для Edit...")
+                system_prompt = (
+                    "You are an AI image analysis and editing expert. Your task is to combine the visual context of an image with a user's request to generate a precise, technical, English-language prompt for the 'Kontext' image editing model."
+                    "\n\nFollow these rules:"
+                    "\n1. **Analyze Both Inputs:** First, analyze the image to understand its contents (e.g., 'a photo of glasses levitating in a forest'). Then, apply the user's text request to this specific visual context."
+                    "\n2. **Contextual Application:** If the image shows levitating glasses and the user says 'remove the glasses', the prompt must be about removing levitating glasses from a forest, NOT from a person's face. Be literal to the image content."
+                    "\n3. **Preserve Everything Else:** The generated prompt must implicitly or explicitly preserve all other elements of the image that were not mentioned in the user's request. Maintain the original style, composition, and lighting unless asked otherwise."
+                    "\n4. **Language:** The user's request can be in any language. Your output prompt MUST be in English."
+                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text, greetings, or explanations."
                 )
-                final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
-                print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
-                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
-            else: # Standard edit mode
-                final_prompt = improve_prompt_with_openai(prompt).replace('\n', ' ').replace('\r', ' ').strip()
-                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": s3_url}}
+                    ]}
+                ]
+                print(f"!!! Edit промпт для OpenAI: {prompt}")
+
+            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
+            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
@@ -526,7 +491,6 @@ def process_image():
             dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
             replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
         
-        # FIX: Added a check to prevent sending invalid data to Replicate
         if not model_version_id or not replicate_input:
             raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
 
@@ -584,4 +548,8 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
+    port = int(os.environ.get("PORT", 5001))
+    # Use Gunicorn for production with gevent workers
+    # The command would be: gunicorn --worker-class gevent --workers 4 --bind 0.0.0.0:5001 app:app
+    # For development, Flask's built-in server is fine.
+    app.run(debug=True, host='0.0.0.0', port=port)
