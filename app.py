@@ -481,30 +481,28 @@ def process_image():
         if mode == 'edit':
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
+            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4" # FIX: Set model_id for both edit modes here
+            
             if edit_mode == 'autofix':
-                model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 if not openai_client:
                     raise Exception("OpenAI API не настроен для Autofix.")
-
+                
                 print("!!! Запрос к OpenAI Vision API для Autofix...")
-
-                # Новый, специализированный системный промпт для задачи "Автофикс"
                 autofix_system_prompt = (
-                   "You are an advanced AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
-                   "\n\nFollow these strict steps:"
-                   "\n1. **DETAILED ANALYSIS:** Scrutinize the image for any unusual or unexpected elements. These could include (but are not limited to):"
-                   "\n   - Distorted or malformed body parts (faces, hands, limbs)."
-                   "\n   - Glitches, unnatural lines, or color splotches."
-                   "\n   - Objects that appear to be floating, misaligned, or out of context."
-                   "\n   - Textures that look artificial or inconsistent with the rest of the image."
-                   "\n   - Any element that looks like a mistake or an unwanted byproduct of the image generation process (e.g., extra limbs, merged objects, etc.)."
-                   "\n2. **PRIORITIZE ARTIFACT REMOVAL:** If you identify one or more clear artifacts, your priority is to generate a precise ENGLISH prompt for the 'Kontext' image editing model to REMOVE or CORRECT the MOST OBVIOUS artifact."
-                   "\n   - The prompt MUST clearly specify the artifact and the desired outcome (e.g., 'remove the strange silver object from the person's left shoulder', 'correct the distorted fingers on the right hand')."
-                   "\n   - Ensure the prompt includes instructions to PRESERVE the rest of the image accurately and maintain the original style and composition."
-                   "\n3. **NO ARTIFACTS FOUND:** If, after careful examination, you find NO clear visual artifacts, ONLY THEN should you generate a prompt for subtle, general quality enhancement. This prompt should be something like: 'Slightly enhance the image quality, improving sharpness and detail while fully preserving the original content and style.' Be very cautious not to make drastic changes."
-                   "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text or explanations."
-               )
-
+                    "You are an advanced AI image analysis and correction expert. Your PRIMARY goal is to meticulously examine the provided image and identify any significant VISUAL ARTIFACTS, ANOMALIES, or UNINTENDED OBJECTS that detract from the image quality or do not logically belong."
+                    "\n\nFollow these strict steps:"
+                    "\n1. **DETAILED ANALYSIS:** Scrutinize the image for any unusual or unexpected elements. These could include (but are not limited to):"
+                    "\n   - Distorted or malformed body parts (faces, hands, limbs)."
+                    "\n   - Glitches, unnatural lines, or color splotches."
+                    "\n   - Objects that appear to be floating, misaligned, or out of context."
+                    "\n   - Textures that look artificial or inconsistent with the rest of the image."
+                    "\n   - Any element that looks like a mistake or an unwanted byproduct of the image generation process (e.g., extra limbs, merged objects, etc.)."
+                    "\n2. **PRIORITIZE ARTIFACT REMOVAL:** If you identify one or more clear artifacts, your priority is to generate a precise ENGLISH prompt for the 'Kontext' image editing model to REMOVE or CORRECT the MOST OBVIOUS artifact."
+                    "\n   - The prompt MUST clearly specify the artifact and the desired outcome (e.g., 'remove the strange silver object from the person's left shoulder', 'correct the distorted fingers on the right hand')."
+                    "\n   - Ensure the prompt includes instructions to PRESERVE the rest of the image accurately and maintain the original style and composition."
+                    "\n3. **NO ARTIFACTS FOUND:** If, after careful examination, you find NO clear visual artifacts, ONLY THEN should you generate a prompt for subtle, general quality enhancement. This prompt should be something like: 'Slightly enhance the image quality, improving sharpness and detail while fully preserving the original content and style.' Be very cautious not to make drastic changes."
+                    "\n\nYour output MUST be ONLY the final English prompt. Do not add any conversational text or explanations."
+                )
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -516,48 +514,58 @@ def process_image():
                 final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
                 print(f"!!! Autofix промпт от OpenAI: {final_prompt}")
                 replicate_input = {"input_image": s3_url, "prompt": final_prompt}
-                
+            else: # Standard edit mode
+                final_prompt = improve_prompt_with_openai(prompt).replace('\n', ' ').replace('\r', ' ').strip()
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            scale_factor = float(request.form.get('scale_factor', 'x2').replace('x', ''))
+            scale_factor = float(request.form.get('scale_factor', '2'))
             creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
-            # FIX: Changed 'hdr' to 'dynamic' to match the upscale model's expected input
-            dynamic = round(float(request.form.get('hdr', '10')) / 100.0 * 50.0, 4)
+            dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
             replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
-        else:
-            return jsonify({'error': 'Неизвестный режим работы'}), 400
+        
+        # FIX: Added a check to prevent sending invalid data to Replicate
+        if not model_version_id or not replicate_input:
+            raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
 
-        if not REPLICATE_API_TOKEN: raise Exception("REPLICATE_API_TOKEN не настроен.")
+        if not REPLICATE_API_TOKEN:
+            raise Exception("REPLICATE_API_TOKEN не настроен.")
+
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
         db.session.commit()
+
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
+        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
+        
         print(f"!!! Replicate Payload: {post_payload}")
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
+        
         prediction_data = start_response.json()
         replicate_prediction_id = prediction_data.get('id')
         new_prediction.replicate_id = replicate_prediction_id
+        
         current_user.token_balance -= token_cost
         db.session.commit()
+        
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
-    except RecursionError:
-        error_message = "A recursion error occurred on the server..."
-        print(f"!!! ОБЩАЯ ОШИБКА в process_image (RecursionError): {error_message}")
-        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {error_message}'}), 500
     except requests.exceptions.HTTPError as e:
         error_details = "No details in response."
         if e.response is not None:
-            error_details = e.response.text
+            try:
+                error_details = e.response.text
+            except Exception:
+                pass
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (HTTPError): {e}\nReplicate Response: {error_details}")
         error_to_show = error_details
         try:
             error_json = e.response.json()
             error_to_show = error_json.get('detail', error_details)
-        except ValueError:
+        except (ValueError, AttributeError):
             pass
         return jsonify({'error': f'Ошибка API Replicate: {error_to_show}'}), 500
     except Exception as e:
