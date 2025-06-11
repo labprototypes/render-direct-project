@@ -17,7 +17,8 @@
     
     <div class="form-group">
         {{ form.username.label(style="display: none;") }}
-        {{ form.username(class="form-control", placeholder="Имя пользователя (опционально)") }}
+        {# FIX: Убрали "(опционально)" из плейсхолдера #}
+        {{ form.username(class="form-control", placeholder="Имя пользователя") }}
         {% for error in form.username.errors %}
             <div class="help-block">{{ error }}</div>
         {% endfor %}
