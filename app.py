@@ -302,13 +302,17 @@ def google_create_account():
     except Exception as e:
         flash(f'Error creating customer in Stripe: {e}', 'error')
         return redirect(url_for('google_complete_registration'))
-
+  
+    trial_used = UsedTrialEmail.query.filter_by(email=email).first()
+    initial_tokens = 0 if trial_used else 100
+    
     new_user = User(
         email=email,
         username=google_info['name'],
         password=hashed_password,
         stripe_customer_id=stripe_customer.id,
         marketing_consent=marketing_consent
+        token_balance=initial_tokens
     )
     db.session.add(new_user)
     db.session.commit()
