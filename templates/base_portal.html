@@ -82,6 +82,10 @@
         .btn:hover { background-color: #c8e070; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .btn-secondary { background-color: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); }
         .btn-secondary:hover { background-color: var(--accent-color); color: var(--accent-text-color); }
+        .btn-white { background-color: #FFFFFF; color: var(--accent-text-color);  border: 1px solid #FFFFFF;
+        }
+        .btn-white:hover { background-color: var(--accent-color); border-color: var(--accent-color); color: var(--accent-text-color); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
         .btn-white {
             background-color: #FFFFFF;
             color: var(--accent-text-color);
@@ -130,11 +134,6 @@
         <a href="{{ url_for('index') }}">
             <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Changer Logo" class="logo">
         </a>
-        <nav>
-            <a href="{{ url_for('index') }}">Generate</a>
-            <a href="{{ url_for('archive') }}">Archive</a>
-            <a href="{{ url_for('billing') }}">Manage plan</a>
-        </nav>
     </header>
     <div class="portal-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
