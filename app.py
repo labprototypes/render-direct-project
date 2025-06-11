@@ -26,6 +26,8 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-very-secret-key-for-flask-login')
+app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID')
+app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get(''GOOGLE_CLIENT_SECRET')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -59,6 +61,19 @@ login_manager.login_message_category = "info"
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+from authlib.integrations.flask_client import OAuth
+
+oauth = OAuth(app)
+oauth.register(
+    name='google',
+    client_id=app.config['GOOGLE_CLIENT_ID'],
+    client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
 
 # --- Модели ---
 class User(db.Model, UserMixin):
@@ -206,6 +221,47 @@ def change_password():
 @login_required
 def logout():
     logout_user()
+    return redirect(url_for('index'))
+
+# Важно: добавьте datetime в ваш основной импорт из стандартных библиотек вверху файла
+from datetime import datetime 
+
+@app.route('/google/login')
+def google_login():
+    redirect_uri = url_for('google_callback', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/google/callback')
+def google_callback():
+    token = oauth.google.authorize_access_token()
+    # Получаем информацию о пользователе от Google
+    user_info = oauth.google.get('openid').json()
+    
+    # Ищем пользователя в нашей базе данных по email
+    user = User.query.filter_by(email=user_info['email']).first()
+
+    if not user:
+        # Если пользователя нет, создаем нового
+        hashed_password = generate_password_hash(os.urandom(24).hex(), method='pbkdf2:sha256')
+        
+        try:
+            stripe_customer = stripe.Customer.create(email=user_info['email'])
+        except Exception as e:
+            flash(f'Error creating customer in Stripe: {e}', 'error')
+            return redirect(url_for('login'))
+            
+        user = User(
+            email=user_info['email'],
+            username=user_info['name'],
+            password=hashed_password,
+            # Поля confirmed и confirmed_on не используются, т.к. мы пропустили этот шаг
+            stripe_customer_id=stripe_customer.id
+        )
+        db.session.add(user)
+        db.session.commit()
+    
+    # Входим в систему с найденным или новым пользователем
+    login_user(user)
     return redirect(url_for('index'))
 
 @app.route('/terms')
