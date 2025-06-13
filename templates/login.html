@@ -31,6 +31,7 @@
         }
         body {
             font-family: 'Norms', sans-serif;
+            font-weight: 400;
             background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
             background-size: cover; background-position: center; background-attachment: fixed;
             display: flex; justify-content: center; align-items: center;
@@ -48,12 +49,14 @@
             text-align: center;
         }
         
-        /* НОВЫЕ СТИЛИ ДЛЯ ЗАГОЛОВКОВ КАК В ПРИМЕРЕ */
-        .auth-container h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
+        /* СТИЛИ ДЛЯ ЛОГОТИПА И ЗАГОЛОВКОВ */
+        .main-logo-link {
+            display: inline-block;
             margin-bottom: 5px;
-            color: var(--primary-text-color);
+        }
+        .main-logo {
+            height: 42px; /* Размер вашего лого */
+            width: auto;
         }
         .auth-container h2 {
             font-size: 1rem;
@@ -83,56 +86,102 @@
         }
         .separator:not(:empty)::before { margin-right: 1em; }
         .separator:not(:empty)::after { margin-left: 1em; }
-    </style>
-    
-    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
+        
+        /* ГРУППА ПОЛЕЙ ВВОДА */
+        .form-group {
+            text-align: left; margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: 500;
+        }
+        .form-input {
+            width: 100%; padding: 12px 15px; border-radius: var(--button-border-radius);
+            border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
+            color: var(--primary-text-color); font-size: 1rem; box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-input:focus {
+            outline: none; border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(217, 244, 122, 0.3);
+        }
+        .password-header { display: flex; justify-content: space-between; align-items: baseline; }
+        #forgot-password-link {
+            font-size: 0.85rem; color: var(--accent-color); text-decoration: none;
+            cursor: pointer;
+        }
+        #forgot-password-link:hover { text-decoration: underline; }
 
-    <style>
-        .firebaseui-container { background-color: transparent !important; box-shadow: none !important; margin-top: -20px; }
-        .firebaseui-title { display: none !important; }
-        .firebaseui-text-input-label { color: var(--primary-text-color) !important; font-family: 'Norms', sans-serif !important; font-weight: 500 !important; font-size: 0.9rem !important; margin-bottom: 8px !important; }
-        .firebaseui-card-content { padding: 0 !important; }
-        .firebaseui-input, .firebaseui-input-invalid {
-            font-family: 'Norms', sans-serif !important; font-weight: 400 !important;
-            border: 1px solid var(--border-color) !important; border-radius: var(--button-border-radius) !important;
-            background-color: rgba(0,0,0,0.25) !important; color: var(--primary-text-color) !important;
-            font-size: 1rem !important; padding: 12px 15px !important;
+        /* КНОПКА ВХОДА */
+        .primary-btn {
+            font-family: 'Norms', sans-serif; font-weight: 700;
+            background-color: var(--accent-color); color: var(--accent-text-color);
+            border: none; padding: 14px 20px; border-radius: var(--button-border-radius);
+            cursor: pointer; font-size: 1rem; transition: all 0.3s ease;
+            width: 100%; margin-top: 10px;
         }
-        .firebaseui-input:focus { border-color: var(--accent-color) !important; box-shadow: 0 0 10px rgba(217, 244, 122, 0.3) !important; }
-        .firebaseui-id-submit {
-            font-family: 'Norms', sans-serif !important; font-weight: 700 !important;
-            background-color: var(--accent-color) !important; color: var(--accent-text-color) !important;
-            padding: 14px 20px !important; border-radius: var(--button-border-radius) !important;
-            font-size: 1rem !important; box-shadow: none !important; margin-top: 10px !important;
+        .primary-btn:hover { background-color: #c8e070; transform: translateY(-2px); }
+
+        /* ССЫЛКА НА РЕГИСТРАЦИЮ */
+        .bottom-text { margin-top: 30px; color: var(--secondary-text-color); font-size: 0.9rem; }
+        .bottom-text a { color: var(--accent-color); text-decoration: none; font-weight: 700; }
+        .bottom-text a:hover { text-decoration: underline; }
+
+        /* Сообщение об ошибке */
+        #error-message {
+            color: #FED7D7; background-color: rgba(229, 62, 62, 0.3);
+            border: 1px solid rgba(229, 62, 62, 0.5); padding: 10px;
+            border-radius: 10px; margin-bottom: 20px;
+            display: none; /* Прячем по умолчанию */
         }
-        .firebaseui-id-submit:hover { background-color: #c8e070 !important; }
-        .firebaseui-id-secondary-link { color: var(--accent-color) !important; text-decoration: none !important; font-size: 0.85rem !important; }
-        .firebaseui-id-secondary-link:hover { text-decoration: underline !important; }
-        .firebaseui-form-links { text-align: right !important; }
-        .firebaseui-card-footer { display: none !important; }
     </style>
 </head>
 <body>
     <div class="auth-container">
-        <h1>Pifly.io</h1>
+        <a href="{{ url_for('index') }}" class="main-logo-link">
+            <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Pifly.io Logo" class="main-logo">
+        </a>
         <h2>Sign in to Pifly.io</h2>
+        
+        <div id="error-message"></div>
 
         <button id="google-signin-btn" class="google-btn">
-            <img src="https://www.gstatic.com/firebasejsui/2.0.0/images/auth/google.svg" alt="Google logo">
+            <img src="{{ url_for('static', filename='images/google-logo.svg') }}" alt="Google logo">
             Sign in with Google
         </button>
 
         <div class="separator">Or</div>
 
-        <div id="firebaseui-auth-container"></div>
-        <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
+        <form id="password-form">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <div class="password-header">
+                    <label for="password">Password</label>
+                    <a id="forgot-password-link">Forgot password?</a>
+                </div>
+                <input type="password" id="password" class="form-input" required>
+            </div>
+            <button type="submit" class="primary-btn">Sign in</button>
+        </form>
+
+        <div class="bottom-text">
+            Don't have an account? <a href="#">Sign up</a>
+        </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            sendPasswordResetEmail
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    <script>
         const firebaseConfig = {
           apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
           authDomain: "pifly-cf45f.firebaseapp.com",
@@ -143,58 +192,91 @@
           measurementId: "G-GTKNFZFZXY"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-        function sendTokenToServer(idToken) {
-            document.getElementById('loader').style.display = 'block';
-            document.querySelector('.auth-container').style.display = 'none';
-            fetch('/session-login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ idToken: idToken })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.assign('/');
-                } else {
-                    alert('Login failed: ' + data.message);
-                    location.reload(); 
-                }
+        const googleSigninBtn = document.getElementById('google-signin-btn');
+        const passwordForm = document.getElementById('password-form');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const errorMessageDiv = document.getElementById('error-message');
+
+        function sendTokenToServer(user) {
+            user.getIdToken().then(idToken => {
+                fetch('/session-login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ idToken: idToken })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.assign('/');
+                    } else {
+                        showError(data.message || 'Authentication failed on the server.');
+                    }
+                });
             });
         }
+        
+        function showError(message) {
+            // Упрощаем сообщения об ошибках Firebase
+            let friendlyMessage = message;
+            if (message.includes('auth/invalid-credential') || message.includes('auth/wrong-password')) {
+                friendlyMessage = 'Invalid email or password. Please try again.';
+            } else if (message.includes('auth/email-already-in-use')) {
+                friendlyMessage = 'An account with this email already exists. Please sign in.';
+            }
+            errorMessageDiv.textContent = friendlyMessage;
+            errorMessageDiv.style.display = 'block';
+        }
 
-        // Обработчик для нашей кастомной кнопки Google
-        document.getElementById('google-signin-btn').addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
+        googleSigninBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider)
                 .then((result) => {
-                    result.user.getIdToken().then(sendTokenToServer);
+                    sendTokenToServer(result.user);
+                })
+                .catch((error) => { showError(error.code); });
+        });
+
+        passwordForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    sendTokenToServer(userCredential.user);
                 })
                 .catch((error) => {
-                    alert(error.message);
+                    // Если ошибка - "пользователь не найден", пробуем создать нового
+                    if (error.code === 'auth/user-not-found') {
+                        createUserWithEmailAndPassword(auth, email, password)
+                            .then((userCredential) => {
+                                sendTokenToServer(userCredential.user);
+                            })
+                            .catch((creationError) => {
+                                showError(creationError.code);
+                            });
+                    } else {
+                        showError(error.code);
+                    }
                 });
         });
 
-        // Конфигурация для виджета FirebaseUI (теперь только для Email)
-        const uiConfig = {
-            callbacks: {
-                signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                    authResult.user.getIdToken().then(sendTokenToServer);
-                    return false;
-                }
-            },
-            signInFlow: 'popup',
-            signInOptions: [
-              firebase.auth.EmailAuthProvider.PROVIDER_ID // Оставляем только Email
-            ],
-            tosUrl: '/terms',
-            privacyPolicyUrl: '/privacy'
-        };
-
-        const ui = new firebaseui.auth.AuthUI(auth);
-        ui.start('#firebaseui-auth-container', uiConfig);
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            if (!email) {
+                alert('Please enter your email address in the email field first.');
+                return;
+            }
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    alert('Password reset email sent! Please check your inbox.');
+                })
+                .catch((error) => { showError(error.code); });
+        });
     </script>
 </body>
 </html>
