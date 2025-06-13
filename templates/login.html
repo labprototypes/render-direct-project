@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Login / Sign Up - pifly.io</title>
     <style>
-        /* Стили, скопированные и адаптированные из ваших базовых шаблонов */
+        /* Основные стили страницы, скопированные из base_security.html */
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
@@ -18,12 +18,16 @@
         }
         :root {
             --accent-color: #D9F47A;
+            --accent-glow: rgba(217, 244, 122, 0.7);
             --base-bg-color: #0c0d10;
             --surface-color: #1c1c1f;
             --primary-text-color: #EAEAEA;
+            --secondary-text-color: #888888;
+            --accent-text-color: #1A1A1A;
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
             --content-border-radius: 24px;
+            --button-border-radius: 14px;
         }
         body {
             font-family: 'Norms', sans-serif;
@@ -58,7 +62,59 @@
             font-weight: 700;
         }
     </style>
+    
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
+
+    <style>
+        /* Переопределяем стили для кнопок */
+        .firebaseui-button, .firebaseui-id-submit {
+            font-family: 'Norms', sans-serif !important;
+            font-weight: 700 !important;
+            background-color: var(--accent-color) !important;
+            color: var(--accent-text-color) !important;
+            border: none !important;
+            padding: 14px 20px !important;
+            border-radius: var(--button-border-radius) !important;
+            font-size: 1rem !important;
+            transition: all 0.3s ease !important;
+            margin-top: 10px !important;
+        }
+        .firebaseui-button:hover, .firebaseui-id-submit:hover {
+             background-color: #c8e070 !important;
+        }
+        
+        /* Стили для полей ввода (инпутов) */
+        .firebaseui-input, .firebaseui-input-invalid {
+            font-family: 'Norms', sans-serif !important;
+            font-weight: 400 !important;
+            width: 100% !important;
+            padding: 12px 15px !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--button-border-radius) !important;
+            background-color: rgba(0,0,0,0.25) !important;
+            color: var(--primary-text-color) !important;
+            font-size: 0.95rem !important;
+        }
+        
+        /* Стили для второстепенных ссылок (Cancel, Forgot Password?) */
+        .firebaseui-id-secondary-link {
+            color: var(--secondary-text-color) !important;
+            text-decoration: none !important;
+        }
+        .firebaseui-id-secondary-link:hover {
+            color: var(--accent-color) !important;
+        }
+        
+        /* Убираем иконку Google по умолчанию, чтобы использовать свою */
+        .firebaseui-idp-icon {
+            display: none !important;
+        }
+        /* Стили для текста на кнопках (например, "Continue with Google") */
+        .firebaseui-idp-text {
+            font-size: 1rem !important;
+        }
+    </style>
+
 </head>
 <body>
     <div class="auth-container">
@@ -69,8 +125,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejsui/6.1.0/firebaseui-auth-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -90,7 +145,6 @@
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
                     document.getElementById('loader').style.display = 'block';
                     document.getElementById('firebaseui-auth-container').style.display = 'none';
-
                     authResult.user.getIdToken().then(function(idToken) {
                         fetch('/session-login', {
                             method: 'POST',
