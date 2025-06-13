@@ -5,68 +5,80 @@
 {% block content %}
     <h2>Login or create an account</h2>
     
+    <!-- Контейнер для виджета -->
     <div id="firebaseui-auth-container"></div>
     <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejsui/latest/firebaseui.js"></script>
+    <!-- ИСПОЛЬЗУЕМ НОВЫЙ, МОДУЛЬНЫЙ СПОСОБ ПОДКЛЮЧЕНИЯ FIREBASE -->
+    <!-- Подключаем стили -->
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
+    
+    <!-- Подключаем библиотеки как модули -->
+    <script type="module">
+        // 1. Импортируем нужные функции из библиотек Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // Важно: FirebaseUI не имеет официального модульного экспорта, поэтому импортируем его так
+        import("https://www.gstatic.com/firebasejsui/latest/firebaseui.js").then((firebaseui) => {
 
-    <script>
-        const firebaseConfig = {
-          apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
-          authDomain: "pifly-cf45f.firebaseapp.com",
-          projectId: "pifly-cf45f",
-          storageBucket: "pifly-cf45f.firebasestorage.app",
-          messagingSenderId: "516997916662",
-          appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
-          measurementId: "G-GTKNFZFZXY"
-        };
+            // 2. Ваш финальный конфиг Firebase
+            const firebaseConfig = {
+              apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
+              authDomain: "pifly-cf45f.firebaseapp.com",
+              projectId: "pifly-cf45f",
+              storageBucket: "pifly-cf45f.firebasestorage.app",
+              messagingSenderId: "516997916662",
+              appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
+              measurementId: "G-GTKNFZFZXY"
+            };
 
-        // Используем старый, но надежный синтаксис
-        firebase.initializeApp(firebaseConfig);
+            // 3. Инициализация Firebase и получение объекта аутентификации
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
 
-        const uiConfig = {
-            callbacks: {
-                signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                    document.getElementById('loader').style.display = 'block';
-                    document.getElementById('firebaseui-auth-container').style.display = 'none';
+            // 4. Конфигурация виджета FirebaseUI
+            const uiConfig = {
+                callbacks: {
+                    signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+                        document.getElementById('loader').style.display = 'block';
+                        document.getElementById('firebaseui-auth-container').style.display = 'none';
 
-                    authResult.user.getIdToken().then(function(idToken) {
-                        fetch('/session-login', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ idToken: idToken })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.status === 'success') {
-                                window.location.assign('/');
-                            } else {
-                                alert('Login failed: ' + data.message);
-                                location.reload(); // Перезагружаем страницу при ошибке
-                            }
+                        authResult.user.getIdToken().then(function(idToken) {
+                            fetch('/session-login', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ idToken: idToken })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === 'success') {
+                                    window.location.assign('/');
+                                } else {
+                                    alert('Login failed: ' + data.message);
+                                    location.reload();
+                                }
+                            });
                         });
-                    });
-                    return false;
+                        return false;
+                    },
+                    uiShown: function() {
+                        document.getElementById('loader').style.display = 'none';
+                    }
                 },
-                uiShown: function() {
-                    document.getElementById('loader').style.display = 'none';
-                }
-            },
-            signInFlow: 'popup',
-            signInSuccessUrl: '/', 
-            signInOptions: [
-              firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-              firebase.auth.EmailAuthProvider.PROVIDER_ID
-            ],
-            tosUrl: '/terms',
-            privacyPolicyUrl: '/privacy'
-        };
+                signInFlow: 'popup',
+                signInSuccessUrl: '/', 
+                signInOptions: [
+                  GoogleAuthProvider.PROVIDER_ID,
+                  EmailAuthProvider.PROVIDER_ID
+                ],
+                tosUrl: '/terms',
+                privacyPolicyUrl: '/privacy'
+            };
 
-        // Запускаем виджет FirebaseUI
-        const ui = new firebaseui.auth.AuthUI(firebase.auth());
-        ui.start('#firebaseui-auth-container', uiConfig);
+            // 5. Запускаем виджет FirebaseUI, используя правильный синтаксис
+            // Убеждаемся, что объект ui существует, прежде чем вызывать start
+            const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
+            ui.start('#firebaseui-auth-container', uiConfig);
+        });
     </script>
 {% endblock %}
