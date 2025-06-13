@@ -14,8 +14,6 @@
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
 
     <script>
-        // Этот скрипт теперь будет работать, так как compat-версии создают глобальный объект firebase
-        
         const firebaseConfig = {
           apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
           authDomain: "pifly-cf45f.firebaseapp.com",
@@ -47,7 +45,7 @@
                                 window.location.assign('/');
                             } else {
                                 alert('Login failed: ' + data.message);
-                                document.getElementById('loader').style.display = 'none';
+                                location.reload(); // Перезагружаем страницу при ошибке
                             }
                         });
                     });
@@ -67,6 +65,7 @@
             privacyPolicyUrl: '/privacy'
         };
 
+        // Запускаем виджет FirebaseUI
         const ui = new firebaseui.auth.AuthUI(firebase.auth());
         ui.start('#firebaseui-auth-container', uiConfig);
     </script>
