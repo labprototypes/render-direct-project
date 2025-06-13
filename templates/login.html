@@ -111,6 +111,24 @@
         }
         #forgot-password-link:hover { text-decoration: underline; }
 
+        /* ЧЕКБОКСЫ */
+        .legal-checkboxes {
+            text-align: left; margin: 15px 0 5px 0;
+            font-size: 0.85rem; color: var(--secondary-text-color);
+        }
+        .legal-checkboxes .checkbox-group {
+            display: flex; align-items: center; margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .legal-checkboxes input[type="checkbox"] {
+            margin-right: 10px; accent-color: var(--accent-color);
+            width: 16px; height: 16px; cursor: pointer;
+        }
+        .legal-checkboxes a {
+            color: var(--accent-color); text-decoration: none; font-weight: 500;
+        }
+        .legal-checkboxes a:hover { text-decoration: underline; }
+
         /* КНОПКА ВХОДА */
         .primary-btn {
             font-family: 'Norms', sans-serif; font-weight: 700;
@@ -123,7 +141,7 @@
 
         /* ССЫЛКА НА РЕГИСТРАЦИЮ */
         .bottom-text { margin-top: 30px; color: var(--secondary-text-color); font-size: 0.9rem; }
-        .bottom-text a { color: var(--accent-color); text-decoration: none; font-weight: 700; }
+        .bottom-text a { color: var(--accent-color); text-decoration: none; font-weight: 700; cursor: pointer; }
         .bottom-text a:hover { text-decoration: underline; }
 
         /* Сообщение об ошибке */
@@ -140,7 +158,7 @@
         <a href="{{ url_for('index') }}" class="main-logo-link">
             <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Pifly.io Logo" class="main-logo">
         </a>
-        <h2>Sign in to Pifly.io</h2>
+        <h2 id="auth-title">Sign in to Pifly.io</h2>
         
         <div id="error-message"></div>
 
@@ -154,20 +172,32 @@
         <form id="password-form">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" class="form-input" required>
+                <input type="email" id="email" class="form-input" required autocomplete="email">
             </div>
             <div class="form-group">
                 <div class="password-header">
                     <label for="password">Password</label>
                     <a id="forgot-password-link">Forgot password?</a>
                 </div>
-                <input type="password" id="password" class="form-input" required>
+                <input type="password" id="password" class="form-input" required autocomplete="current-password">
             </div>
-            <button type="submit" class="primary-btn">Sign in</button>
+
+            <div id="legal-checkboxes" class="legal-checkboxes" style="display: none;">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms-check">
+                    <label for="terms-check">I agree to the <a href="{{ url_for('terms') }}" target="_blank">Terms of Service</a> and <a href="{{ url_for('privacy') }}" target="_blank">Privacy Policy</a>.</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="marketing-check" checked>
+                    <label for="marketing-check">I agree to the <a href="{{ url_for('marketing_policy') }}" target="_blank">Marketing Policy</a>.</label>
+                </div>
+            </div>
+            
+            <button type="submit" id="submit-btn" class="primary-btn">Sign in</button>
         </form>
 
-        <div class="bottom-text">
-            Don't have an account? <a href="#">Sign up</a>
+        <div id="bottom-text-container" class="bottom-text">
+            Don't have an account? <a id="switch-to-signup">Sign up</a>
         </div>
     </div>
 
@@ -195,17 +225,60 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
+        // --- DOM Elements ---
         const googleSigninBtn = document.getElementById('google-signin-btn');
         const passwordForm = document.getElementById('password-form');
         const forgotPasswordLink = document.getElementById('forgot-password-link');
         const errorMessageDiv = document.getElementById('error-message');
+        const authTitle = document.getElementById('auth-title');
+        const submitBtn = document.getElementById('submit-btn');
+        const bottomTextContainer = document.getElementById('bottom-text-container');
+        const legalCheckboxes = document.getElementById('legal-checkboxes');
+        const termsCheck = document.getElementById('terms-check');
+        const marketingCheck = document.getElementById('marketing-check');
 
-        function sendTokenToServer(user) {
+        let isSignUpMode = false;
+
+        function toggleMode(toSignUp) {
+            isSignUpMode = toSignUp;
+            errorMessageDiv.style.display = 'none'; // Hide errors on mode switch
+
+            if (isSignUpMode) {
+                authTitle.textContent = 'Create an account on Pifly.io';
+                submitBtn.textContent = 'Sign Up';
+                forgotPasswordLink.style.display = 'none';
+                legalCheckboxes.style.display = 'block';
+                bottomTextContainer.innerHTML = 'Already have an account? <a id="switch-to-signin">Sign in</a>';
+                document.getElementById('password').setAttribute('autocomplete', 'new-password');
+            } else {
+                authTitle.textContent = 'Sign in to Pifly.io';
+                submitBtn.textContent = 'Sign In';
+                forgotPasswordLink.style.display = 'block';
+                legalCheckboxes.style.display = 'none';
+                bottomTextContainer.innerHTML = 'Don\'t have an account? <a id="switch-to-signup">Sign up</a>';
+                 document.getElementById('password').setAttribute('autocomplete', 'current-password');
+            }
+            addSwitchListeners(); // Re-attach listeners to the newly created links
+        }
+        
+        function addSwitchListeners() {
+            const signupLink = document.getElementById('switch-to-signup');
+            const signinLink = document.getElementById('switch-to-signin');
+            if(signupLink) signupLink.addEventListener('click', () => toggleMode(true));
+            if(signinLink) signinLink.addEventListener('click', () => toggleMode(false));
+        }
+
+        function sendTokenToServer(user, marketingConsent = null) {
             user.getIdToken().then(idToken => {
+                const payload = { idToken: idToken };
+                if (marketingConsent !== null) {
+                    payload.marketingConsent = marketingConsent;
+                }
+
                 fetch('/session-login', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ idToken: idToken })
+                    body: JSON.stringify(payload)
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -219,17 +292,20 @@
         }
         
         function showError(message) {
-            // Упрощаем сообщения об ошибках Firebase
             let friendlyMessage = message;
-            if (message.includes('auth/invalid-credential') || message.includes('auth/wrong-password')) {
+            if (message.includes('auth/invalid-credential') || message.includes('auth/wrong-password') || message.includes('auth/user-not-found')) {
                 friendlyMessage = 'Invalid email or password. Please try again.';
             } else if (message.includes('auth/email-already-in-use')) {
                 friendlyMessage = 'An account with this email already exists. Please sign in.';
+                toggleMode(false); // Switch to sign-in mode
+            } else if (message.includes('auth/weak-password')) {
+                 friendlyMessage = 'Password should be at least 6 characters.';
             }
             errorMessageDiv.textContent = friendlyMessage;
             errorMessageDiv.style.display = 'block';
         }
 
+        // --- Event Listeners ---
         googleSigninBtn.addEventListener('click', () => {
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider)
@@ -241,27 +317,36 @@
 
         passwordForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            errorMessageDiv.style.display = 'none';
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    sendTokenToServer(userCredential.user);
-                })
-                .catch((error) => {
-                    // Если ошибка - "пользователь не найден", пробуем создать нового
-                    if (error.code === 'auth/user-not-found') {
-                        createUserWithEmailAndPassword(auth, email, password)
-                            .then((userCredential) => {
-                                sendTokenToServer(userCredential.user);
-                            })
-                            .catch((creationError) => {
-                                showError(creationError.code);
-                            });
-                    } else {
+            if (isSignUpMode) {
+                // --- Sign Up Logic ---
+                if (!termsCheck.checked) {
+                    showError('You must agree to the Terms of Service and Privacy Policy to create an account.');
+                    return;
+                }
+                const marketingConsent = marketingCheck.checked;
+
+                createUserWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        sendTokenToServer(userCredential.user, marketingConsent);
+                    })
+                    .catch((error) => {
                         showError(error.code);
-                    }
-                });
+                    });
+
+            } else {
+                // --- Sign In Logic ---
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        sendTokenToServer(userCredential.user);
+                    })
+                    .catch((error) => {
+                        showError(error.code);
+                    });
+            }
         });
 
         forgotPasswordLink.addEventListener('click', (e) => {
@@ -277,6 +362,9 @@
                 })
                 .catch((error) => { showError(error.code); });
         });
+
+        // Initial setup
+        addSwitchListeners();
     </script>
 </body>
 </html>
