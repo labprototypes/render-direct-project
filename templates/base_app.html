@@ -643,7 +643,7 @@
                             <span id="token-balance-display">{{ current_user.token_balance }}</span>
                             <span class="token-coin"></span>
                         </span>
-                        <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="Меню пользователя" aria-expanded="false">
+                        <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="User menu" aria-expanded="false">
                             <svg class="icon-burger" viewBox="0 0 100 80"><rect y="0" width="100" height="12" rx="6" fill="currentColor"></rect><rect y="34" width="100" height="12" rx="6" fill="currentColor"></rect><rect y="68" width="100" height="12" rx="6" fill="currentColor"></rect></svg>
                             <svg class="icon-close" viewBox="0 0 80 80"><line x1="20" y1="20" x2="60" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/><line x1="60" y1="20" x2="20" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/></svg>
                         </button>
@@ -656,10 +656,16 @@
                             <li><a href="{{ url_for('index') }}">Generate</a></li>
                             <li><a href="{{ url_for('archive') }}">Archive</a></li>
                             <li><a href="{{ url_for('billing') }}">Manage plan</a></li>
-                            <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
                             <li><a href="{{ url_for('logout') }}">Logout</a></li>
                         </ul>
                     </div>
+                {% else %}
+                    <div class="user-controls-loggedout">
+                        <a href="{{ url_for('login') }}" class="auth-button">Login</a>
+                        <a href="{{ url_for('login') }}" class="auth-button">Sign Up</a>
+                    </div>
+                {% endif %}
+            </div>
                 {% else %}
                     <div class="user-controls-loggedout">
                         <a href="{{ url_for('login') }}" class="auth-button">Login</a>
