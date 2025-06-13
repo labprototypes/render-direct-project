@@ -17,7 +17,11 @@
             <div class="control-group">
                 <div class="edit-mode-selector">
                     <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Add or remove objects, modify style or lighting.">Edit</button>
-                    <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
+                    {% if current_user.current_plan == 'taste' %}
+                        <button class="edit-mode-btn feature-locked" disabled title="Please upgrade your plan to use this feature">Autofix</button>
+                    {% else %}
+                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
+                    {% endif %}
                 </div>
             </div>
              <p id="edit-mode-description" class="mode-description"></p>
@@ -61,7 +65,22 @@
             </label>
             <input type="file" id="image-file-upscale" name="image" accept="image/*" style="display: none;">
             <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-                <div class="control-group"><label>Resolution</label><div class="resolution-selector"><button class="resolution-btn active" data-value="2">x2</button><button class="resolution-btn" data-value="4">x4</button><button class="resolution-btn" data-value="8">x8</button></div></div>
+                <div class="control-group">
+                    <label>Resolution</label>
+                    <div class="resolution-selector">
+                        <button class="resolution-btn active" data-value="2">x2</button>
+                        {% if current_user.current_plan == 'taste' %}
+                            <button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x4</button>
+                        {% else %}
+                            <button class="resolution-btn" data-value="4">x4</button>
+                        {% endif %}
+                        {% if current_user.current_plan in ['taste', 'best'] %}
+                            <button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x8</button>
+                        {% else %}
+                            <button class="resolution-btn" data-value="8">x8</button>
+                        {% endif %}
+    </div>
+</div>
                 <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="creativity-slider">Creativity</label><span class="slider-value" id="creativity-value">30</span></div><input type="range" id="creativity-slider" min="0" max="100" value="30" class="custom-slider"></div></div>
                 <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="resemblance-slider">Resemblance</label><span class="slider-value" id="resemblance-value">20</span></div><input type="range" id="resemblance-slider" min="0" max="100" value="20" class="custom-slider"></div></div>
                 <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="hdr-slider">HDR</label><span class="slider-value" id="hdr-value">10</span></div><input type="range" id="hdr-slider" min="0" max="100" value="10" class="custom-slider"></div></div>
