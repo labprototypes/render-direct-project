@@ -614,6 +614,16 @@
         .delete-account-section p {
             color: var(--primary-text-color); /* Используем вашу основную переменную для белого текста */
         }
+        .feature-locked {
+            opacity: 0.5; /* Делаем элемент полупрозрачным */
+            cursor: not-allowed; /* Курсор "запрещено" */
+            position: relative; /* Необходимо для корректной работы подсказки */
+        }
+        .feature-locked:hover {
+            transform: none !important;
+            box-shadow: none !important;
+            background-color: transparent !important; /* Убедимся, что фон не меняется */
+        }
     </style>
 </head>
 <body class="{% block body_class %}{% endblock %}">
