@@ -14,62 +14,57 @@
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
 
     <script>
-        // Ждем, пока вся страница (DOM) будет полностью загружена
-        document.addEventListener('DOMContentLoaded', function() {
-            // Весь наш код инициализации Firebase теперь внутри этого обработчика
+        const firebaseConfig = {
+          apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
+          authDomain: "pifly-cf45f.firebaseapp.com",
+          projectId: "pifly-cf45f",
+          storageBucket: "pifly-cf45f.firebasestorage.app",
+          messagingSenderId: "516997916662",
+          appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
+          measurementId: "G-GTKNFZFZXY"
+        };
 
-            const firebaseConfig = {
-              apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
-              authDomain: "pifly-cf45f.firebaseapp.com",
-              projectId: "pifly-cf45f",
-              storageBucket: "pifly-cf45f.firebasestorage.app",
-              messagingSenderId: "516997916662",
-              appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
-              measurementId: "G-GTKNFZFZXY"
-            };
+        firebase.initializeApp(firebaseConfig);
 
-            firebase.initializeApp(firebaseConfig);
+        const uiConfig = {
+            callbacks: {
+                signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+                    document.getElementById('loader').style.display = 'block';
+                    document.getElementById('firebaseui-auth-container').style.display = 'none';
 
-            const uiConfig = {
-                callbacks: {
-                    signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                        document.getElementById('loader').style.display = 'block';
-                        document.getElementById('firebaseui-auth-container').style.display = 'none';
-
-                        authResult.user.getIdToken().then(function(idToken) {
-                            fetch('/session-login', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({ idToken: idToken })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.status === 'success') {
-                                    window.location.assign('/');
-                                } else {
-                                    alert('Login failed: ' + data.message);
-                                    document.getElementById('loader').style.display = 'none';
-                                }
-                            });
+                    authResult.user.getIdToken().then(function(idToken) {
+                        fetch('/session-login', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ idToken: idToken })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                window.location.assign('/');
+                            } else {
+                                alert('Login failed: ' + data.message);
+                                document.getElementById('loader').style.display = 'none';
+                            }
                         });
-                        return false;
-                    },
-                    uiShown: function() {
-                        document.getElementById('loader').style.display = 'none';
-                    }
+                    });
+                    return false;
                 },
-                signInFlow: 'popup',
-                signInSuccessUrl: '/', 
-                signInOptions: [
-                  firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-                  firebase.auth.EmailAuthProvider.PROVIDER_ID
-                ],
-                tosUrl: '/terms',
-                privacyPolicyUrl: '/privacy'
-            };
+                uiShown: function() {
+                    document.getElementById('loader').style.display = 'none';
+                }
+            },
+            signInFlow: 'popup',
+            signInSuccessUrl: '/', 
+            signInOptions: [
+              firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+              firebase.auth.EmailAuthProvider.PROVIDER_ID
+            ],
+            tosUrl: '/terms',
+            privacyPolicyUrl: '/privacy'
+        };
 
-            const ui = new firebaseui.auth.AuthUI(firebase.auth());
-            ui.start('#firebaseui-auth-container', uiConfig);
-        });
+        const ui = new firebaseui.auth.AuthUI(firebase.auth());
+        ui.start('#firebaseui-auth-container', uiConfig);
     </script>
 {% endblock %}
