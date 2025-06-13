@@ -69,7 +69,8 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejsui/latest/firebaseui.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejsui/6.1.0/firebaseui-auth-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -89,6 +90,7 @@
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
                     document.getElementById('loader').style.display = 'block';
                     document.getElementById('firebaseui-auth-container').style.display = 'none';
+
                     authResult.user.getIdToken().then(function(idToken) {
                         fetch('/session-login', {
                             method: 'POST',
