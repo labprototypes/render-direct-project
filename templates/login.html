@@ -18,12 +18,9 @@
         }
         :root {
             --accent-color: #D9F47A;
-            --accent-glow: rgba(217, 244, 122, 0.7);
             --base-bg-color: #0c0d10;
             --surface-color: #1c1c1f;
             --primary-text-color: #EAEAEA;
-            --secondary-text-color: #888888;
-            --accent-text-color: #1A1A1A;
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
             --content-border-radius: 24px;
@@ -60,31 +57,12 @@
             font-size: 1.8rem;
             font-weight: 700;
         }
-        .flash-messages {
-            list-style-type: none; padding: 0; margin: 0 0 20px 0;
-        }
-        .flash-messages li {
-            background-color: rgba(229, 62, 62, 0.3); color: #FED7D7;
-            padding: 10px 15px; border-radius: 10px; font-size: 0.9rem;
-            border: 1px solid rgba(229, 62, 62, 0.5);
-        }
     </style>
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
 </head>
 <body>
     <div class="auth-container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flash-messages">
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-
         <h2>Login or create an account</h2>
-        
         <div id="firebaseui-auth-container"></div>
         <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
     </div>
@@ -111,7 +89,6 @@
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
                     document.getElementById('loader').style.display = 'block';
                     document.getElementById('firebaseui-auth-container').style.display = 'none';
-
                     authResult.user.getIdToken().then(function(idToken) {
                         fetch('/session-login', {
                             method: 'POST',
@@ -129,9 +106,6 @@
                         });
                     });
                     return false;
-                },
-                uiShown: function() {
-                    document.getElementById('loader').style.display = 'none';
                 }
             },
             signInFlow: 'popup',
