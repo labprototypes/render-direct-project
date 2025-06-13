@@ -31,17 +31,10 @@
         }
         body {
             font-family: 'Norms', sans-serif;
-            font-weight: 400;
             background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
-            background-size: cover;
-            background-position: center center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            background-size: cover; background-position: center; background-attachment: fixed;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
             color: var(--primary-text-color);
         }
         .auth-container {
@@ -50,71 +43,85 @@
             padding: 30px 40px;
             border-radius: var(--content-border-radius);
             box-shadow: 0 10px 40px var(--shadow-color);
-            width: 100%;
-            max-width: 450px;
-            position: relative;
-            text-align: center;
+            width: 100%; max-width: 450px;
+            position: relative; text-align: center;
         }
         .auth-container h2 {
-            color: var(--primary-text-color);
-            margin-bottom: 25px;
-            font-size: 1.8rem;
-            font-weight: 700;
+            margin-bottom: 25px; font-size: 1.8rem; font-weight: 700;
         }
     </style>
     
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
 
     <style>
-        /* Переопределяем стили для кнопок */
-        .firebaseui-button, .firebaseui-id-submit {
-            font-family: 'Norms', sans-serif !important;
-            font-weight: 700 !important;
-            background-color: var(--accent-color) !important;
-            color: var(--accent-text-color) !important;
-            border: none !important;
-            padding: 14px 20px !important;
-            border-radius: var(--button-border-radius) !important;
-            font-size: 1rem !important;
-            transition: all 0.3s ease !important;
-            margin-top: 10px !important;
-        }
-        .firebaseui-button:hover, .firebaseui-id-submit:hover {
-             background-color: #c8e070 !important;
-        }
-        
-        /* Стили для полей ввода (инпутов) */
+        /* Общие стили для всего виджета */
+        .firebaseui-container { background-color: transparent !important; box-shadow: none !important; }
+        .firebaseui-title { color: var(--primary-text-color) !important; font-family: 'Norms', sans-serif !important; font-weight: 700 !important; }
+        .firebaseui-text, .firebaseui-text-input-label { color: var(--secondary-text-color) !important; font-family: 'Norms', sans-serif !important; }
+        .firebaseui-card-content { padding: 0 !important; }
+        .firebaseui-card-header { padding: 0 !important; }
+
+        /* Стили для полей ввода (Inputs) */
         .firebaseui-input, .firebaseui-input-invalid {
             font-family: 'Norms', sans-serif !important;
             font-weight: 400 !important;
-            width: 100% !important;
-            padding: 12px 15px !important;
             border: 1px solid var(--border-color) !important;
             border-radius: var(--button-border-radius) !important;
             background-color: rgba(0,0,0,0.25) !important;
             color: var(--primary-text-color) !important;
             font-size: 0.95rem !important;
         }
-        
-        /* Стили для второстепенных ссылок (Cancel, Forgot Password?) */
+        .firebaseui-input:focus {
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 10px rgba(217, 244, 122, 0.3) !important;
+        }
+
+        /* Главные кнопки (Sign in, Next, Save) */
+        .firebaseui-id-submit {
+            font-family: 'Norms', sans-serif !important;
+            font-weight: 700 !important;
+            background-color: var(--accent-color) !important;
+            color: var(--accent-text-color) !important;
+            padding: 14px 20px !important;
+            border-radius: var(--button-border-radius) !important;
+            font-size: 1rem !important;
+            box-shadow: none !important;
+        }
+        .firebaseui-id-submit:hover { background-color: #c8e070 !important; }
+
+        /* Второстепенные кнопки (Cancel) */
         .firebaseui-id-secondary-link {
+            font-family: 'Norms', sans-serif !important;
             color: var(--secondary-text-color) !important;
             text-decoration: none !important;
         }
-        .firebaseui-id-secondary-link:hover {
-            color: var(--accent-color) !important;
-        }
+        .firebaseui-id-secondary-link:hover { color: var(--accent-color) !important; }
         
-        /* Убираем иконку Google по умолчанию, чтобы использовать свою */
-        .firebaseui-idp-icon {
-            display: none !important;
+        /* Кнопки входа через соц. сети (Google и др.) */
+        .firebaseui-idp-button {
+            font-family: 'Norms', sans-serif !important;
+            background-color: transparent !important;
+            color: var(--accent-color) !important;
+            border: 1px solid var(--accent-color) !important;
+            border-radius: var(--button-border-radius) !important;
+            box-shadow: none !important;
+            transition: all 0.3s ease !important;
         }
-        /* Стили для текста на кнопках (например, "Continue with Google") */
-        .firebaseui-idp-text {
-            font-size: 1rem !important;
+        .firebaseui-idp-button:hover {
+            background-color: var(--accent-color) !important;
+            color: var(--accent-text-color) !important;
         }
-    </style>
+        .firebaseui-idp-icon { display: none !important; } /* Прячем стандартную иконку Google */
+        .firebaseui-idp-text { font-size: 1rem !important; font-weight: 700 !important; }
 
+        /* Ссылки на Политику и Условия */
+        .firebaseui-card-footer { padding-top: 20px !important; }
+        .firebaseui-link {
+            color: var(--secondary-text-color) !important;
+            text-decoration: none !important;
+        }
+        .firebaseui-link:hover { color: var(--accent-color) !important; }
+    </style>
 </head>
 <body>
     <div class="auth-container">
@@ -137,9 +144,7 @@
           appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
           measurementId: "G-GTKNFZFZXY"
         };
-
         firebase.initializeApp(firebaseConfig);
-
         const uiConfig = {
             callbacks: {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
@@ -173,7 +178,6 @@
             tosUrl: '/terms',
             privacyPolicyUrl: '/privacy'
         };
-
         const ui = new firebaseui.auth.AuthUI(firebase.auth());
         ui.start('#firebaseui-auth-container', uiConfig);
     </script>
