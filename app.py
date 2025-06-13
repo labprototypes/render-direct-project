@@ -136,7 +136,8 @@ def login():
 
 @app.route('/session-login', methods=['POST'])
 def session_login():
-    id_token = request.json.get('idToken')
+    data = request.get_json()
+    id_token = data.get('idToken')
     if not id_token:
         return jsonify({"status": "error", "message": "ID token is missing."}), 400
 
@@ -152,12 +153,16 @@ def session_login():
             # Логика для новых пользователей
             trial_used = UsedTrialEmail.query.filter_by(email=email).first()
             initial_tokens = 0 if trial_used else 100
+            
+            # Получаем согласие на маркетинг из запроса
+            marketing_consent = data.get('marketingConsent', True)
 
             user = User(
                 id=uid, 
                 email=email, 
                 username=name,
-                token_balance=initial_tokens
+                token_balance=initial_tokens,
+                marketing_consent=marketing_consent
             )
             db.session.add(user)
             db.session.commit()
