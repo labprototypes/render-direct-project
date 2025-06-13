@@ -113,7 +113,7 @@ class User(db.Model, UserMixin):
 
 class Prediction(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(128), db.ForeignKey('user.id'), nullable=False)
     replicate_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
     status = db.Column(db.String(50), default='pending', nullable=False)
     output_url = db.Column(db.String(2048), nullable=True)
