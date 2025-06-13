@@ -30,10 +30,15 @@
             <ul class="plan-includes">
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>One-time purchase of 1,000 credits</li>
             </ul>
-            <form action="{{ url_for('create_checkout_session') }}" method="POST">
-                <input type="hidden" name="price_id" value="{{ TOKEN_PRICE_ID }}">
-                <button type="submit" class="btn">Purchase Credits</button>
-            </form>
+            {% if current_user.current_plan == 'taste' %}
+                <div> <button class="btn feature-locked" disabled title="Please upgrade your plan to use this feature">Top up credits</button>
+                </div>
+            {% else %}
+                <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                    <input type="hidden" name="price_id" value="{{ TOKEN_PRICE_ID }}">
+                    <button type="submit" class="btn">Top up credits</button>
+                </form>
+            {% endif %}
         </div>
     </div>
 
