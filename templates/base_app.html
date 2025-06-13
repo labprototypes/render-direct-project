@@ -669,6 +669,13 @@
                 {% else %}
                     <div class="user-controls-loggedout">
                         <a href="{{ url_for('login') }}" class="auth-button">Login</a>
+                        <a href="{{ url_for('login') }}" class="auth-button">Sign Up</a>
+                    </div>
+                {% endif %}
+            </div>
+                {% else %}
+                    <div class="user-controls-loggedout">
+                        <a href="{{ url_for('login') }}" class="auth-button">Login</a>
                         <a href="{{ url_for('register') }}" class="auth-button">Sign Up</a>
                     </div>
                 {% endif %}
