@@ -1,0 +1,82 @@
+{% extends "base_security.html" %}
+
+{% block title %}Login / Sign Up{% endblock %}
+
+{% block content %}
+    <h2>Login or create an account</h2>
+    
+    <div id="firebaseui-auth-container"></div>
+
+    <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejsui/6.0.1/firebaseui.js"></script>
+<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/6.0.1/firebaseui.css" />
+
+<script>
+    // 3. ВАШ ФИНАЛЬНЫЙ КОНФИГ FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
+      authDomain: "pifly-cf45f.firebaseapp.com",
+      projectId: "pifly-cf45f",
+      storageBucket: "pifly-cf45f.firebasestorage.app",
+      messagingSenderId: "516997916662",
+      appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
+      measurementId: "G-GTKNFZFZXY"
+    };
+
+    // 4. Инициализация Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // 5. Конфигурация виджета FirebaseUI
+    const uiConfig = {
+        callbacks: {
+            signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+                document.getElementById('loader').style.display = 'block';
+                document.getElementById('firebaseui-auth-container').style.display = 'none';
+
+                authResult.user.getIdToken().then(function(idToken) {
+                    // Отправляем токен на наш бэкенд Flask
+                    fetch('/session-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ idToken: idToken })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Если бэкенд подтвердил токен, перенаправляем на главную
+                            window.location.assign('/');
+                        } else {
+                            // Если бэкенд вернул ошибку, показываем ее
+                            alert('Login failed: ' + data.message);
+                            document.getElementById('loader').style.display = 'none';
+                        }
+                    });
+                });
+                // Возвращаем false, чтобы FirebaseUI не делал свой редирект
+                return false;
+            },
+            uiShown: function() {
+                document.getElementById('loader').style.display = 'none';
+            }
+        },
+        signInFlow: 'popup',
+        signInSuccessUrl: '/', 
+        signInOptions: [
+          firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+          firebase.auth.EmailAuthProvider.PROVIDER_ID
+        ],
+        tosUrl: '/terms',
+        privacyPolicyUrl: '/privacy'
+    };
+
+    // 6. Запускаем виджет FirebaseUI
+    const ui = new firebaseui.auth.AuthUI(firebase.auth());
+    ui.start('#firebaseui-auth-container', uiConfig);
+</script>
+{% endblock %}
