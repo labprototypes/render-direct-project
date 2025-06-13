@@ -79,18 +79,33 @@ else:
     openai_client = None
     print("!!! ВНИМАНИЕ: OPENAI_API_KEY не найден. Улучшение промптов и Autofix не будут работать.")
 
+import firebase_admin
+from firebase_admin import credentials, auth
+
+# Путь к секретному файлу на Render
+cred_path = '/etc/secrets/firebase_credentials.json'
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+else:
+    # Для локальной разработки, положите файл в корень проекта
+    cred = credentials.Certificate('firebase_credentials.json')
+
+firebase_admin.initialize_app(cred)
 # --- Модели Базы Данных ---
+# В app.py
+
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(128), primary_key=True) # ID теперь строка для Firebase UID
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    username = db.Column(db.String(255), unique=True, nullable=True)
-    password = db.Column(db.String(255), nullable=False)
+    username = db.Column(db.String(255), nullable=True) # Имя пользователя от Google
     token_balance = db.Column(db.Integer, default=100, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
     current_plan = db.Column(db.String(50), nullable=True, default='trial')
+
+    # Поле password больше не нужно
 
     @property
     def is_active(self):
@@ -110,45 +125,11 @@ class UsedTrialEmail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
 
-# --- Формы ---
-class LoginForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    remember = BooleanField('Remember me')
-    submit = SubmitField('Login')
-
-class RegisterForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    username = StringField('Username', validators=[
-        DataRequired(message="Please enter a username."),
-        Length(min=3, max=30, message="Username must be between 3 and 30 characters.")
-    ])
-    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
-    password_confirm = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
-    accept_tos = BooleanField('I accept the Terms of Service and have read the Privacy Policy', validators=[DataRequired(message="You must accept the Terms and Privacy Policy.")])
-    marketing_consent = BooleanField('I agree to receive marketing communications as described in the Marketing Policy', default=True)
-    submit = SubmitField('Sign Up')
-
-    def validate_username(self, username):
-        user = User.query.filter_by(username=username.data).first()
-        if user:
-            raise ValidationError('This username is already taken. Please choose another.')
-
-class ChangePasswordForm(FlaskForm):
-    old_password = PasswordField('Current Password', validators=[DataRequired()])
-    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
-    new_password_confirm = PasswordField('Confirm New Password', validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
-    submit = SubmitField('Change Password')
-
-class DeleteAccountForm(FlaskForm):
-    password = PasswordField('Password', validators=[DataRequired()])
-    submit = SubmitField('Delete My Account Permanently')
-
 
 # --- Декораторы и Загрузчик пользователя ---
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return User.query.get(user_id) # <--- Убрали int()
 
 def subscription_required(f):
     @wraps(f)
@@ -162,163 +143,40 @@ def subscription_required(f):
     return decorated_function
 
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and check_password_hash(user.password, form.password.data):
-            login_user(user, remember=form.remember.data)
-            return redirect(url_for('index'))
-        else:
-            flash('Invalid email or password.', 'error')
-    return render_template('custom_login_user.html', form=form)
+# --- НОВЫЙ МАРШРУТ ДЛЯ АУТЕНТИФИКАЦИИ ЧЕРЕЗ FIREBASE ---
+@app.route('/session-login', methods=['POST'])
+def session_login():
+    id_token = request.json.get('idToken')
+    if not id_token:
+        return jsonify({"status": "error", "message": "ID token is missing."}), 400
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = RegisterForm()
-    if form.validate_on_submit():
-        existing_user = User.query.filter_by(email=form.email.data).first()
-        if existing_user:
-            flash('A user with this email already exists.', 'error')
-            return redirect(url_for('register'))
-        hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
-        try:
-            stripe_customer = stripe.Customer.create(email=form.email.data)
-        except Exception as e:
-            flash(f'Error creating customer in Stripe: {e}', 'error')
-            return render_template('custom_register_user.html', form=form)
-        trial_used = UsedTrialEmail.query.filter_by(email=form.email.data).first()
-        initial_tokens = 0 if trial_used else 100
-        new_user = User(
-            email=form.email.data,
-            username=form.username.data,
-            password=hashed_password,
-            marketing_consent=form.marketing_consent.data,
-            stripe_customer_id=stripe_customer.id,
-            token_balance=initial_tokens
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        flash('You have successfully registered! Please log in.', 'success')
-        return redirect(url_for('login'))
-    return render_template('custom_register_user.html', form=form)
-
-@app.route('/change-password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    form = ChangePasswordForm()
-    if form.validate_on_submit():
-        if not check_password_hash(current_user.password, form.old_password.data):
-            flash('Incorrect current password.', 'error')
-            return redirect(url_for('change_password'))
-        current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2:sha256')
-        db.session.commit()
-        flash('Your password has been changed successfully!', 'success')
-        return redirect(url_for('index'))
-    return render_template('custom_change_password.html', form=form)
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
-
-@app.route('/delete-account', methods=['GET', 'POST'])
-@login_required
-def delete_account():
-    form = DeleteAccountForm()
-    if form.validate_on_submit():
-        if not check_password_hash(current_user.password, form.password.data):
-            flash('Incorrect password.', 'error')
-            return redirect(url_for('delete_account'))
-        if current_user.stripe_subscription_id:
-            try:
-                stripe.Subscription.modify(
-                    current_user.stripe_subscription_id,
-                    cancel_at_period_end=True
-                )
-                flash('Your subscription has been scheduled for cancellation at the end of the current period.', 'info')
-            except stripe.error.StripeError as e:
-                flash(f'Could not cancel subscription with Stripe: {e}', 'error')
-                return redirect(url_for('delete_account'))
-        used_email = UsedTrialEmail.query.filter_by(email=current_user.email).first()
-        if not used_email:
-            used_email_record = UsedTrialEmail(email=current_user.email)
-            db.session.add(used_email_record)
-        Prediction.query.filter_by(user_id=current_user.id).delete()
-        user_to_delete = User.query.get(current_user.id)
-        logout_user()
-        db.session.delete(user_to_delete)
-        db.session.commit()
-        flash('Your account and all associated data have been deleted.', 'success')
-        return redirect(url_for('index'))
-    return render_template('delete_account.html', form=form)
-
-# --- Маршруты для Google Auth ---
-@app.route('/google/login')
-def google_login():
-    redirect_uri = url_for('google_callback', _external=True)
-    return oauth.google.authorize_redirect(redirect_uri)
-
-@app.route('/google/callback')
-def google_callback():
-    token = oauth.google.authorize_access_token()
-    user_info = oauth.google.userinfo()
-    user = User.query.filter_by(email=user_info['email']).first()
-    if user:
-        login_user(user)
-        return redirect(url_for('index'))
-    session['google_oauth_info'] = {
-        'email': user_info['email'],
-        'name': user_info.get('name', user_info['email'])
-    }
-    return redirect(url_for('google_complete_registration'))
-
-@app.route('/google/complete-registration', methods=['GET'])
-def google_complete_registration():
-    if 'google_oauth_info' not in session:
-        return redirect(url_for('login'))
-    google_info = session['google_oauth_info']
-    return render_template('google_complete.html', name=google_info['name'])
-
-@app.route('/google/create-account', methods=['POST'])
-def google_create_account():
-    if 'google_oauth_info' not in session:
-        return redirect(url_for('login'))
-    if 'accept_tos' not in request.form:
-        flash('You must accept the Terms of Service and Privacy Policy.', 'error')
-        return redirect(url_for('google_complete_registration'))
-    google_info = session['google_oauth_info']
-    email = google_info['email']
-    if User.query.filter_by(email=email).first():
-        return redirect(url_for('login'))
-    marketing_consent = 'marketing_consent' in request.form
-    hashed_password = generate_password_hash(os.urandom(24).hex(), method='pbkdf2:sha256')
     try:
-        stripe_customer = stripe.Customer.create(email=email)
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+        email = decoded_token.get('email')
+        name = decoded_token.get('name', email)
+
+        # Ищем пользователя или создаем нового
+        user = User.query.get(uid)
+        if not user:
+            # Логика для новых пользователей
+            trial_used = UsedTrialEmail.query.filter_by(email=email).first()
+            initial_tokens = 0 if trial_used else 100
+
+            user = User(
+                id=uid, 
+                email=email, 
+                username=name,
+                token_balance=initial_tokens
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        login_user(user)
+        return jsonify({"status": "success"})
+
     except Exception as e:
-        flash(f'Error creating customer in Stripe: {e}', 'error')
-        return redirect(url_for('google_complete_registration'))
-    trial_used = UsedTrialEmail.query.filter_by(email=email).first()
-    initial_tokens = 0 if trial_used else 100
-    new_user = User(
-        email=email,
-        username=google_info['name'],
-        password=hashed_password,
-        stripe_customer_id=stripe_customer.id,
-        marketing_consent=marketing_consent,
-        token_balance=initial_tokens
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    session.pop('google_oauth_info', None)
-    login_user(new_user)
-    return redirect(url_for('index'))
+        return jsonify({"status": "error", "message": str(e)}), 401
 
 # --- Маршруты для юридических и вспомогательных страниц ---
 @app.route('/terms')
