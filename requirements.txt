@@ -1,6 +1,5 @@
 Flask-SQLAlchemy
 flask-login
-flask-wtf
 Flask-Mail
 psycopg2-binary  # Драйвер для PostgreSQL
 flask
@@ -16,5 +15,4 @@ werkzeug
 email-validator
 gevent
 stripe
-Authlib
 firebase-admin
