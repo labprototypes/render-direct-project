@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Login / Sign Up - pifly.io</title>
+    <title>Sign in - pifly.io</title>
     <style>
-        /* Основные стили страницы, скопированные из base_security.html */
+        /* ИМПОРТ ШРИФТОВ И ОСНОВНЫЕ ПЕРЕМЕННЫЕ */
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
@@ -40,92 +40,90 @@
         .auth-container {
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
-            padding: 30px 40px;
+            padding: 40px 50px;
             border-radius: var(--content-border-radius);
             box-shadow: 0 10px 40px var(--shadow-color);
-            width: 100%; max-width: 450px;
-            position: relative; text-align: center;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        
+        /* НОВЫЕ СТИЛИ ДЛЯ ЗАГОЛОВКОВ КАК В ПРИМЕРЕ */
+        .auth-container h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--primary-text-color);
         }
         .auth-container h2 {
-            margin-bottom: 25px; font-size: 1.8rem; font-weight: 700;
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--secondary-text-color);
+            margin-bottom: 30px;
         }
+
+        /* КАСТОМНАЯ КНОПКА GOOGLE */
+        .google-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; padding: 12px; font-size: 1rem; font-weight: 700;
+            border-radius: var(--button-border-radius); border: 1px solid var(--border-color);
+            background-color: #FFFFFF; color: #1A1A1A;
+            cursor: pointer; transition: all 0.2s ease; gap: 10px;
+        }
+        .google-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .google-btn img { height: 20px; width: 20px; }
+        
+        /* РАЗДЕЛИТЕЛЬ "OR" */
+        .separator {
+            display: flex; align-items: center; text-align: center;
+            color: var(--secondary-text-color); margin: 25px 0; font-size: 0.9rem;
+        }
+        .separator::before, .separator::after {
+            content: ''; flex: 1; border-bottom: 1px solid var(--border-color);
+        }
+        .separator:not(:empty)::before { margin-right: 1em; }
+        .separator:not(:empty)::after { margin-left: 1em; }
     </style>
     
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
 
     <style>
-        /* Общие стили для всего виджета */
-        .firebaseui-container { background-color: transparent !important; box-shadow: none !important; }
-        .firebaseui-title { color: var(--primary-text-color) !important; font-family: 'Norms', sans-serif !important; font-weight: 700 !important; }
-        .firebaseui-text, .firebaseui-text-input-label { color: var(--secondary-text-color) !important; font-family: 'Norms', sans-serif !important; }
+        .firebaseui-container { background-color: transparent !important; box-shadow: none !important; margin-top: -20px; }
+        .firebaseui-title { display: none !important; }
+        .firebaseui-text-input-label { color: var(--primary-text-color) !important; font-family: 'Norms', sans-serif !important; font-weight: 500 !important; font-size: 0.9rem !important; margin-bottom: 8px !important; }
         .firebaseui-card-content { padding: 0 !important; }
-        .firebaseui-card-header { padding: 0 !important; }
-
-        /* Стили для полей ввода (Inputs) */
         .firebaseui-input, .firebaseui-input-invalid {
-            font-family: 'Norms', sans-serif !important;
-            font-weight: 400 !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: var(--button-border-radius) !important;
-            background-color: rgba(0,0,0,0.25) !important;
-            color: var(--primary-text-color) !important;
-            font-size: 0.95rem !important;
+            font-family: 'Norms', sans-serif !important; font-weight: 400 !important;
+            border: 1px solid var(--border-color) !important; border-radius: var(--button-border-radius) !important;
+            background-color: rgba(0,0,0,0.25) !important; color: var(--primary-text-color) !important;
+            font-size: 1rem !important; padding: 12px 15px !important;
         }
-        .firebaseui-input:focus {
-            border-color: var(--accent-color) !important;
-            box-shadow: 0 0 10px rgba(217, 244, 122, 0.3) !important;
-        }
-
-        /* Главные кнопки (Sign in, Next, Save) */
+        .firebaseui-input:focus { border-color: var(--accent-color) !important; box-shadow: 0 0 10px rgba(217, 244, 122, 0.3) !important; }
         .firebaseui-id-submit {
-            font-family: 'Norms', sans-serif !important;
-            font-weight: 700 !important;
-            background-color: var(--accent-color) !important;
-            color: var(--accent-text-color) !important;
-            padding: 14px 20px !important;
-            border-radius: var(--button-border-radius) !important;
-            font-size: 1rem !important;
-            box-shadow: none !important;
+            font-family: 'Norms', sans-serif !important; font-weight: 700 !important;
+            background-color: var(--accent-color) !important; color: var(--accent-text-color) !important;
+            padding: 14px 20px !important; border-radius: var(--button-border-radius) !important;
+            font-size: 1rem !important; box-shadow: none !important; margin-top: 10px !important;
         }
         .firebaseui-id-submit:hover { background-color: #c8e070 !important; }
-
-        /* Второстепенные кнопки (Cancel) */
-        .firebaseui-id-secondary-link {
-            font-family: 'Norms', sans-serif !important;
-            color: var(--secondary-text-color) !important;
-            text-decoration: none !important;
-        }
-        .firebaseui-id-secondary-link:hover { color: var(--accent-color) !important; }
-        
-        /* Кнопки входа через соц. сети (Google и др.) */
-        .firebaseui-idp-button {
-            font-family: 'Norms', sans-serif !important;
-            background-color: transparent !important;
-            color: var(--accent-color) !important;
-            border: 1px solid var(--accent-color) !important;
-            border-radius: var(--button-border-radius) !important;
-            box-shadow: none !important;
-            transition: all 0.3s ease !important;
-        }
-        .firebaseui-idp-button:hover {
-            background-color: var(--accent-color) !important;
-            color: var(--accent-text-color) !important;
-        }
-        .firebaseui-idp-icon { display: none !important; } /* Прячем стандартную иконку Google */
-        .firebaseui-idp-text { font-size: 1rem !important; font-weight: 700 !important; }
-
-        /* Ссылки на Политику и Условия */
-        .firebaseui-card-footer { padding-top: 20px !important; }
-        .firebaseui-link {
-            color: var(--secondary-text-color) !important;
-            text-decoration: none !important;
-        }
-        .firebaseui-link:hover { color: var(--accent-color) !important; }
+        .firebaseui-id-secondary-link { color: var(--accent-color) !important; text-decoration: none !important; font-size: 0.85rem !important; }
+        .firebaseui-id-secondary-link:hover { text-decoration: underline !important; }
+        .firebaseui-form-links { text-align: right !important; }
+        .firebaseui-card-footer { display: none !important; }
     </style>
 </head>
 <body>
     <div class="auth-container">
-        <h2>Login or create an account</h2>
+        <h1>Pifly.io</h1>
+        <h2>Sign in to Pifly.io</h2>
+
+        <button id="google-signin-btn" class="google-btn">
+            <img src="https://www.gstatic.com/firebasejsui/2.0.0/images/auth/google.svg" alt="Google logo">
+            Sign in with Google
+        </button>
+
+        <div class="separator">Or</div>
+
         <div id="firebaseui-auth-container"></div>
         <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
     </div>
@@ -144,41 +142,58 @@
           appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
           measurementId: "G-GTKNFZFZXY"
         };
+
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        function sendTokenToServer(idToken) {
+            document.getElementById('loader').style.display = 'block';
+            document.querySelector('.auth-container').style.display = 'none';
+            fetch('/session-login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ idToken: idToken })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.assign('/');
+                } else {
+                    alert('Login failed: ' + data.message);
+                    location.reload(); 
+                }
+            });
+        }
+
+        // Обработчик для нашей кастомной кнопки Google
+        document.getElementById('google-signin-btn').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    result.user.getIdToken().then(sendTokenToServer);
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        });
+
+        // Конфигурация для виджета FirebaseUI (теперь только для Email)
         const uiConfig = {
             callbacks: {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                    document.getElementById('loader').style.display = 'block';
-                    document.getElementById('firebaseui-auth-container').style.display = 'none';
-                    authResult.user.getIdToken().then(function(idToken) {
-                        fetch('/session-login', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ idToken: idToken })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.status === 'success') {
-                                window.location.assign('/');
-                            } else {
-                                alert('Login failed: ' + data.message);
-                                location.reload(); 
-                            }
-                        });
-                    });
+                    authResult.user.getIdToken().then(sendTokenToServer);
                     return false;
                 }
             },
             signInFlow: 'popup',
-            signInSuccessUrl: '/', 
             signInOptions: [
-              firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-              firebase.auth.EmailAuthProvider.PROVIDER_ID
+              firebase.auth.EmailAuthProvider.PROVIDER_ID // Оставляем только Email
             ],
             tosUrl: '/terms',
             privacyPolicyUrl: '/privacy'
         };
-        const ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+        const ui = new firebaseui.auth.AuthUI(auth);
         ui.start('#firebaseui-auth-container', uiConfig);
     </script>
 </body>
