@@ -8,12 +8,15 @@
     <div id="firebaseui-auth-container"></div>
     <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejsui/latest/firebaseui.js"></script>
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
 
-    <script>
+    <script type="module">
+        // 1. Импортируем нужные функции из библиотек Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import * as firebaseui from "https://www.gstatic.com/firebasejsui/latest/firebaseui.js";
+
+        // 2. Ваш финальный конфиг Firebase
         const firebaseConfig = {
           apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
           authDomain: "pifly-cf45f.firebaseapp.com",
@@ -24,8 +27,11 @@
           measurementId: "G-GTKNFZFZXY"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        // 3. Инициализация Firebase и получение объекта аутентификации
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
+        // 4. Конфигурация виджета FirebaseUI
         const uiConfig = {
             callbacks: {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
@@ -57,14 +63,15 @@
             signInFlow: 'popup',
             signInSuccessUrl: '/', 
             signInOptions: [
-              firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-              firebase.auth.EmailAuthProvider.PROVIDER_ID
+              GoogleAuthProvider.PROVIDER_ID,
+              EmailAuthProvider.PROVIDER_ID
             ],
             tosUrl: '/terms',
             privacyPolicyUrl: '/privacy'
         };
 
-        const ui = new firebaseui.auth.AuthUI(firebase.auth());
+        // 5. Запускаем виджет FirebaseUI
+        const ui = new firebaseui.auth.AuthUI(auth);
         ui.start('#firebaseui-auth-container', uiConfig);
     </script>
 {% endblock %}
