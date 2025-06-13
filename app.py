@@ -480,6 +480,13 @@ def process_image():
 def index():
     return render_template('index.html')
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'success') # Добавим сообщение для пользователя
+    return redirect(url_for('login'))
+
 # --- Final app setup ---
 with app.app_context():
     db.create_all()
