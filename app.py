@@ -18,10 +18,6 @@ from flask import Flask, request, jsonify, render_template, url_for, redirect, f
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
-
 
 # --- Настройки приложения ---
 app = Flask(__name__)
