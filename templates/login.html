@@ -1,21 +1,99 @@
-{% extends "base_security.html" %}
-
-{% block title %}Login / Sign Up{% endblock %}
-
-{% block content %}
-    <h2>Login or create an account</h2>
-    
-    <div id="firebaseui-auth-container"></div>
-    <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Login / Sign Up - pifly.io</title>
+    <style>
+        /* Стили, скопированные и адаптированные из ваших базовых шаблонов */
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
+            font-weight: 700;
+        }
+        :root {
+            --accent-color: #D9F47A;
+            --accent-glow: rgba(217, 244, 122, 0.7);
+            --base-bg-color: #0c0d10;
+            --surface-color: #1c1c1f;
+            --primary-text-color: #EAEAEA;
+            --secondary-text-color: #888888;
+            --accent-text-color: #1A1A1A;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --content-border-radius: 24px;
+        }
+        body {
+            font-family: 'Norms', sans-serif;
+            font-weight: 400;
+            background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--primary-text-color);
+        }
+        .auth-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 30px 40px;
+            border-radius: var(--content-border-radius);
+            box-shadow: 0 10px 40px var(--shadow-color);
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            text-align: center;
+        }
+        .auth-container h2 {
+            color: var(--primary-text-color);
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .flash-messages {
+            list-style-type: none; padding: 0; margin: 0 0 20px 0;
+        }
+        .flash-messages li {
+            background-color: rgba(229, 62, 62, 0.3); color: #FED7D7;
+            padding: 10px 15px; border-radius: 10px; font-size: 0.9rem;
+            border: 1px solid rgba(229, 62, 62, 0.5);
+        }
+    </style>
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
+</head>
+<body>
+    <div class="auth-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <h2>Login or create an account</h2>
+        
+        <div id="firebaseui-auth-container"></div>
+        <div id="loader" style="text-align: center; padding: 20px; display: none;">Loading...</div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejsui/latest/firebaseui.js"></script>
 
     <script>
-        // Этот код будет использовать глобальный объект 'firebase', который создается compat-скриптами выше
-        
         const firebaseConfig = {
           apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
           authDomain: "pifly-cf45f.firebaseapp.com",
@@ -26,7 +104,6 @@
           measurementId: "G-GTKNFZFZXY"
         };
 
-        // Используем старый, но надежный синтаксис, который теперь должен работать
         firebase.initializeApp(firebaseConfig);
 
         const uiConfig = {
@@ -67,8 +144,8 @@
             privacyPolicyUrl: '/privacy'
         };
 
-        // Теперь вызов firebase.auth() не должен вызывать ошибку, так как мы используем compat-библиотеки
         const ui = new firebaseui.auth.AuthUI(firebase.auth());
         ui.start('#firebaseui-auth-container', uiConfig);
     </script>
-{% endblock %}
+</body>
+</html>
