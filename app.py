@@ -144,6 +144,10 @@ def subscription_required(f):
 
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
 # --- НОВЫЙ МАРШРУТ ДЛЯ АУТЕНТИФИКАЦИИ ЧЕРЕЗ FIREBASE ---
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
 @app.route('/session-login', methods=['POST'])
 def session_login():
     id_token = request.json.get('idToken')
