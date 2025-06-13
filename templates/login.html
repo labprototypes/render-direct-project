@@ -11,16 +11,14 @@
 {% endblock %}
 
 
-{# === ИСПРАВЛЕНИЕ: ПЕРЕНОСИМ ВСЕ СКРИПТЫ В БЛОК page_scripts === #}
 {% block page_scripts %}
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-
-    <script src="https://www.gstatic.com/firebasejsui/6.0.1/firebaseui.js"></script>
-    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/6.0.1/firebaseui.css" />
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejsui/latest/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejsui/latest/firebaseui.css" />
 
     <script>
-        // 3. ВАШ ФИНАЛЬНЫЙ КОНФИГ FIREBASE
+        // ВАШ ФИНАЛЬНЫЙ КОНФИГ FIREBASE
         const firebaseConfig = {
           apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
           authDomain: "pifly-cf45f.firebaseapp.com",
@@ -31,10 +29,10 @@
           measurementId: "G-GTKNFZFZXY"
         };
 
-        // 4. Инициализация Firebase
+        // Инициализация Firebase
         firebase.initializeApp(firebaseConfig);
 
-        // 5. Конфигурация виджета FirebaseUI
+        // Конфигурация виджета FirebaseUI
         const uiConfig = {
             callbacks: {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
@@ -75,7 +73,7 @@
             privacyPolicyUrl: '/privacy'
         };
 
-        // 6. Запускаем виджет FirebaseUI
+        // Запускаем виджет FirebaseUI
         const ui = new firebaseui.auth.AuthUI(firebase.auth());
         ui.start('#firebaseui-auth-container', uiConfig);
     </script>
