@@ -295,30 +295,33 @@ def archive():
 def create_checkout_session():
     price_id = request.form.get('price_id')
     mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
-
+    
     try:
-        # Готовим параметры для Stripe
+        # Готовим базовые параметры для Stripe
         checkout_params = {
             'payment_method_types': ['card'],
             'line_items': [{'price': price_id, 'quantity': 1}],
             'mode': mode,
             'automatic_tax': {'enabled': True},
-            'customer_update': {'address': 'auto'},
             'success_url': url_for('billing', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url': url_for('billing', _external=True),
         }
 
-        # ПРОВЕРКА: Если у пользователя уже есть ID клиента Stripe, используем его.
+        # ПРОВЕРКА: Если у пользователя уже есть ID клиента Stripe...
         if current_user.stripe_customer_id:
+            # ...тогда используем его И разрешаем ему обновлять адрес.
             checkout_params['customer'] = current_user.stripe_customer_id
-        # ЕСЛИ НЕТ: Передаем email для создания нового клиента и наш user.id в метаданных.
+            checkout_params['customer_update'] = {'address': 'auto'} # <-- ПЕРЕМЕСТИЛИ СЮДА
+        
+        # ЕСЛИ НЕТ: Передаем email для создания нового клиента.
+        # customer_update здесь не используется, что и требовалось.
         else:
             checkout_params['customer_email'] = current_user.email
             checkout_params['metadata'] = {'user_id': current_user.id}
 
         checkout_session = stripe.checkout.Session.create(**checkout_params)
         return redirect(checkout_session.url, code=303)
-
+        
     except Exception as e:
         flash(f'Stripe error: {str(e)}', 'error')
         return redirect(url_for('billing'))
