@@ -290,19 +290,12 @@ def archive():
     predictions = Prediction.query.filter_by(user_id=current_user.id, status='completed').order_by(Prediction.created_at.desc()).all()
     return render_template('archive.html', predictions=predictions)
 
-# НАЙДИТЕ ЭТУ ФУНКЦИЮ
-@app.route('/create-checkout-session', methods=['POST'])
-@login_required
-def create_checkout_session():
-    # ... существующий код ...
-
-# И ЗАМЕНИТЕ ЕЕ НА ЭТУ ВЕРСИЮ
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
     price_id = request.form.get('price_id')
     mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
-    
+
     try:
         # Готовим параметры для Stripe
         checkout_params = {
@@ -325,7 +318,7 @@ def create_checkout_session():
 
         checkout_session = stripe.checkout.Session.create(**checkout_params)
         return redirect(checkout_session.url, code=303)
-        
+
     except Exception as e:
         flash(f'Stripe error: {str(e)}', 'error')
         return redirect(url_for('billing'))
