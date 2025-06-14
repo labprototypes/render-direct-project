@@ -32,15 +32,17 @@
         }
 
         :root {
-            --primary-text-color: #F2F2F5;
-            --secondary-text-color: #C9C9D1;
-            --base-bg-color: #1B1B1E;
-            --accent-color: #D1FF5A;
-            --accent-glow: rgba(209, 255, 90, 0.5);
-            --accent-text-color: #1B1B1E;
-            --border-color: #C9C9D1;
+            --accent-color: #D9F47A;
+            --accent-glow: rgba(217, 244, 122, 0.7);
+            --base-bg-color: #0c0d10;
+            --surface-color: #1c1c1f;
+            --surface-glass: rgba(35, 35, 38, 0.6); 
+            --primary-text-color: #EAEAEA;
+            --secondary-text-color: #888888;
+            --accent-text-color: #1A1A1A;
+            --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
-            --blur-intensity: 25px;
+            --blur-intensity: 25px; 
             --content-border-radius: 24px;
             --element-border-radius: 16px;
             --button-border-radius: 14px;
@@ -64,6 +66,11 @@
             flex-direction: column;
             min-height: 100vh;
             position: relative;
+            background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             overflow-y: auto; 
         }
         
@@ -216,13 +223,16 @@
         }
         
         .image-drop-area {
-            background-color: #2A2A2E;
-            border: 1px dashed var(--border-color);
+            width: 100%; height: 160px; 
+            background-color: rgba(0,0,0,0.25);
+            border-radius: var(--element-border-radius); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; cursor: pointer;
+            position: relative; overflow: hidden; border: 1px dashed var(--border-color);
+            transition: all var(--transition-speed) ease;
         }
-        
-        .image-drop-area:hover {
-            background-color: #303035;
-            border-color: var(--accent-color);
+        .image-drop-area:hover, .image-drop-area.dragover {
+             border-color: var(--accent-glow); background-color: rgba(217, 244, 122, 0.05);
+             transform: scale(1.02);
         }
         .drop-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; }
         .drop-placeholder-icon { width: 32px; height: 32px; color: var(--secondary-text-color); transition: color var(--transition-speed) ease; }
@@ -317,47 +327,38 @@
         @keyframes pulse { 0%, 100% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1); opacity: 1; } }
         
         .input-area {
-            background-color: #2A2A2E;
-            border: 1px solid var(--border-color);
-            border-radius: var(--button-border-radius);
-            padding: 6px 8px;
-            width: 100%;
+            display: flex; align-items: center; background-color: rgba(0,0,0,0.25);
+            border-radius: var(--button-border-radius); padding: 6px 8px; width: 100%;
+            border: 1px solid var(--border-color); transition: all var(--transition-speed) ease;
         }
-        
+        .input-area:focus-within { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(217, 244, 122, 0.3); }
         #prompt {
-            color: var(--primary-text-color);
+            flex-grow: 1; border: none; padding: 10px 15px; font-size: 0.9rem;
+            background-color: transparent; outline: none; color: var(--primary-text-color);
+            font-family: 'Norms', sans-serif;
+            font-weight: 400;
         }
-        
-        #prompt::placeholder {
-            color: var(--secondary-text-color);
-        }
+        #prompt::placeholder { color: var(--secondary-text-color); opacity: 1; }
         
         .submit-action-group {
             width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;
         }
         .submit-button-element {
-            width: 100%;
-            background: linear-gradient(to bottom, #D1FF5A, #C4EB4D);
-            color: var(--accent-text-color);
-            border: none;
-            cursor: pointer;
-            padding: 16px;
-            border-radius: var(--button-border-radius);
-            font-size: 1.1rem;
+            width: 100%; background-color: transparent; color: var(--accent-color);
+            border: 1px solid var(--accent-color); cursor: pointer; padding: 16px;
+            border-radius: var(--button-border-radius); font-size: 1.1rem;
             font-family: 'Norms', sans-serif;
-            font-weight: 700;
+            font-weight: 700; 
             transition: all var(--transition-speed) ease-out;
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4),
-                        0 4px 10px rgba(209, 255, 90, 0.3);
+            position: relative; overflow: hidden;
             letter-spacing: 0.5px;
         }
-        
         .submit-button-element:hover {
-            transform: translateY(-2px);
-            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6),
-                        0 6px 18px rgba(209, 255, 90, 0.6);
+            transform: translateY(-3px);
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            box-shadow: 0 5px 20px var(--accent-glow);
         }
-
         .submit-button-element:active { transform: translateY(0); }
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
@@ -372,21 +373,22 @@
         .template-selector {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%;
         }
-        .edit-mode-btn,
-        .resolution-btn {
-            background-color: #2A2A2E;
-            border: 1px solid var(--border-color);
-            color: var(--secondary-text-color);
+        .edit-mode-btn, .resolution-btn {
+            flex: 1; padding: 12px;
+            border-radius: 10px;
+            border: none; background-color: transparent;
+            color: var(--secondary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
+            font-size: 0.85rem; font-weight: 500;
+            transition: all var(--transition-speed) ease; text-align: center;
         }
-        
-        .edit-mode-btn.active,
-        .resolution-btn.active {
-            background: linear-gradient(to bottom, #D1FF5A, #C4EB4D);
-            color: var(--accent-text-color);
-            box-shadow: 0 0 10px var(--accent-glow);
+        .edit-mode-btn:hover, .resolution-btn:hover {
+            color: var(--primary-text-color); background-color: rgba(255,255,255,0.05);
+        }
+        .edit-mode-btn.active, .resolution-btn.active {
+            background-color: var(--accent-color); border-color: var(--accent-color);
+            color: var(--accent-text-color); box-shadow: 0 0 15px var(--accent-glow);
             font-weight: 700;
         }
-
 
         .template-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
