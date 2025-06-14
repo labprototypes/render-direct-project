@@ -201,9 +201,28 @@ def upload_file_to_s3(file_to_upload):
 
 def handle_checkout_session(session):
     customer_id = session.get('customer')
+    user_id_from_metadata = session.get('metadata', {}).get('user_id')
+
     with app.app_context():
-        user = User.query.filter_by(stripe_customer_id=customer_id).first()
-        if not user: return
+        user = None
+        # Сначала ищем пользователя по ID из метаданных (самый надежный способ)
+        if user_id_from_metadata:
+            user = User.query.get(user_id_from_metadata)
+
+        # Если по какой-то причине метаданных нет, пытаемся найти по customer_id
+        if not user and customer_id:
+            user = User.query.filter_by(stripe_customer_id=customer_id).first()
+
+        if not user:
+            print(f"!!! Webhook Error: Could not find user for customer {customer_id} or metadata {user_id_from_metadata}")
+            return
+
+        # Если у пользователя еще не сохранен stripe_customer_id, сохраняем его
+        if not user.stripe_customer_id and customer_id:
+            user.stripe_customer_id = customer_id
+            print(f"!!! Stripe customer ID {customer_id} saved for user {user.id}")
+
+        # Дальнейшая логика по обработке подписки или платежа
         if session.get('subscription'):
             subscription_id = session.get('subscription')
             subscription = stripe.Subscription.retrieve(subscription_id)
@@ -211,9 +230,13 @@ def handle_checkout_session(session):
             user.subscription_status = subscription.status
             price_id = subscription.items.data[0].price.id
             user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
-            handle_successful_payment(invoice=None, subscription=subscription)
+            # Вызываем обработчик пополнения токенов (если это первая оплата подписки)
+            if session.get('payment_status') == 'paid':
+                 handle_successful_payment(invoice=None, subscription=subscription)
         elif session.get('payment_intent'):
-            user.token_balance += 1000
+            # Это разовая покупка (например, токены)
+            user.token_balance += 1000 # Пример, как в вашем коде
+
         db.session.commit()
 
 def handle_subscription_change(subscription):
@@ -267,23 +290,42 @@ def archive():
     predictions = Prediction.query.filter_by(user_id=current_user.id, status='completed').order_by(Prediction.created_at.desc()).all()
     return render_template('archive.html', predictions=predictions)
 
+# НАЙДИТЕ ЭТУ ФУНКЦИЮ
+@app.route('/create-checkout-session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    # ... существующий код ...
+
+# И ЗАМЕНИТЕ ЕЕ НА ЭТУ ВЕРСИЮ
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
     price_id = request.form.get('price_id')
     mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
+    
     try:
-        checkout_session = stripe.checkout.Session.create(
-            customer=current_user.stripe_customer_id,
-            payment_method_types=['card'],
-            line_items=[{'price': price_id, 'quantity': 1}],
-            mode=mode,
-            automatic_tax={'enabled': True},
-            customer_update={'address': 'auto'},
-            success_url=url_for('billing', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=url_for('billing', _external=True),
-        )
+        # Готовим параметры для Stripe
+        checkout_params = {
+            'payment_method_types': ['card'],
+            'line_items': [{'price': price_id, 'quantity': 1}],
+            'mode': mode,
+            'automatic_tax': {'enabled': True},
+            'customer_update': {'address': 'auto'},
+            'success_url': url_for('billing', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url': url_for('billing', _external=True),
+        }
+
+        # ПРОВЕРКА: Если у пользователя уже есть ID клиента Stripe, используем его.
+        if current_user.stripe_customer_id:
+            checkout_params['customer'] = current_user.stripe_customer_id
+        # ЕСЛИ НЕТ: Передаем email для создания нового клиента и наш user.id в метаданных.
+        else:
+            checkout_params['customer_email'] = current_user.email
+            checkout_params['metadata'] = {'user_id': current_user.id}
+
+        checkout_session = stripe.checkout.Session.create(**checkout_params)
         return redirect(checkout_session.url, code=303)
+        
     except Exception as e:
         flash(f'Stripe error: {str(e)}', 'error')
         return redirect(url_for('billing'))
