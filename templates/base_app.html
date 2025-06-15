@@ -34,14 +34,14 @@
         :root {
             --primary-text-color: #1B1B1E;
             --secondary-text-color: #6c757d;
-            --base-bg-color: #EFEFEF; /* ИЗМЕНЕНО: Новый цвет фона */
+            --base-bg-color: #EFEFEF;
             --accent-color: #D1FF5A;
             --accent-glow: rgba(209, 255, 90, 0.5);
             --accent-text-color: #1B1B1E;
             --border-color: #E0E0E0;
             --shadow-color: rgba(0, 0, 0, 0.1);
             --surface-color: #FFFFFF;
-            --light-surface-color: rgba(0, 0, 0, 0.04); /* ДОБАВЛЕНО: Цвет для светлых подложек */
+            --light-surface-color: rgba(0, 0, 0, 0.04);
             --toggle-active-bg: #1B1B1E;
             --toggle-active-text: #FFFFFF;
             --blur-intensity: 15px;
@@ -85,7 +85,6 @@
         
         body.no-scroll .app-container { height: 100vh; }
 
-        /* ИЗМЕНЕНО: Шапка стала более прозрачной */
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
@@ -104,7 +103,6 @@
         .app-logo-link:hover { transform: scale(1.05); }
         .logo { height: 38px; cursor: pointer; display: block; }
         
-        /* ИЗМЕНЕНО: Активная кнопка Upscale/Edit стала акцентного цвета */
         .mode-selector {
             display: flex; align-items: center;
             background-color: var(--surface-color);
@@ -120,7 +118,7 @@
             font-family: 'Norms', sans-serif; font-size: 0.85rem; font-weight: 500;
             transition: all var(--transition-speed) ease; text-align: center;
             opacity: 1;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* ИЗМЕНЕНО: Добавлен объем */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
         .mode-btn:not(.active):hover {
@@ -128,18 +126,17 @@
         }
         
         .mode-btn.active {
-            background-color: var(--accent-color); /* ИЗМЕНЕНО */
-            color: var(--accent-text-color);      /* ИЗМЕНЕНО */
-            box-shadow: 0 4px 15px var(--accent-glow); /* ИЗМЕНЕНО */
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            box-shadow: 0 4px 15px var(--accent-glow);
             font-weight: 700;
         }
 
-        /* ИЗМЕНЕНО: Фон кнопок Autofix/Edit и добавлен объем */
         .edit-mode-selector, .resolution-selector {
             display: flex; align-items: center;
-            background-color: var(--light-surface-color); /* ИЗМЕНЕНО */
+            background-color: var(--light-surface-color);
             padding: 6px; border-radius: 18px; gap: 6px;
-            border: none; /* ИЗМЕНЕНО */
+            border: none;
         }
         
         .edit-mode-btn, .resolution-btn {
@@ -148,17 +145,18 @@
             color: var(--primary-text-color); cursor: pointer;
             font-family: 'Norms', sans-serif; font-size: 0.85rem; font-weight: 500;
             transition: all var(--transition-speed) ease; text-align: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* ИЗМЕНЕНО: Добавлен объем */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         .edit-mode-btn:hover, .resolution-btn:hover {
             color: var(--primary-text-color); background-color: rgba(0,0,0,0.05);
         }
-
+        
+        /* ИЗМЕНЕНО: Активные кнопки Edit/Autofix теперь тоже акцентного цвета */
         .edit-mode-btn.active, .resolution-btn.active {
-            background-color: var(--toggle-active-bg);
-            color: var(--toggle-active-text);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            box-shadow: 0 4px 15px var(--accent-glow);
             font-weight: 700;
         }
 
@@ -176,7 +174,6 @@
             border-radius: 50%; margin-left: 8px; box-shadow: 0 0 10px var(--accent-glow);
         }
 
-        /* ИЗМЕНЕНО: Убрана круглая обводка у бургер-меню */
         .burger-menu-btn {
             background-color: transparent; border: none;
             padding: 0; cursor: pointer; width: 40px; height: 40px;
@@ -238,7 +235,6 @@
         
         .image-inputs-container { display: flex; justify-content: center; gap: 15px; width: 100%; }
         
-        /* ИЗМЕНЕНО: используется новая переменная цвета */
         .image-drop-area {
             width: 100%; height: 160px; 
             background-color: var(--light-surface-color); 
@@ -340,14 +336,18 @@
         }
         .submit-button-element:active { transform: translateY(0); }
         
-        /* ИЗМЕНЕНО: Стиль для неактивной кнопки Generate */
+        /* ИЗМЕНЕНО: Цвет текста неактивной кнопки Generate */
         .submit-button-element:disabled {
             background-color: var(--border-color);
-            color: var(--accent-text-color) !important;
+            color: var(--secondary-text-color) !important;
             border-color: transparent;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+        .submit-button-element:disabled:hover {
+            background-color: var(--border-color);
+            color: var(--secondary-text-color) !important;
         }
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
@@ -360,7 +360,6 @@
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%;
         }
 
-        /* ИЗМЕНЕНО: Стили для неактивных и активных блоков (Create, Relight и т.д.) */
         .template-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 8px; padding: 12px; border-radius: var(--element-border-radius);
