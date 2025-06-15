@@ -32,17 +32,18 @@
         }
 
         :root {
-            --primary-text-color: #1B1B1E;           /* ИЗМЕНЕНО: Основной цвет текста (темный) */
-            --secondary-text-color: #6c757d;         /* ИЗМЕНЕНО: Вторичный цвет текста (серый) */
-            --base-bg-color: #E7E7E7;                 /* ИЗМЕНЕНО: Цвет фона страницы */
-            --accent-color: #D1FF5A;                 /* СОХРАНЕНО: Ваш акцентный цвет */
-            --accent-glow: rgba(209, 255, 90, 0.5);   /* СОХРАНЕНО: Свечение акцентного цвета */
-            --accent-text-color: #1B1B1E;             /* СОХРАНЕНО: Цвет текста на акцентных элементах */
-            --border-color: #E0E0E0;                 /* ИЗМЕНЕНО: Цвет границ (светло-серый) */
-            --shadow-color: rgba(0, 0, 0, 0.1);      /* ИЗМЕНЕНО: Цвет теней (более светлый) */
-            --surface-color: #FFFFFF;                /* ДОБАВЛЕНО: Цвет подложек (белый) */
-            --toggle-active-bg: #1B1B1E;             /* ДОБАВЛЕНО: Цвет активной кнопки-переключателя (черный) */
-            --toggle-active-text: #FFFFFF;           /* ДОБАВЛЕНО: Цвет текста активной кнопки-переключателя (белый) */
+            --primary-text-color: #1B1B1E;
+            --secondary-text-color: #6c757d;
+            --base-bg-color: #EFEFEF; /* ИЗМЕНЕНО: Новый цвет фона */
+            --accent-color: #D1FF5A;
+            --accent-glow: rgba(209, 255, 90, 0.5);
+            --accent-text-color: #1B1B1E;
+            --border-color: #E0E0E0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --surface-color: #FFFFFF;
+            --light-surface-color: rgba(0, 0, 0, 0.04); /* ДОБАВЛЕНО: Цвет для светлых подложек */
+            --toggle-active-bg: #1B1B1E;
+            --toggle-active-text: #FFFFFF;
             --blur-intensity: 15px;
             --content-border-radius: 24px;
             --element-border-radius: 16px;
@@ -55,14 +56,14 @@
         
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.2); }
+        ::-webkit-scrollbar-thumb { background-color: rgba(0, 0, 0, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background-color: rgba(0, 0, 0, 0.3); }
 
         body {
             font-family: 'Norms', sans-serif;
             font-weight: 400; 
-            color: var(--primary-text-color); /* ИЗМЕНЕНО */
-            background-color: var(--base-bg-color); /* ИЗМЕНЕНО */
+            color: var(--primary-text-color);
+            background-color: var(--base-bg-color); 
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -70,9 +71,7 @@
             overflow-y: auto; 
         }
         
-        body.no-scroll {
-            overflow: hidden; 
-        }
+        body.no-scroll { overflow: hidden; }
 
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
@@ -84,19 +83,17 @@
             height: auto; 
         }
         
-        body.no-scroll .app-container {
-             height: 100vh; 
-        }
+        body.no-scroll .app-container { height: 100vh; }
 
-
+        /* ИЗМЕНЕНО: Шапка стала более прозрачной */
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            background-color: rgba(231, 231, 231, 0.8); /* ИЗМЕНЕНО: светлый эффект стекла */
+            background-color: rgba(239, 239, 239, 0.6); 
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border-bottom: 1px solid var(--border-color);
-            box-shadow: none; /* Убран внутренний shadow */
+            box-shadow: none;
         }
         .page-header-inner {
             width: 100%; max-width: 1200px; padding: 0 25px;
@@ -107,43 +104,68 @@
         .app-logo-link:hover { transform: scale(1.05); }
         .logo { height: 38px; cursor: pointer; display: block; }
         
+        /* ИЗМЕНЕНО: Активная кнопка Upscale/Edit стала акцентного цвета */
         .mode-selector {
-            display: flex;
-            align-items: center;
-            background-color: var(--surface-color); /* ИЗМЕНЕНО: белый фон */
-            padding: 6px;
-            border-radius: 18px; /* ИЗМЕНЕНО: более скругленный */
-            gap: 6px;
+            display: flex; align-items: center;
+            background-color: var(--surface-color);
+            padding: 6px; border-radius: 18px; gap: 6px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06); /* ДОБАВЛЕНО: легкая тень */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
+        
         .mode-btn {
-            flex: 1;
-            padding: 8px 20px;
-            border-radius: 12px; /* ИЗМЕНЕНО: скругление для внутренней кнопки */
-            border: none;
-            background-color: transparent; /* Неактивная кнопка прозрачна */
-            color: var(--primary-text-color); /* ИЗМЕНЕНО: темный текст */
-            cursor: pointer;
-            font-family: 'Norms', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all var(--transition-speed) ease;
-            text-align: center;
+            flex: 1; padding: 8px 20px; border-radius: 12px;
+            border: none; background-color: transparent;
+            color: var(--primary-text-color); cursor: pointer;
+            font-family: 'Norms', sans-serif; font-size: 0.85rem; font-weight: 500;
+            transition: all var(--transition-speed) ease; text-align: center;
             opacity: 1;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* ИЗМЕНЕНО: Добавлен объем */
         }
-        .mode-btn.active, .edit-mode-btn.active, .resolution-btn.active {
-        background-color: var(--toggle-active-bg); /* ИЗМЕНЕНО: черный фон */
-        color: var(--toggle-active-text); /* ИЗМЕНЕНО: белый текст */
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* ИЗМЕНЕНО: более выраженная тень */
-        font-weight: 700;
+        
+        .mode-btn:not(.active):hover {
+            color: var(--primary-text-color); background-color: rgba(0,0,0,0.05);
         }
-        .mode-btn:not(.active):hover { opacity: 1; color: var(--primary-text-color); }
+        
+        .mode-btn.active {
+            background-color: var(--accent-color); /* ИЗМЕНЕНО */
+            color: var(--accent-text-color);      /* ИЗМЕНЕНО */
+            box-shadow: 0 4px 15px var(--accent-glow); /* ИЗМЕНЕНО */
+            font-weight: 700;
+        }
+
+        /* ИЗМЕНЕНО: Фон кнопок Autofix/Edit и добавлен объем */
+        .edit-mode-selector, .resolution-selector {
+            display: flex; align-items: center;
+            background-color: var(--light-surface-color); /* ИЗМЕНЕНО */
+            padding: 6px; border-radius: 18px; gap: 6px;
+            border: none; /* ИЗМЕНЕНО */
+        }
+        
+        .edit-mode-btn, .resolution-btn {
+            flex: 1; padding: 8px 20px; border-radius: 12px;
+            border: none; background-color: transparent;
+            color: var(--primary-text-color); cursor: pointer;
+            font-family: 'Norms', sans-serif; font-size: 0.85rem; font-weight: 500;
+            transition: all var(--transition-speed) ease; text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* ИЗМЕНЕНО: Добавлен объем */
+        }
+
+        .edit-mode-btn:hover, .resolution-btn:hover {
+            color: var(--primary-text-color); background-color: rgba(0,0,0,0.05);
+        }
+
+        .edit-mode-btn.active, .resolution-btn.active {
+            background-color: var(--toggle-active-bg);
+            color: var(--toggle-active-text);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-weight: 700;
+        }
+
         .top-right-nav { position: relative; display: flex; align-items: center; }
         .user-controls-loggedin {
-            display: flex; align-items: center; background-color: var(--surface-color);
-            padding: 8px 8px 8px 18px; border-radius: var(--content-border-radius); gap: 12px;
-            border: 1px solid var(--border-color);
+            display: flex; align-items: center; background-color: transparent;
+            padding: 8px; border-radius: var(--content-border-radius); gap: 12px; border: none;
         }
         .token-display {
             display: flex; align-items: center; color: var(--primary-text-color);
@@ -151,76 +173,60 @@
         }
         .token-coin {
             width: 18px; height: 18px; background-color: var(--accent-color);
-            border-radius: 50%; margin-left: 8px;
-            box-shadow: 0 0 10px var(--accent-glow);
+            border-radius: 50%; margin-left: 8px; box-shadow: 0 0 10px var(--accent-glow);
         }
+
+        /* ИЗМЕНЕНО: Убрана круглая обводка у бургер-меню */
         .burger-menu-btn {
-            color: var(--primary-text-color); border: 1px solid var(--border-color); border-radius: 50%;
+            background-color: transparent; border: none;
             padding: 0; cursor: pointer; width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
             transition: all var(--transition-speed) ease; position: relative;
-            color: #FFFFFF; /* FIX: Set icon color to white */
+            color: var(--primary-text-color);
         }
-        .burger-menu-btn:hover { transform: scale(1.1); border-color: var(--accent-glow); }
+        .burger-menu-btn:hover { transform: scale(1.1); }
         
-        .icon-burger, .icon-close {
-            transition: opacity 0.2s ease-in-out;
-        }
-        .icon-close { 
-            display: none;
-            width: 16px;
-            height: 16px;
-        }
-        .icon-burger {
-            display: block;
-            width: 16px;
-            height: 12px;
-        }
+        .icon-burger, .icon-close { transition: opacity 0.2s ease-in-out; }
+        .icon-close { display: none; width: 16px; height: 16px; }
+        .icon-burger { display: block; width: 16px; height: 12px; }
         .burger-menu-btn.open .icon-close { display: block; }
         .burger-menu-btn.open .icon-burger { display: none; }
         
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
-            background-color: var(--surface-color); /* ИЗМЕНЕНО */
-            backdrop-filter: none; -webkit-backdrop-filter: none; /* Убран blur */
-            border-radius: var(--element-border-radius);
-            box-shadow: 0 10px 40px var(--shadow-color);
-            border: 1px solid var(--border-color);
-            padding: 12px; width: 240px; z-index: 1000;
+            background-color: var(--surface-color);
+            backdrop-filter: none; -webkit-backdrop-filter: none;
+            border-radius: var(--element-border-radius); box-shadow: 0 10px 40px var(--shadow-color);
+            border: 1px solid var(--border-color); padding: 12px; width: 240px; z-index: 1000;
             opacity: 0; visibility: hidden; transform: translateY(-10px);
             transition: all var(--transition-speed) ease;
         }
         .dropdown-menu.open { opacity: 1; visibility: visible; transform: translateY(0); }
         .dropdown-header { padding: 5px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-        .dropdown-user-email { 
-            color: var(--primary-text-color); font-size: 0.9rem; font-weight: 500;
-        }
+        .dropdown-user-email { color: var(--primary-text-color); font-size: 0.9rem; font-weight: 500; }
         .dropdown-menu ul { list-style: none; }
         .dropdown-menu li a {
             display: block; padding: 10px 5px; color: var(--primary-text-color); text-decoration: none;
-            font-size: 0.95rem; font-weight: 400;
-            transition: all var(--transition-speed) ease;
-            border-radius: 8px;
+            font-size: 0.95rem; font-weight: 400; transition: all var(--transition-speed) ease; border-radius: 8px;
         }
-        .dropdown-menu li a:hover { color: var(--accent-text-color); background-color: var(--accent-color);}
+        .dropdown-menu li a:hover { color: var(--accent-text-color); background-color: var(--accent-color); }
         
-        .user-controls-loggedout {
-            display: flex; align-items: center; gap: 15px;
-        }
+        .user-controls-loggedout { display: flex; align-items: center; gap: 15px; }
         .user-controls-loggedout .auth-button {
             color: var(--primary-text-color); text-decoration: none; font-size: 0.9rem; font-weight: 500;
-            transition: color var(--transition-speed) ease; padding: 10px 18px;
+            transition: all var(--transition-speed) ease; padding: 10px 18px;
             border: 1px solid var(--border-color); border-radius: var(--button-border-radius);
-            background-color: rgba(255,255,255,0.05);
+            background-color: rgba(0,0,0,0.05);
         }
         .user-controls-loggedout .auth-button:hover { color: var(--accent-text-color); background-color: var(--accent-color); border-color: var(--accent-color); font-weight: 700; }
+        
         .content-wrapper {
             width: 100%; max-width: 440px; padding: 25px;
-            background-color: var(--surface-color); /* ИЗМЕНЕНО */
+            background-color: var(--surface-color);
             border-radius: var(--content-border-radius);
             transition: opacity var(--transition-speed), filter var(--transition-speed);
             border: 1px solid var(--border-color);
-            box-shadow: 0 10px 40px var(--shadow-color); /* Тень обновлена через :root */
+            box-shadow: 0 10px 40px var(--shadow-color);
             overflow-y: auto;
         }
         .content-wrapper.disabled { opacity: 0.5; pointer-events: none; filter: blur(4px); }
@@ -230,20 +236,19 @@
             align-items: center; justify-content: flex-start; gap: 20px;
         }
         
-        .image-inputs-container {
-            display: flex; justify-content: center; gap: 15px; width: 100%;
-        }
+        .image-inputs-container { display: flex; justify-content: center; gap: 15px; width: 100%; }
         
+        /* ИЗМЕНЕНО: используется новая переменная цвета */
         .image-drop-area {
             width: 100%; height: 160px; 
-            background-color: rgba(0,0,0,0.03); /* ИЗМЕНЕНО: очень светлый фон */
+            background-color: var(--light-surface-color); 
             border-radius: var(--element-border-radius); display: flex; flex-direction: column;
             justify-content: center; align-items: center; cursor: pointer;
             position: relative; overflow: hidden; border: 1px dashed var(--border-color);
             transition: all var(--transition-speed) ease;
         }
         .image-drop-area:hover, .image-drop-area.dragover {
-             border-color: var(--accent-glow); background-color: rgba(217, 244, 122, 0.05);
+             border-color: var(--accent-color); background-color: rgba(217, 244, 122, 0.1);
              transform: scale(1.02);
         }
         .drop-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; }
@@ -258,16 +263,11 @@
         }
         
         #result-area-right {
-            flex: 1; 
-            height: calc(100vh - 140px); 
-            display: flex; 
-            flex-direction: column;
-            gap: 20px;
-            background-color: var(--surface-color); /* ИЗМЕНЕНО */
-            border-radius: var(--content-border-radius);
-            border: 1px solid var(--border-color);
-            padding: 20px;
-            overflow-y: auto; 
+            flex: 1; height: calc(100vh - 140px); 
+            display: flex; flex-direction: column;
+            gap: 20px; background-color: var(--surface-color);
+            border-radius: var(--content-border-radius); border: 1px solid var(--border-color);
+            padding: 20px; overflow-y: auto; 
         }
         #history-placeholder {
             display: flex; flex-direction: column; justify-content: center;
@@ -278,53 +278,25 @@
         
         .history-item {
              justify-content: center; display: flex; align-items: center;
-             width: 100%; position: relative;
-             flex-shrink: 0;
+             width: 100%; position: relative; flex-shrink: 0;
         }
         .history-item-image {
-            /* FIX: Constrain the image size to act as a preview */
-            max-width: 100%;    /* Изображение не будет шире панели результатов */
-            max-height: 75vh;   /* Но и не выше 75% высоты экрана */
-            width: auto;        /* Ширина подстраивается автоматически, сохраняя пропорции */
-            height: auto;       /* Высота подстраивается автоматически, сохраняя пропорции */
-            object-fit: contain;
-            border-radius: var(--element-border-radius);
-            box-shadow: 0 10px 40px var(--shadow-color);
-            display: block;
+            max-width: 100%; max-height: 75vh; width: auto; height: auto;
+            object-fit: contain; border-radius: var(--element-border-radius);
+            box-shadow: 0 10px 40px var(--shadow-color); display: block;
         }
-
         .download-action-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            width: 32px;
-            height: 32px;
-            z-index: 10;
-            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            position: absolute; bottom: 8px; right: 8px;
+            width: 32px; height: 32px; z-index: 10; cursor: pointer;
             transition: all var(--transition-speed) ease;
-            opacity: 0;
-            visibility: hidden;
-            transform: scale(0.8);
-            /* FIX: Removed background styles */
-            background-color: transparent;
-            backdrop-filter: none;
-            border-radius: 0;
+            opacity: 0; visibility: hidden; transform: scale(0.8);
+            background-color: transparent; backdrop-filter: none; border-radius: 0;
         }
         .archive-item:hover .download-action-link,
-        .history-item:hover .download-action-link { 
-            opacity: 1; 
-            visibility: visible;
-            transform: scale(1);
-        }
+        .history-item:hover .download-action-link { opacity: 1; visibility: visible; transform: scale(1); }
         .download-action-link:hover { transform: scale(1.1) !important; }
-        .download-button-icon {
-            height: 22px; /* A slightly larger icon now that there's no background */
-            width: 22px;
-            display: block;
-        }
+        .download-button-icon { height: 22px; width: 22px; display: block; }
 
         .loader-container {
             width: 100%; padding: 40px 0; justify-content: center; align-items: center; z-index: 101; display: flex; margin: auto;
@@ -339,18 +311,15 @@
         @keyframes pulse { 0%, 100% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1); opacity: 1; } }
         
         .input-area {
-            display: flex; align-items: center;
-            background-color: transparent; /* ИЗМЕНЕНО */
+            display: flex; align-items: center; background-color: transparent;
             border-radius: var(--button-border-radius); padding: 6px 8px; width: 100%;
-            border: 1px solid var(--border-color);
-            transition: all var(--transition-speed) ease;
+            border: 1px solid var(--border-color); transition: all var(--transition-speed) ease;
         }
-        .input-area:focus-within { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-glow); }
+        .input-area:focus-within { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(217, 244, 122, 0.3); }
         #prompt {
             flex-grow: 1; border: none; padding: 10px 15px; font-size: 0.9rem;
             background-color: transparent; outline: none; color: var(--primary-text-color);
-            font-family: 'Norms', sans-serif;
-            font-weight: 400;
+            font-family: 'Norms', sans-serif; font-weight: 400;
         }
         #prompt::placeholder { color: var(--secondary-text-color); opacity: 1; }
         
@@ -361,77 +330,75 @@
             width: 100%; background-color: transparent; color: var(--accent-color);
             border: 1px solid var(--accent-color); cursor: pointer; padding: 16px;
             border-radius: var(--button-border-radius); font-size: 1.1rem;
-            font-family: 'Norms', sans-serif;
-            font-weight: 700; 
+            font-family: 'Norms', sans-serif; font-weight: 700; 
             transition: all var(--transition-speed) ease-out;
-            position: relative; overflow: hidden;
-            letter-spacing: 0.5px;
+            position: relative; overflow: hidden; letter-spacing: 0.5px;
         }
         .submit-button-element:hover {
-            transform: translateY(-3px);
-            background-color: var(--accent-color);
-            color: var(--accent-text-color);
-            box-shadow: 0 5px 20px var(--accent-glow);
+            transform: translateY(-3px); background-color: var(--accent-color);
+            color: var(--accent-text-color); box-shadow: 0 5px 20px var(--accent-glow);
         }
         .submit-button-element:active { transform: translateY(0); }
+        
+        /* ИЗМЕНЕНО: Стиль для неактивной кнопки Generate */
+        .submit-button-element:disabled {
+            background-color: var(--border-color);
+            color: var(--accent-text-color) !important;
+            border-color: transparent;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
         .control-group > label {
             font-size: 0.9rem; color: var(--primary-text-color); margin-bottom: 0; padding-left: 5px; 
             font-weight: 700;
         }
-        .edit-mode-selector, .resolution-selector {
-            display: flex; gap: 10px; width: 100%; background-color: rgba(0,0,0,0.25);
-            padding: 5px; border-radius: var(--button-border-radius); border: 1px solid var(--border-color);
-        }
+        
         .template-selector {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%;
         }
-        .edit-mode-btn, .resolution-btn {
-            flex: 1; padding: 12px;
-            border-radius: 10px;
-            border: none; background-color: transparent;
-            color: var(--secondary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
-            font-size: 0.85rem; font-weight: 500;
-            transition: all var(--transition-speed) ease; text-align: center;
-        }
-        .edit-mode-btn:hover, .resolution-btn:hover {
-            color: var(--primary-text-color); background-color: rgba(255,255,255,0.05);
-        }
-        .edit-mode-btn.active, .resolution-btn.active {
-            background-color: var(--accent-color); border-color: var(--accent-color);
-            color: var(--accent-text-color); box-shadow: 0 0 15px var(--accent-glow);
-            font-weight: 700;
-        }
 
+        /* ИЗМЕНЕНО: Стили для неактивных и активных блоков (Create, Relight и т.д.) */
         .template-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 8px; padding: 12px; border-radius: var(--element-border-radius);
-            border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
-            color: var(--primary-text-color); cursor: pointer; font-family: 'Norms', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 500; 
+            border: 1px solid transparent; 
+            background-color: var(--light-surface-color);
+            color: var(--secondary-text-color); 
+            cursor: pointer; font-family: 'Norms', sans-serif;
+            font-size: 0.8rem; font-weight: 500; 
             transition: all var(--transition-speed) ease; text-align: center;
+        }
+        .template-btn svg {
+            width: 22px; height: 22px; margin-bottom: 5px;
+            color: var(--secondary-text-color);
+            transition: all var(--transition-speed) ease;
         }
         .template-btn:hover {
              border-color: var(--accent-color); transform: translateY(-3px);
              background-color: rgba(217, 244, 122, 0.1);
         }
         .template-btn.active {
-            border-color: var(--accent-color); background-color: rgba(217, 244, 122, 0.15);
-            box-shadow: 0 0 15px rgba(217, 244, 122, 0.2); color: var(--accent-color);
+            border-color: transparent;
+            background-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+            color: var(--accent-text-color);
             font-weight: 700;
         }
-        .template-btn svg { width: 22px; height: 22px; margin-bottom: 5px; color: var(--secondary-text-color); transition: all var(--transition-speed) ease; }
-        .template-btn:hover svg, .template-btn.active svg { color: var(--accent-color); }
+        .template-btn.active svg {
+            color: var(--accent-text-color);
+        }
         
         .mode-description {
             font-size: 0.85rem; color: var(--secondary-text-color); text-align: center;
-            width: 100%; padding: 0 10px; line-height: 1.5; min-height: 2.5em;
-            font-weight: 300;
+            width: 100%; padding: 0 10px; line-height: 1.5; min-height: 2.5em; font-weight: 300;
         }
-
-        .slider-container { width: 100%; padding: 10px; background-color: rgba(0,0,0,0.25); border-radius: var(--element-border-radius); border: 1px solid var(--border-color);}
+        .slider-container {
+            width: 100%; padding: 10px; background-color: transparent;
+            border-radius: var(--element-border-radius); border: 1px solid var(--border-color);
+        }
         .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .slider-container label { font-weight: 500; color: var(--primary-text-color); font-size: 0.9rem; }
         .slider-value { font-weight: 700; color: var(--primary-text-color); }
@@ -444,16 +411,14 @@
             -webkit-appearance: none; appearance: none;
             width: 20px; height: 20px; border-radius: 50%;
             background: var(--accent-color); cursor: pointer;
-            border: none;
-            box-shadow: 0 0 10px var(--accent-glow);
+            border: none; box-shadow: 0 0 10px var(--accent-glow);
             transition: transform var(--transition-speed) ease;
         }
         .slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         .slider-container input[type="range"]::-moz-range-thumb {
             width: 20px; height: 20px; border-radius: 50%;
             background: var(--accent-color); cursor: pointer; border: none;
-            box-shadow: 0 0 10px var(--accent-glow);
-            transition: transform var(--transition-speed) ease;
+            box-shadow: 0 0 10px var(--accent-glow); transition: transform var(--transition-speed) ease;
         }
         .slider-container input[type="range"]::-moz-range-thumb:hover { transform: scale(1.2); }
         
@@ -462,19 +427,16 @@
             font-size: 0.9rem; color: var(--secondary-text-color); font-weight: 500;
         }
         .token-cost .token-coin { 
-            width: 14px; 
-            height: 14px; 
-            margin-left: 0; 
+            width: 14px; height: 14px; margin-left: 0; 
             background-color: var(--accent-color); 
             box-shadow: 0 0 8px var(--accent-glow);
         }
-
         .error-message {
-            display: none; font-size: 0.9rem; color: #F0F0F0;
-            background-color: rgba(229, 62, 62, 0.5); backdrop-filter: blur(10px);
+            display: none; font-size: 0.9rem; color: #FFFFFF;
+            background-color: rgba(229, 62, 62, 0.8); backdrop-filter: blur(10px);
             padding: 12px 18px; border-radius: 12px; position: fixed;
             bottom: 20px; left: 50%; transform: translateX(-50%);
-            border: 1px solid rgba(229, 62, 62, 0.8);
+            border: 1px solid rgba(229, 62, 62, 0.9);
             width: auto; max-width: 480px; z-index: 105; text-align: center;
             box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
             transition: all var(--transition-speed) ease;
@@ -482,60 +444,36 @@
         }
         
         .archive-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
-            width: 100%;
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; width: 100%;
         }
-        
-        .archive-item {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1 / 1;
-        }
-        
+        .archive-item { position: relative; width: 100%; aspect-ratio: 1 / 1; }
         .archive-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
+            width: 100%; height: 100%; object-fit: cover;
+            border-radius: 16px; border: 1px solid var(--border-color);
             transition: transform 0.3s, box-shadow 0.3s;
         }
-        .archive-item:hover img {
-            transform: scale(1.05);
-            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
-        }
+        .archive-item:hover img { transform: scale(1.05); box-shadow: 0 5px 25px rgba(0,0,0,0.2); }
         .archive-placeholder-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            flex-grow: 1; 
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; flex-grow: 1; 
         }
         .archive-placeholder {
-            text-align: center;
-            background-color: var(--surface-color);
-            padding: 50px;
-            border-radius: var(--content-border-radius);
+            text-align: center; background-color: var(--surface-color);
+            padding: 50px; border-radius: var(--content-border-radius);
             border: 1px solid var(--border-color);
         }
-        .archive-placeholder p {
-            color: var(--primary-text-color);
-            font-size: 1.2rem;
-            font-weight: 500;
-        }
+        .archive-placeholder p { color: var(--primary-text-color); font-size: 1.2rem; font-weight: 500; }
 
         .billing-header {
             display: flex; gap: 30px; width: 100%; max-width: 1100px; 
             align-items: stretch; margin-bottom: 40px;
         }
         .billing-header .current-plan-info {
-            flex-grow: 1; background-color: rgba(0,0,0,0.2); padding: 30px;
+            flex-grow: 1; background-color: var(--surface-color); padding: 30px;
             border-radius: 24px; border: 1px solid var(--border-color);
         }
-        .billing-header .current-plan-info h1 { font-size: 2.2rem; }
-        .billing-header .current-plan-info p { font-size: 1.1rem; }
+        .billing-header .current-plan-info h1 { font-size: 2.2rem; color: var(--primary-text-color); }
+        .billing-header .current-plan-info p { font-size: 1.1rem; color: var(--secondary-text-color); }
         
         .plans-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px;
@@ -546,16 +484,13 @@
             border-radius: 24px; padding: 30px; display: flex;
             flex-direction: column; transition: all 0.3s ease;
         }
-        .plan-card.highlighted {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 40px -10px var(--accent-glow);
-        }
-        .plan-name { font-size: 1.2rem; font-weight: 700; }
+        .plan-card.highlighted { border-color: var(--accent-color); box-shadow: 0 0 40px -10px var(--accent-glow); }
+        .plan-name { font-size: 1.2rem; font-weight: 700; color: var(--primary-text-color); }
         .plan-description { font-size: 0.9rem; color: var(--secondary-text-color); margin-top: 5px; height: 3em; }
-        .plan-price { font-size: 2.8rem; font-weight: 700; margin: 20px 0; }
+        .plan-price { font-size: 2.8rem; font-weight: 700; margin: 20px 0; color: var(--primary-text-color); }
         .plan-price span { font-size: 1rem; font-weight: 400; color: var(--secondary-text-color); }
         .plan-includes { list-style: none; padding: 0; margin: 20px 0; text-align: left; flex-grow: 1;}
-        .plan-includes li { margin-bottom: 12px; display: flex; align-items: center; font-size: 0.95rem; }
+        .plan-includes li { margin-bottom: 12px; display: flex; align-items: center; font-size: 0.95rem; color: var(--primary-text-color);}
         .plan-includes li.unavailable { color: var(--disabled-color); text-decoration: line-through; }
         .plan-includes li svg { width: 18px; height: 18px; margin-right: 10px; }
         .plan-includes li.available svg { color: var(--accent-color); }
@@ -573,9 +508,7 @@
         .btn-disabled:hover { background-color: var(--border-color); transform: none; box-shadow: none; }
 
         @media (max-width: 992px) {
-            body { 
-                overflow-y: auto !important; 
-            } 
+            body { overflow-y: auto !important; } 
             .app-container {
                 flex-direction: column; align-items: center; 
                 height: auto !important; 
@@ -598,45 +531,24 @@
             .content-wrapper { max-width: 100%; }
             .archive-grid { grid-template-columns: repeat(2, 1fr); }
             body {
-                background-image: none !important; /* ВАЖНО: Убираем изображение */
+                background-image: none !important;
                 background-attachment: scroll;
             }
+        }
         .btn-google {
-            background-color: #FFFFFF;
-            color: #444;
-            border: 1px solid #DDD !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            width: 100%;
-            margin-top: 10px;
+            background-color: #FFFFFF; color: #444; border: 1px solid #DDD !important;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; width: 100%; margin-top: 10px;
         }
-        .btn-google:hover {
-            background-color: #F8F8F8;
-            color: #333;
-        }
-        .btn-google img {
-            width: 18px;
-            height: 18px;
-        }
-        .or-separator {
-            text-align: center;
-            margin: 20px 0;
-            color: #888;
-        }
-        .delete-account-section p {
-            color: var(--primary-text-color); /* Используем вашу основную переменную для белого текста */
-        }
+        .btn-google:hover { background-color: #F8F8F8; color: #333; }
+        .btn-google img { width: 18px; height: 18px; }
+        .or-separator { text-align: center; margin: 20px 0; color: #888; }
+        .delete-account-section p { color: var(--primary-text-color); }
         .feature-locked {
-            opacity: 0.5; /* Делаем элемент полупрозрачным */
-            cursor: not-allowed; /* Курсор "запрещено" */
-            position: relative; /* Необходимо для корректной работы подсказки */
+            opacity: 0.5; cursor: not-allowed; position: relative;
         }
         .feature-locked:hover {
-            transform: none !important;
-            box-shadow: none !important;
-            background-color: transparent !important; /* Убедимся, что фон не меняется */
+            transform: none !important; box-shadow: none !important; background-color: transparent !important;
         }
     </style>
 </head>
@@ -659,7 +571,7 @@
                         </span>
                         <button class="burger-menu-btn" id="burger-menu-toggle" aria-label="User menu" aria-expanded="false">
                             <svg class="icon-burger" viewBox="0 0 100 80"><rect y="0" width="100" height="12" rx="6" fill="currentColor"></rect><rect y="34" width="100" height="12" rx="6" fill="currentColor"></rect><rect y="68" width="100" height="12" rx="6" fill="currentColor"></rect></svg>
-                            <svg class="icon-close" viewBox="0 0 80 80"><line x1="20" y1="20" x2="60" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/><line x1="60" y1="20" x2="20" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/></svg>
+                            <svg class="icon-close" viewBox="0 0 80 80"><line x1="20" y1="20" x2="60" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/><line x1="60" y1="20"x2="20" y2="60" stroke-width="10" stroke-linecap="round" stroke="currentColor"/></svg>
                         </button>
                     </div>
                     <div class="dropdown-menu" id="dropdown-menu">
@@ -716,36 +628,17 @@
     {% block page_scripts %}{% endblock %}
 </body>
 <style>
-    /* Стили для контейнера футера */
     .footer-container {
-        padding: 20px 40px; /* Отступы сверху/снизу и по бокам */
-        text-align: center; /* Выравнивание по центру */
-        background-color: transparent; /* Прозрачный фон, как на вашем изображении */
-        border-top: 1px solid rgba(255, 255, 255, 0.1); /* Тонкая линия сверху для разделения */
+        padding: 20px 40px; text-align: center;
+        background-color: transparent; border-top: 1px solid var(--border-color);
     }
-
-    /* Стили для ссылок в футере */
     .footer-links a {
-        color: var(--secondary-text-color); /* ИЗМЕНЕНО: серый цвет для ссылок */
-        text-decoration: none;
-        margin: 0 15px;
-        font-size: 0.9rem;
-        transition: color 0.3s ease;
+        color: var(--secondary-text-color); text-decoration: none;
+        margin: 0 15px; font-size: 0.9rem; transition: color 0.3s ease;
     }
-
-    /* Добавляем эффект при наведении мыши для лучшего интерактива */
-    .footer-links a:hover {
-        color: var(--accent-color); /* Ваш акцентный цвет для наведения */
-    }
-
-    .btn-danger {
-        background-color: #E53E3E;
-        color: white;
-    }
-    .btn-danger:hover {
-        background-color: #C53030;
-    }
-
+    .footer-links a:hover { color: var(--accent-color); }
+    .btn-danger { background-color: #E53E3E; color: white; }
+    .btn-danger:hover { background-color: #C53030; }
 </style>
 
 <footer class="footer-container">
@@ -754,6 +647,5 @@
         <a href="{{ url_for('privacy') }}">Privacy Policy</a>
         <a href="{{ url_for('marketing_policy') }}">Marketing Policy</a>
     </div>
-    
-    </footer>
+</footer>
 </html>
