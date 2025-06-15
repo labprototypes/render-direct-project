@@ -32,13 +32,14 @@
         }
 
         :root {
-            --primary-text-color: #F2F2F5;
-            --secondary-text-color: #C9C9D1;
-            --base-bg-color: #D6D6D6;
-            --accent-color: #D1FF5A;
-            --accent-glow: rgba(209, 255, 90, 0.5);
-            --accent-text-color: #1B1B1E;
-            --border-color: #F2F2F5;
+            --primary-text-color: #F2F2F5;   /* Основной текст (светлый) */
+            --secondary-text-color: #C9C9D1; /* Вторичный текст (менее яркий) */
+            --base-bg-color: #1B1B1E;      /* Фон (самый темный) */
+            --surface-color: #2A2A2E;      /* Цвет панелей (чуть светлее фона) */
+            --accent-color: #D1FF5A;       /* Акцентный лаймовый */
+            --accent-glow: rgba(209, 255, 90, 0.3); /* Свечение акцента (чуть мягче) */
+            --accent-text-color: #1B1B1E;  /* Текст на акцентных кнопках (темный) */
+            --border-color: rgba(242, 242, 245, 0.2); /* Границы (полупрозрачные белые) */
             --shadow-color: rgba(0, 0, 0, 0.5);
             --blur-intensity: 25px;
             --content-border-radius: 24px;
@@ -58,8 +59,8 @@
         body {
             font-family: 'Norms', sans-serif;
             font-weight: 400; 
-            color: var(--primary-text-color);
-            background-color: var(--base-bg-color); 
+            color: var(--primary-text-color); /* Убеждаемся, что текст светлый */
+            background-color: var(--base-bg-color); /* Применяем темный фон */
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -71,6 +72,19 @@
             overflow: hidden; 
         }
 
+        .content-wrapper,
+        #result-area-right,
+        .user-controls-loggedin,
+        .dropdown-menu,
+        .plan-card,
+        .billing-header .current-plan-info,
+        .archive-placeholder,
+        .mode-selector,
+        .edit-mode-selector, 
+        .resolution-selector {
+            background-color: var(--surface-color);
+        }
+        
         .app-container {
             width: 100%; max-width: 1200px; margin: 0 auto;
             padding: 100px 25px 40px;
