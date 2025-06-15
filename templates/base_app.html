@@ -32,20 +32,23 @@
         }
 
         :root {
-            --primary-text-color: #F2F2F5;
-            --secondary-text-color: #C9C9D1;
-            --base-bg-color: #D6D6D6;
-            --accent-color: #D1FF5A;
-            --accent-glow: rgba(209, 255, 90, 0.5);
-            --accent-text-color: #1B1B1E;
-            --border-color: #F2F2F5;
-            --shadow-color: rgba(0, 0, 0, 0.5);
-            --blur-intensity: 25px;
+            --primary-text-color: #1B1B1E;           /* ИЗМЕНЕНО: Основной цвет текста (темный) */
+            --secondary-text-color: #6c757d;         /* ИЗМЕНЕНО: Вторичный цвет текста (серый) */
+            --base-bg-color: #E7E7E7;                 /* ИЗМЕНЕНО: Цвет фона страницы */
+            --accent-color: #D1FF5A;                 /* СОХРАНЕНО: Ваш акцентный цвет */
+            --accent-glow: rgba(209, 255, 90, 0.5);   /* СОХРАНЕНО: Свечение акцентного цвета */
+            --accent-text-color: #1B1B1E;             /* СОХРАНЕНО: Цвет текста на акцентных элементах */
+            --border-color: #E0E0E0;                 /* ИЗМЕНЕНО: Цвет границ (светло-серый) */
+            --shadow-color: rgba(0, 0, 0, 0.1);      /* ИЗМЕНЕНО: Цвет теней (более светлый) */
+            --surface-color: #FFFFFF;                /* ДОБАВЛЕНО: Цвет подложек (белый) */
+            --toggle-active-bg: #1B1B1E;             /* ДОБАВЛЕНО: Цвет активной кнопки-переключателя (черный) */
+            --toggle-active-text: #FFFFFF;           /* ДОБАВЛЕНО: Цвет текста активной кнопки-переключателя (белый) */
+            --blur-intensity: 15px;
             --content-border-radius: 24px;
             --element-border-radius: 16px;
             --button-border-radius: 14px;
             --transition-speed: 0.3s;
-            --disabled-color: #555;
+            --disabled-color: #AEAEAE;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -58,8 +61,8 @@
         body {
             font-family: 'Norms', sans-serif;
             font-weight: 400; 
-            color: var(--primary-text-color);
-            background-color: var(--base-bg-color); 
+            color: var(--primary-text-color); /* ИЗМЕНЕНО */
+            background-color: var(--base-bg-color); /* ИЗМЕНЕНО */
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -89,11 +92,11 @@
         .page-header-container {
             position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 105;
             display: flex; justify-content: center; padding: 12px 0;
-            background-color: transparent;
+            background-color: rgba(231, 231, 231, 0.8); /* ИЗМЕНЕНО: светлый эффект стекла */
             backdrop-filter: blur(var(--blur-intensity));
             -webkit-backdrop-filter: blur(var(--blur-intensity));
             border-bottom: 1px solid var(--border-color);
-            box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+            box-shadow: none; /* Убран внутренний shadow */
         }
         .page-header-inner {
             width: 100%; max-width: 1200px; padding: 0 25px;
@@ -105,21 +108,35 @@
         .logo { height: 38px; cursor: pointer; display: block; }
         
         .mode-selector {
-            display: flex; align-items: center; background-color: rgba(0,0,0,0.2);
-            padding: 6px; border-radius: var(--button-border-radius); gap: 6px;
+            display: flex;
+            align-items: center;
+            background-color: var(--surface-color); /* ИЗМЕНЕНО: белый фон */
+            padding: 6px;
+            border-radius: 18px; /* ИЗМЕНЕНО: более скругленный */
+            gap: 6px;
             border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); /* ДОБАВЛЕНО: легкая тень */
         }
         .mode-btn {
-            background-color: transparent; border: none; padding: 8px 20px;
-            border-radius: 10px; cursor: pointer;
-            font-family: 'Norms', sans-serif; font-size: 0.9rem; font-weight: 500;
-            color: var(--primary-text-color); opacity: 0.7; 
+            flex: 1;
+            padding: 8px 20px;
+            border-radius: 12px; /* ИЗМЕНЕНО: скругление для внутренней кнопки */
+            border: none;
+            background-color: transparent; /* Неактивная кнопка прозрачна */
+            color: var(--primary-text-color); /* ИЗМЕНЕНО: темный текст */
+            cursor: pointer;
+            font-family: 'Norms', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
             transition: all var(--transition-speed) ease;
+            text-align: center;
+            opacity: 1;
         }
-        .mode-btn.active {
-            background-color: var(--accent-color); color: var(--accent-text-color);
-            font-weight: 700; opacity: 1;
-            box-shadow: 0 0 15px var(--accent-glow);
+        .mode-btn.active, .edit-mode-btn.active, .resolution-btn.active {
+        background-color: var(--toggle-active-bg); /* ИЗМЕНЕНО: черный фон */
+        color: var(--toggle-active-text); /* ИЗМЕНЕНО: белый текст */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* ИЗМЕНЕНО: более выраженная тень */
+        font-weight: 700;
         }
         .mode-btn:not(.active):hover { opacity: 1; color: var(--primary-text-color); }
         .top-right-nav { position: relative; display: flex; align-items: center; }
@@ -138,7 +155,7 @@
             box-shadow: 0 0 10px var(--accent-glow);
         }
         .burger-menu-btn {
-            background-color: transparent; border: 1px solid var(--border-color); border-radius: 50%;
+            color: var(--primary-text-color); border: 1px solid var(--border-color); border-radius: 50%;
             padding: 0; cursor: pointer; width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
             transition: all var(--transition-speed) ease; position: relative;
@@ -164,10 +181,12 @@
         
         .dropdown-menu {
             position: absolute; top: calc(100% + 10px); right: 0;
-            background-color: var(--surface-glass);
-            backdrop-filter: blur(var(--blur-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity));
-            border-radius: var(--element-border-radius); box-shadow: 0 10px 40px var(--shadow-color);
-            border: 1px solid var(--border-color); padding: 12px; width: 240px; z-index: 1000;
+            background-color: var(--surface-color); /* ИЗМЕНЕНО */
+            backdrop-filter: none; -webkit-backdrop-filter: none; /* Убран blur */
+            border-radius: var(--element-border-radius);
+            box-shadow: 0 10px 40px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            padding: 12px; width: 240px; z-index: 1000;
             opacity: 0; visibility: hidden; transform: translateY(-10px);
             transition: all var(--transition-speed) ease;
         }
@@ -183,7 +202,7 @@
             transition: all var(--transition-speed) ease;
             border-radius: 8px;
         }
-        .dropdown-menu li a:hover { color: var(--accent-color); background-color: rgba(255,255,255,0.05);}
+        .dropdown-menu li a:hover { color: var(--accent-text-color); background-color: var(--accent-color);}
         
         .user-controls-loggedout {
             display: flex; align-items: center; gap: 15px;
@@ -197,11 +216,11 @@
         .user-controls-loggedout .auth-button:hover { color: var(--accent-text-color); background-color: var(--accent-color); border-color: var(--accent-color); font-weight: 700; }
         .content-wrapper {
             width: 100%; max-width: 440px; padding: 25px;
-            background-color: var(--surface-color);
+            background-color: var(--surface-color); /* ИЗМЕНЕНО */
             border-radius: var(--content-border-radius);
             transition: opacity var(--transition-speed), filter var(--transition-speed);
             border: 1px solid var(--border-color);
-            box-shadow: 0 10px 40px var(--shadow-color);
+            box-shadow: 0 10px 40px var(--shadow-color); /* Тень обновлена через :root */
             overflow-y: auto;
         }
         .content-wrapper.disabled { opacity: 0.5; pointer-events: none; filter: blur(4px); }
@@ -217,7 +236,7 @@
         
         .image-drop-area {
             width: 100%; height: 160px; 
-            background-color: rgba(0,0,0,0.25);
+            background-color: rgba(0,0,0,0.03); /* ИЗМЕНЕНО: очень светлый фон */
             border-radius: var(--element-border-radius); display: flex; flex-direction: column;
             justify-content: center; align-items: center; cursor: pointer;
             position: relative; overflow: hidden; border: 1px dashed var(--border-color);
@@ -244,7 +263,7 @@
             display: flex; 
             flex-direction: column;
             gap: 20px;
-            background-color: rgba(0,0,0,0.2);
+            background-color: var(--surface-color); /* ИЗМЕНЕНО */
             border-radius: var(--content-border-radius);
             border: 1px solid var(--border-color);
             padding: 20px;
@@ -320,11 +339,13 @@
         @keyframes pulse { 0%, 100% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1); opacity: 1; } }
         
         .input-area {
-            display: flex; align-items: center; background-color: rgba(0,0,0,0.25);
+            display: flex; align-items: center;
+            background-color: transparent; /* ИЗМЕНЕНО */
             border-radius: var(--button-border-radius); padding: 6px 8px; width: 100%;
-            border: 1px solid var(--border-color); transition: all var(--transition-speed) ease;
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-speed) ease;
         }
-        .input-area:focus-within { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(217, 244, 122, 0.3); }
+        .input-area:focus-within { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-glow); }
         #prompt {
             flex-grow: 1; border: none; padding: 10px 15px; font-size: 0.9rem;
             background-color: transparent; outline: none; color: var(--primary-text-color);
@@ -577,7 +598,7 @@
             .content-wrapper { max-width: 100%; }
             .archive-grid { grid-template-columns: repeat(2, 1fr); }
             body {
-                background-image: url("{{ url_for('static', filename='images/mobile_background.webp') }}");
+                background-image: none !important; /* ВАЖНО: Убираем изображение */
                 background-attachment: scroll;
             }
         .btn-google {
@@ -705,16 +726,16 @@
 
     /* Стили для ссылок в футере */
     .footer-links a {
-        color: #FFFFFF; /* ===> ЗАДАЕМ БЕЛЫЙ ЦВЕТ ДЛЯ ССЫЛОК <=== */
-        text-decoration: none; /* Убираем стандартное подчеркивание */
-        margin: 0 15px; /* Добавляем отступы между ссылками для аккуратности */
-        font-size: 0.9rem; /* Немного уменьшим шрифт */
+        color: var(--secondary-text-color); /* ИЗМЕНЕНО: серый цвет для ссылок */
+        text-decoration: none;
+        margin: 0 15px;
+        font-size: 0.9rem;
         transition: color 0.3s ease;
     }
 
     /* Добавляем эффект при наведении мыши для лучшего интерактива */
     .footer-links a:hover {
-        color: #D9F47A; /* Ваш акцентный цвет для наведения */
+        color: var(--accent-color); /* Ваш акцентный цвет для наведения */
     }
 
     .btn-danger {
