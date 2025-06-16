@@ -208,6 +208,8 @@ def upload_file_to_s3(file_to_upload):
     print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
     return hosted_image_url
 
+# В файле app.py
+
 def handle_checkout_session(session_data):
     customer_id = session_data.get('customer')
     user_id_from_metadata = session_data.get('metadata', {}).get('user_id')
@@ -228,30 +230,29 @@ def handle_checkout_session(session_data):
             subscription_id = session_data.get('subscription')
             subscription = stripe.Subscription.retrieve(subscription_id)
             user.stripe_subscription_id = subscription_id
-            user.subscription_status = subscription.status
             
-            # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
-            # Проверяем, есть ли у подписки триал, и используем правильное поле для даты
-            if subscription.trial_end:
-                # Это триальная подписка
+            # --- ИСПРАВЛЕННАЯ ЛОГИКА СТАТУСОВ ---
+            stripe_status = subscription.status
+            if stripe_status == 'trialing':
+                user.subscription_status = 'trial'
+                user.current_plan = 'taste' # Триал всегда для плана 'taste'
                 user.subscription_ends_at = datetime.fromtimestamp(subscription.trial_end, tz=timezone.utc)
                 if not user.trial_used:
                     user.trial_used = True
-                    user.token_balance += 1500 # Начисляем 1500 токенов за триал
-                    user.current_plan = 'taste' # Триал всегда для плана 'taste'
+                    user.token_balance += 1500
                     print(f"User {user.id} started a free trial. Added 1500 tokens.")
-            elif subscription.current_period_end:
-                # Это обычная платная подписка
+            elif stripe_status == 'active':
+                user.subscription_status = 'active'
                 user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
                 price_id = subscription.items.data[0].price.id
-                user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), user.current_plan)
-
-            # Если сессия включает успешный платеж (например, после триала), начисляем токены
+                user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
+            else: # incomplete, past_due, etc.
+                user.subscription_status = stripe_status
+            
             if session_data.get('payment_status') == 'paid':
                 handle_successful_payment(subscription=subscription)
 
         elif session_data.get('payment_intent'):
-            # Это разовая покупка токенов
             user.token_balance += 1000
 
         db.session.commit()
@@ -261,16 +262,20 @@ def handle_subscription_change(subscription):
         user = User.query.filter_by(stripe_subscription_id=subscription.id).first()
         if not user: return
 
-        user.subscription_status = subscription.status
+        stripe_status = subscription.status
         user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
-        
+
         if subscription.cancel_at_period_end:
             user.subscription_status = 'canceled'
-        elif subscription.status == 'active':
+        elif stripe_status == 'trialing':
+            user.subscription_status = 'trial'
+            user.current_plan = 'taste'
+        elif stripe_status == 'active':
+            user.subscription_status = 'active'
             price_id = subscription.items.data[0].price.id
             user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
-        else:
-             user.current_plan = 'inactive'
+        else: # incomplete, past_due, etc.
+            user.subscription_status = stripe_status
              
         db.session.commit()
 
