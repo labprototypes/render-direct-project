@@ -126,7 +126,7 @@ def subscription_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for('login'))
-        if current_user.subscription_status not in ['active', 'trial']:
+        if current_user.subscription_status not in ['active', 'trial', 'canceled']:
             flash('Your plan does not allow access to this feature. Please subscribe.', 'warning')
             return redirect(url_for('billing'))
         return f(*args, **kwargs)
