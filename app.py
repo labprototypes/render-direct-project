@@ -136,6 +136,7 @@ def subscription_required(f):
 def login():
     return render_template('login.html')
 
+# В файле app.py, замените функцию session_login
 @app.route('/session-login', methods=['POST'])
 def session_login():
     data = request.get_json()
@@ -149,14 +150,17 @@ def session_login():
         email = decoded_token.get('email')
         name = decoded_token.get('name', email)
 
-        # Ищем пользователя или создаем нового
         user = User.query.get(uid)
+        
+        # Если пользователь новый
         if not user:
-            # Логика для новых пользователей
+            # Проверяем, были ли приняты условия
+            terms_accepted = data.get('termsAccepted')
+            if not terms_accepted:
+                return jsonify({"status": "error", "message": "You must accept the Terms of Service and Privacy Policy."}), 400
+
             trial_used = UsedTrialEmail.query.filter_by(email=email).first()
             initial_tokens = 0 if trial_used else 100
-            
-            # Получаем согласие на маркетинг из запроса
             marketing_consent = data.get('marketingConsent', True)
 
             user = User(
@@ -164,17 +168,23 @@ def session_login():
                 email=email, 
                 username=name,
                 token_balance=initial_tokens,
-                marketing_consent=marketing_consent
+                marketing_consent=marketing_consent,
+                trial_used=bool(trial_used) # Устанавливаем флаг, если email уже использовал триал
             )
             db.session.add(user)
             db.session.commit()
+            
+            login_user(user)
+            # Для нового пользователя отправляем редирект на выбор плана
+            return jsonify({"status": "success", "action": "redirect", "url": url_for('choose_plan')})
 
+        # Если пользователь уже существует
         login_user(user)
-        return jsonify({"status": "success"})
+        # Для существующего пользователя отправляем редирект на главную страницу
+        return jsonify({"status": "success", "action": "redirect", "url": url_for('index')})
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 401
-
 # --- Маршруты для юридических и вспомогательных страниц ---
 @app.route('/terms')
 def terms():
