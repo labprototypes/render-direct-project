@@ -322,7 +322,6 @@
             width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;
         }
         
-        /* ИЗМЕНЕНО: цвет текста и рамки для неактивной кнопки */
         .submit-button-element {
             width: 100%; background-color: transparent; color: var(--primary-text-color);
             border: 1px solid var(--border-color); cursor: pointer; padding: 16px;
@@ -399,8 +398,13 @@
             width: 100%; padding: 10px; background-color: transparent;
             border-radius: var(--element-border-radius); border: 1px solid var(--border-color);
         }
-        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .slider-container label { font-weight: 500; color: var(--primary-text-color); font-size: 0.9rem; }
+        .slider-header { 
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; 
+        }
+        .slider-container label { 
+            font-weight: 500; color: var(--primary-text-color); font-size: 0.9rem; 
+            display: flex; align-items: center; gap: 8px; /* For spacing with icon */
+        }
         .slider-value { font-weight: 700; color: var(--primary-text-color); }
         .slider-container input[type="range"] {
             -webkit-appearance: none; appearance: none;
@@ -493,7 +497,6 @@
         .plan-includes li { margin-bottom: 12px; display: flex; align-items: center; font-size: 0.95rem; color: var(--primary-text-color);}
         .plan-includes li.unavailable { color: var(--disabled-color); text-decoration: line-through; }
         
-        /* ИЗМЕНЕНО: цвет фона и иконок для чекбоксов на странице биллинга */
         .plan-includes li svg {
             width: 18px; height: 18px; margin-right: 10px;
             background-color: var(--toggle-active-bg);
@@ -557,6 +560,48 @@
         }
         .feature-locked:hover {
             transform: none !important; box-shadow: none !important; background-color: transparent !important;
+        }
+
+        /* === ИЗМЕНЕНО: Новые стили для всплывающих подсказок (tooltips) === */
+        .tooltip-trigger {
+            position: relative;
+            cursor: help;
+            display: inline-flex;
+            align-items: center;
+            color: var(--secondary-text-color);
+        }
+        .tooltip-trigger svg {
+            width: 16px;
+            height: 16px;
+        }
+        .tooltip-trigger::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 140%; 
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--toggle-active-bg);
+            color: var(--toggle-active-text);
+            padding: 10px 15px;
+            border-radius: var(--element-border-radius);
+            font-size: 0.85rem;
+            font-weight: 400;
+            line-height: 1.5;
+            width: max-content;
+            max-width: 280px;
+            text-align: center;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        /* Показываем по наведению или по клику (через класс .active) */
+        .tooltip-trigger:hover::after,
+        .tooltip-trigger.active::after {
+            opacity: 1;
+            visibility: visible;
         }
     </style>
 </head>
@@ -647,38 +692,6 @@
     .footer-links a:hover { color: var(--accent-color); }
     .btn-danger { background-color: #E53E3E; color: white; }
     .btn-danger:hover { background-color: #C53030; }
-
-    /* === СТИЛИ ДЛЯ ВСПЛЫВАЮЩИХ ПОДСКАЗОК (TOOLTIPS) === */
-    [data-tooltip] {
-        position: relative;
-        cursor: help;
-    }
-    [data-tooltip]::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        bottom: 125%; /* Расположение над элементом */
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--toggle-active-bg);
-        color: var(--toggle-active-text);
-        padding: 8px 12px;
-        border-radius: var(--element-border-radius);
-        font-size: 0.85rem;
-        font-weight: 500;
-        line-height: 1.4;
-        width: max-content;
-        max-width: 250px;
-        text-align: center;
-        z-index: 10;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s, visibility 0.2s;
-        pointer-events: none; /* Чтобы подсказка не мешала курсору */
-    }
-    [data-tooltip]:hover::after {
-        opacity: 1;
-        visibility: visible;
-    }
 </style>
 
 <footer class="footer-container">
