@@ -601,18 +601,6 @@ def replicate_webhook():
         db.session.commit()
     return 'Webhook received', 200
 
-# --- Маршруты API и обработки изображений ---
-@app.route('/get-result/<string:prediction_id>', methods=['GET'])
-@login_required
-def get_result(prediction_id):
-    prediction = Prediction.query.get(prediction_id)
-    if not prediction or prediction.user_id != current_user.id:
-        return jsonify({'error': 'Prediction not found or access denied'}), 404
-    if prediction.status == 'completed':
-        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
-    if prediction.status == 'failed':
-        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': User.query.get(current_user.id).token_balance})
-    return jsonify({'status': 'pending'})
 
 # --- Главный маршрут и выход ---
 @app.route('/')
