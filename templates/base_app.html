@@ -601,6 +601,25 @@
             opacity: 1;
             visibility: visible;
         }
+        /* Добавьте в конец тега <style> в base_app.html */
+        .checkbox-container {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        .checkbox-container label {
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+        }
+        .checkbox-container label a {
+            color: var(--primary-text-color);
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body class="{% block body_class %}{% endblock %}">
