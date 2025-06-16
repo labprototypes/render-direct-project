@@ -4,11 +4,21 @@
 
 {% block content %}
 <div class="app-container" style="display: block; padding-bottom: 40px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flash-messages" style="list-style: none; padding: 0; margin-bottom: 20px; text-align: center;">
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
     <div class="billing-header" style="max-width: 1100px; margin: 0 auto 40px auto;">
         <div class="current-plan-info">
             <h1>Manage your plan</h1>
-            
             <p>Your current plan: <strong>{{ (current_user.current_plan or 'None').replace('_', ' ')|title }}</strong></p>
+            
             {% if current_user.subscription_ends_at %}
                 <p>
                     {% if current_user.subscription_status == 'canceled' %}
@@ -19,7 +29,7 @@
                     <strong>{{ current_user.subscription_ends_at.strftime('%B %d, %Y') }}</strong>
                 </p>
             {% endif %}
-            
+
             <p>You have <strong>{{ current_user.token_balance }}</strong> credits.</p>
             
             {% if current_user.subscription_status == 'active' %}
@@ -29,12 +39,128 @@
             {% elif current_user.subscription_status != 'canceled' %}
             <p style="margin-top: 20px; color: var(--secondary-text-color);">You do not have an active subscription. Choose a plan below to start.</p>
             {% endif %}
+
         </div>
+        <div class="plan-card">
+            <h3 class="plan-name">Top Up Credits</h3>
+            <p class="plan-description">Need more credits before your next renewal?</p>
+            <div class="plan-price">&euro;5</div>
+            <ul class="plan-includes">
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>One-time purchase of 1,000 credits</li>
+            </ul>
+            {% if current_user.current_plan == 'taste' %}
+                <div> <button class="btn feature-locked" disabled title="Please upgrade your plan to use this feature">Top up credits</button>
+                </div>
+            {% else %}
+                <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                    <input type="hidden" name="price_id" value="{{ TOKEN_PRICE_ID }}">
+                    <button type="submit" class="btn">Top up credits</button>
+                </form>
+            {% endif %}
         </div>
+    </div>
+
+    <hr style="width: 100%; max-width: 1100px; border-color: var(--border-color); margin: 40px auto;">
+
+    <div class="plans-grid" style="max-width: 1100px; margin: 40px auto 0 auto;">
+        
+        <div class="plan-card {% if current_user.current_plan == 'taste' %}highlighted{% endif %}">
+            <h3 class="plan-name">A Taste Of It</h3>
+            <p class="plan-description">For those who wants to start</p>
+            <div class="plan-price">&euro;9<span>/mo</span></div>
+            <ul class="plan-includes">
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>1,500 credits</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 90 images monthly</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>AI promt enhancer</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Artifacts autofix mode</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Credit Top-Up</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
+            </ul>
+            {% if current_user.subscription_status == 'active' %}
+                {% if current_user.current_plan == 'taste' %}
+                    <button class="btn-disabled" disabled>Your Current Plan</button>
+                {% else %}
+                    <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
+                {% endif %}
+            {% else %}
+                <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
+                    <button type="submit" class="btn">Subscribe</button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="plan-card {% if current_user.current_plan == 'best' %}highlighted{% endif %}">
+            <h3 class="plan-name">The Best Pick</h3>
+            <p class="plan-description">Best for full-time creators</p>
+            <div class="plan-price">&euro;19<span>/mo</span></div>
+            <ul class="plan-includes">
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4,500 credits</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 270 images monthly</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>AI promt enhancer</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1440p)</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
+            </ul>
+            {% if current_user.subscription_status == 'active' %}
+                {% if current_user.current_plan == 'best' %}
+                    <button class="btn-disabled" disabled>Your Current Plan</button>
+                {% else %}
+                    <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
+                {% endif %}
+            {% else %}
+                <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.best }}">
+                    <button type="submit" class="btn">Subscribe</button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="plan-card {% if current_user.current_plan == 'pro' %}highlighted{% endif %}">
+            <h3 class="plan-name">Pick&Flip PRO</h3>
+            <p class="plan-description">Teams and advanced creators</p>
+            <div class="plan-price">&euro;35<span>/mo</span></div>
+            <ul class="plan-includes">
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>15,000 credits</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 900 images monthly</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>AI promt enhancer</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 8K)</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Early Access to New Features</li>
+            </ul>
+            {% if current_user.subscription_status == 'active' %}
+                {% if current_user.current_plan == 'pro' %}
+                    <button class="btn-disabled" disabled>Your Current Plan</button>
+                {% else %}
+                    <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
+                {% endif %}
+            {% else %}
+                <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}">
+                    <button type="submit" class="btn">Subscribe</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
 
     {% if current_user.subscription_status in ['active', 'canceled'] %}
     <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
-        <div style="display: flex; justify-content: center; gap: 20px;">
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
             
             {% if current_user.subscription_status == 'active' %}
             <form action="{{ url_for('cancel_subscription') }}" method="POST">
@@ -48,6 +174,5 @@
         </div>
     </div>
     {% endif %}
-
 </div>
 {% endblock %}
