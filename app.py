@@ -265,17 +265,23 @@ def handle_subscription_change(subscription):
         stripe_status = subscription.status
         user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
 
+        # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
+        # В первую очередь проверяем, отменена ли подписка на конец периода.
+        # Это самый важный флаг.
         if subscription.cancel_at_period_end:
             user.subscription_status = 'canceled'
+        # Если не отменена, смотрим на ее текущий статус
         elif stripe_status == 'trialing':
             user.subscription_status = 'trial'
-            user.current_plan = 'taste'
         elif stripe_status == 'active':
             user.subscription_status = 'active'
-            price_id = subscription.items.data[0].price.id
-            user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
         else: # incomplete, past_due, etc.
             user.subscription_status = stripe_status
+        
+        # Обновляем название плана, если подписка не была отменена
+        if user.subscription_status in ['active', 'trial']:
+            price_id = subscription.items.data[0].price.id
+            user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
              
         db.session.commit()
 
