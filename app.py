@@ -260,29 +260,28 @@ def handle_checkout_session(session_data):
 def handle_subscription_change(subscription):
     with app.app_context():
         user = User.query.filter_by(stripe_subscription_id=subscription.id).first()
-        if not user: return
+        if not user: 
+            print(f"Webhook: Could not find user for subscription change: {subscription.id}")
+            return
 
-        stripe_status = subscription.status
-        user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
+        # ИСПРАВЛЕНИЕ: Сначала проверяем, существует ли поле, перед тем как его использовать
+        if subscription.get('current_period_end'):
+            user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
 
-        # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
-        # В первую очередь проверяем, отменена ли подписка на конец периода.
-        # Это самый важный флаг.
+        # Обновляем статус на основе флагов и статуса из Stripe
         if subscription.cancel_at_period_end:
             user.subscription_status = 'canceled'
-        # Если не отменена, смотрим на ее текущий статус
-        elif stripe_status == 'trialing':
+        elif subscription.status == 'trialing':
             user.subscription_status = 'trial'
-        elif stripe_status == 'active':
+        elif subscription.status == 'active':
             user.subscription_status = 'active'
-        else: # incomplete, past_due, etc.
-            user.subscription_status = stripe_status
-        
-        # Обновляем название плана, если подписка не была отменена
-        if user.subscription_status in ['active', 'trial']:
             price_id = subscription.items.data[0].price.id
             user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
-             
+        else:
+            user.subscription_status = subscription.status # e.g., 'past_due' or final 'canceled'
+            if user.subscription_status == 'canceled':
+                user.current_plan = 'free' # Если подписка окончательно отменена
+
         db.session.commit()
 
 def handle_successful_payment(invoice=None, subscription=None):
@@ -379,10 +378,20 @@ def cancel_subscription():
         flash('No active subscription to cancel.', 'error')
         return redirect(url_for('billing'))
     try:
-        stripe.Subscription.modify(current_user.stripe_subscription_id, cancel_at_period_end=True)
+        # Отправляем команду в Stripe
+        stripe.Subscription.modify(
+            current_user.stripe_subscription_id,
+            cancel_at_period_end=True
+        )
+
+        # ИСПРАВЛЕНИЕ: Немедленно обновляем статус в НАШЕЙ базе данных
+        current_user.subscription_status = 'canceled'
+        db.session.commit()
+
         flash('Your subscription will be canceled at the end of the current period.', 'success')
     except Exception as e:
         flash(f'Error cancelling subscription: {str(e)}', 'error')
+
     return redirect(url_for('billing'))
 
 @app.route('/delete-account', methods=['POST'])
