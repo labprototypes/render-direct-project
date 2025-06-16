@@ -158,7 +158,7 @@ def session_login():
                 return jsonify({"status": "error", "message": "You must accept the Terms of Service and Privacy Policy."}), 400
             
             trial_used_record = UsedTrialEmail.query.filter_by(email=email).first()
-            initial_tokens = 0 if trial_used_record else 100
+            initial_tokens = 0
             marketing_consent = data.get('marketingConsent', True)
 
             user = User(
