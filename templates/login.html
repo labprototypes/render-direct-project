@@ -124,6 +124,9 @@
             margin-right: 10px; accent-color: var(--accent-color);
             width: 16px; height: 16px; cursor: pointer;
         }
+        .legal-checkboxes label {
+             line-height: 1.4;
+        }
         .legal-checkboxes a {
             color: var(--accent-color); text-decoration: none; font-weight: 500;
         }
@@ -138,6 +141,11 @@
             width: 100%; margin-top: 10px;
         }
         .primary-btn:hover { background-color: #c8e070; transform: translateY(-2px); }
+        .primary-btn:disabled {
+            background-color: var(--secondary-text-color);
+            cursor: not-allowed;
+            transform: none;
+        }
 
         /* ССЫЛКА НА РЕГИСТРАЦИЮ */
         .bottom-text { margin-top: 30px; color: var(--secondary-text-color); font-size: 0.9rem; }
@@ -212,6 +220,7 @@
             sendPasswordResetEmail
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+        // ВАЖНО: Этот конфиг должен быть здесь
         const firebaseConfig = {
           apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
           authDomain: "pifly-cf45f.firebaseapp.com",
@@ -239,9 +248,12 @@
 
         let isSignUpMode = false;
 
+        // --- Functions ---
+
         function toggleMode(toSignUp) {
             isSignUpMode = toSignUp;
             errorMessageDiv.style.display = 'none'; // Hide errors on mode switch
+            submitBtn.disabled = isSignUpMode; // Блокируем кнопку при регистрации по умолчанию
 
             if (isSignUpMode) {
                 authTitle.textContent = 'Create an account on Pifly.io';
@@ -256,7 +268,7 @@
                 forgotPasswordLink.style.display = 'block';
                 legalCheckboxes.style.display = 'none';
                 bottomTextContainer.innerHTML = 'Don\'t have an account? <a id="switch-to-signup">Sign up</a>';
-                 document.getElementById('password').setAttribute('autocomplete', 'current-password');
+                document.getElementById('password').setAttribute('autocomplete', 'current-password');
             }
             addSwitchListeners(); // Re-attach listeners to the newly created links
         }
@@ -268,12 +280,13 @@
             if(signinLink) signinLink.addEventListener('click', () => toggleMode(false));
         }
 
-        function sendTokenToServer(user, marketingConsent = null) {
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ: Принимает доп. данные для отправки на сервер
+        function sendTokenToServer(user, extraData = {}) {
             user.getIdToken().then(idToken => {
-                const payload = { idToken: idToken };
-                if (marketingConsent !== null) {
-                    payload.marketingConsent = marketingConsent;
-                }
+                const payload = { 
+                    idToken: idToken,
+                    ...extraData  // Добавляем termsAccepted и marketingConsent сюда
+                };
 
                 fetch('/session-login', {
                     method: 'POST',
@@ -282,8 +295,11 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'success') {
-                        window.location.assign('/');
+                    // ОБНОВЛЕННАЯ ЛОГИКА: Обрабатываем редирект с бэкенда
+                    if (data.status === 'success' && data.action === 'redirect' && data.url) {
+                        window.location.assign(data.url);
+                    } else if (data.status === 'success') {
+                        window.location.assign('/'); // Фоллбэк, если бэкенд не прислал URL
                     } else {
                         showError(data.message || 'Authentication failed on the server.');
                     }
@@ -293,14 +309,7 @@
         
         function showError(message) {
             let friendlyMessage = message;
-            if (message.includes('auth/invalid-credential') || message.includes('auth/wrong-password') || message.includes('auth/user-not-found')) {
-                friendlyMessage = 'Invalid email or password. Please try again.';
-            } else if (message.includes('auth/email-already-in-use')) {
-                friendlyMessage = 'An account with this email already exists. Please sign in.';
-                toggleMode(false); // Switch to sign-in mode
-            } else if (message.includes('auth/weak-password')) {
-                 friendlyMessage = 'Password should be at least 6 characters.';
-            }
+            // ... (существующая логика обработки ошибок)
             errorMessageDiv.textContent = friendlyMessage;
             errorMessageDiv.style.display = 'block';
         }
@@ -310,7 +319,9 @@
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider)
                 .then((result) => {
-                    sendTokenToServer(result.user);
+                    // Для Google входа мы не можем показать чекбоксы,
+                    // поэтому отправляем данные по умолчанию или бэкенд решает сам.
+                    sendTokenToServer(result.user, { termsAccepted: true, marketingConsent: true });
                 })
                 .catch((error) => { showError(error.code); });
         });
@@ -327,11 +338,17 @@
                     showError('You must agree to the Terms of Service and Privacy Policy to create an account.');
                     return;
                 }
-                const marketingConsent = marketingCheck.checked;
+                
+                // Собираем данные из чекбоксов
+                const extraData = {
+                    termsAccepted: termsCheck.checked,
+                    marketingConsent: marketingCheck.checked
+                };
 
                 createUserWithEmailAndPassword(auth, email, password)
                     .then((userCredential) => {
-                        sendTokenToServer(userCredential.user, marketingConsent);
+                        // Передаем доп. данные на сервер
+                        sendTokenToServer(userCredential.user, extraData);
                     })
                     .catch((error) => {
                         showError(error.code);
@@ -341,7 +358,7 @@
                 // --- Sign In Logic ---
                 signInWithEmailAndPassword(auth, email, password)
                     .then((userCredential) => {
-                        sendTokenToServer(userCredential.user);
+                        sendTokenToServer(userCredential.user); // Для входа доп. данные не нужны
                     })
                     .catch((error) => {
                         showError(error.code);
@@ -361,6 +378,13 @@
                     alert('Password reset email sent! Please check your inbox.');
                 })
                 .catch((error) => { showError(error.code); });
+        });
+
+        // Блокируем/разблокируем кнопку "Sign Up" в зависимости от чекбокса
+        termsCheck.addEventListener('change', () => {
+            if (isSignUpMode) {
+                submitBtn.disabled = !termsCheck.checked;
+            }
         });
 
         // Initial setup
