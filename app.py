@@ -6,7 +6,7 @@ monkey.patch_all()
 import os
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 
 # Third-party imports
@@ -74,16 +74,20 @@ if os.path.exists(cred_path):
     cred = credentials.Certificate(cred_path)
 else:
     # Для локальной разработки, положите файл в корень проекта
-    cred = credentials.Certificate('firebase_credentials.json')
+    if os.path.exists('firebase_credentials.json'):
+        cred = credentials.Certificate('firebase_credentials.json')
+    else:
+        cred = None
+        print("!!! ВНИМАНИЕ: Не найден файл firebase_credentials.json. Аутентификация Firebase не будет работать.")
 
-firebase_admin.initialize_app(cred)
+if cred and not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
 # --- Модели Базы Данных ---
-# В app.py
-
 class User(db.Model, UserMixin):
-    id = db.Column(db.String(128), primary_key=True) # ID теперь строка для Firebase UID
+    id = db.Column(db.String(128), primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    username = db.Column(db.String(255), nullable=True) # Имя пользователя от Google
+    username = db.Column(db.String(255), nullable=True)
     token_balance = db.Column(db.Integer, default=100, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     subscription_status = db.Column(db.String(50), default='trial', nullable=False)
@@ -92,8 +96,6 @@ class User(db.Model, UserMixin):
     current_plan = db.Column(db.String(50), nullable=True, default='trial')
     trial_used = db.Column(db.Boolean, default=False, nullable=False)
     subscription_ends_at = db.Column(db.DateTime, nullable=True)
-
-    # Поле password больше не нужно
 
     @property
     def is_active(self):
@@ -107,7 +109,7 @@ class Prediction(db.Model):
     output_url = db.Column(db.String(2048), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     token_cost = db.Column(db.Integer, nullable=False, default=1)
-    user = db.relationship('User', backref=db.backref('predictions', lazy=True))
+    user = db.relationship('User', backref=db.backref('predictions', lazy=True, cascade="all, delete-orphan"))
 
 class UsedTrialEmail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -117,7 +119,7 @@ class UsedTrialEmail(db.Model):
 # --- Декораторы и Загрузчик пользователя ---
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(user_id) # <--- Убрали int()
+    return User.query.get(user_id)
 
 def subscription_required(f):
     @wraps(f)
@@ -131,12 +133,10 @@ def subscription_required(f):
     return decorated_function
 
 # --- МАРШРУТЫ АУТЕНТИФИКАЦИИ ---
-# --- НОВЫЙ МАРШРУТ ДЛЯ АУТЕНТИФИКАЦИИ ЧЕРЕЗ FIREBASE ---
 @app.route('/login')
 def login():
     return render_template('login.html')
 
-# В файле app.py, замените функцию session_login
 @app.route('/session-login', methods=['POST'])
 def session_login():
     data = request.get_json()
@@ -149,18 +149,16 @@ def session_login():
         uid = decoded_token['uid']
         email = decoded_token.get('email')
         name = decoded_token.get('name', email)
-
+        
         user = User.query.get(uid)
         
-        # Если пользователь новый
         if not user:
-            # Проверяем, были ли приняты условия
             terms_accepted = data.get('termsAccepted')
             if not terms_accepted:
                 return jsonify({"status": "error", "message": "You must accept the Terms of Service and Privacy Policy."}), 400
-
-            trial_used = UsedTrialEmail.query.filter_by(email=email).first()
-            initial_tokens = 0 if trial_used else 100
+            
+            trial_used_record = UsedTrialEmail.query.filter_by(email=email).first()
+            initial_tokens = 0 if trial_used_record else 100
             marketing_consent = data.get('marketingConsent', True)
 
             user = User(
@@ -169,22 +167,21 @@ def session_login():
                 username=name,
                 token_balance=initial_tokens,
                 marketing_consent=marketing_consent,
-                trial_used=bool(trial_used) # Устанавливаем флаг, если email уже использовал триал
+                trial_used=bool(trial_used_record)
             )
             db.session.add(user)
             db.session.commit()
             
             login_user(user)
-            # Для нового пользователя отправляем редирект на выбор плана
             return jsonify({"status": "success", "action": "redirect", "url": url_for('choose_plan')})
 
-        # Если пользователь уже существует
         login_user(user)
-        # Для существующего пользователя отправляем редирект на главную страницу
         return jsonify({"status": "success", "action": "redirect", "url": url_for('index')})
 
     except Exception as e:
+        print(f"Error in session_login: {e}")
         return jsonify({"status": "error", "message": str(e)}), 401
+
 # --- Маршруты для юридических и вспомогательных страниц ---
 @app.route('/terms')
 def terms():
@@ -211,95 +208,84 @@ def upload_file_to_s3(file_to_upload):
     print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
     return hosted_image_url
 
-def handle_checkout_session(session):
-    customer_id = session.get('customer')
-    user_id_from_metadata = session.get('metadata', {}).get('user_id')
+def handle_checkout_session(session_data):
+    customer_id = session_data.get('customer')
+    user_id_from_metadata = session_data.get('metadata', {}).get('user_id')
 
     with app.app_context():
-        user = None
-        # Сначала ищем пользователя по ID из метаданных (самый надежный способ)
-        if user_id_from_metadata:
-            user = User.query.get(user_id_from_metadata)
-
-        # Если по какой-то причине метаданных нет, пытаемся найти по customer_id
+        user = User.query.get(user_id_from_metadata) if user_id_from_metadata else None
         if not user and customer_id:
             user = User.query.filter_by(stripe_customer_id=customer_id).first()
-
+        
         if not user:
-            print(f"!!! Webhook Error: Could not find user for customer {customer_id} or metadata {user_id_from_metadata}")
+            print(f"Webhook Error: Could not find user for checkout session {session_data.get('id')}")
             return
 
-        # Если у пользователя еще не сохранен stripe_customer_id, сохраняем его
         if not user.stripe_customer_id and customer_id:
             user.stripe_customer_id = customer_id
-            print(f"!!! Stripe customer ID {customer_id} saved for user {user.id}")
-
-        if session.get('subscription'):
-            subscription_id = session.get('subscription')
+        
+        if session_data.get('subscription'):
+            subscription_id = session_data.get('subscription')
             subscription = stripe.Subscription.retrieve(subscription_id)
             user.stripe_subscription_id = subscription_id
             user.subscription_status = subscription.status
+            user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
             
-            # --- ОБНОВЛЕННАЯ ЛОГИКА ---
-            # Устанавливаем дату окончания подписки/триала
-            user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end)
-            
-            # Отмечаем использование триала
-            if subscription.trial_end:
-                 user.trial_used = True
+            # Логика для триала
+            if subscription.trial_end and not user.trial_used:
+                user.trial_used = True
+                user.token_balance += 1500 # Начисляем 1500 токенов за триал
+                user.current_plan = 'taste' # Триал всегда для плана 'taste'
+                print(f"User {user.id} started a free trial. Added 1500 tokens.")
+            else: # Логика для обычной подписки
+                price_id = subscription.items.data[0].price.id
+                user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), user.current_plan)
 
-            price_id = subscription.items.data[0].price.id
-            user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
-            
-            if session.get('payment_status') == 'paid':
-                 handle_successful_payment(invoice=None, subscription=subscription)
+            if session_data.get('payment_status') == 'paid':
+                handle_successful_payment(subscription=subscription)
 
-        # Дальнейшая логика по обработке подписки или платежа
-        if session.get('subscription'):
-            subscription_id = session.get('subscription')
-            subscription = stripe.Subscription.retrieve(subscription_id)
-            user.stripe_subscription_id = subscription_id
-            user.subscription_status = subscription.status
-            price_id = subscription.items.data[0].price.id
-            user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
-            # Вызываем обработчик пополнения токенов (если это первая оплата подписки)
-            if session.get('payment_status') == 'paid':
-                 handle_successful_payment(invoice=None, subscription=subscription)
-        elif session.get('payment_intent'):
-            # Это разовая покупка (например, токены)
-            user.token_balance += 1000 # Пример, как в вашем коде
+        elif session_data.get('payment_intent'):
+            user.token_balance += 1000
 
         db.session.commit()
 
 def handle_subscription_change(subscription):
-    customer_id = subscription.get('customer')
     with app.app_context():
-        user = User.query.filter_by(stripe_customer_id=customer_id).first()
+        user = User.query.filter_by(stripe_subscription_id=subscription.id).first()
         if not user: return
+
         user.subscription_status = subscription.status
-        if subscription.status != 'active':
-            user.current_plan = 'inactive'
+        user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
+        
+        if subscription.cancel_at_period_end:
+            user.subscription_status = 'canceled'
+        elif subscription.status == 'active':
+            price_id = subscription.items.data[0].price.id
+            user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
+        else:
+             user.current_plan = 'inactive'
+             
         db.session.commit()
 
 def handle_successful_payment(invoice=None, subscription=None):
-    if invoice:
-        subscription_id = invoice.get('subscription')
-    elif subscription:
-        subscription_id = subscription.id
-    else: return
+    subscription_id = invoice.get('subscription') if invoice else (subscription.id if subscription else None)
     if not subscription_id: return
+    
     with app.app_context():
         user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
         if not user: return
+        
         if not subscription:
             subscription = stripe.Subscription.retrieve(subscription_id)
+        
         price_id = subscription.items.data[0].price.id
-        if price_id == PLAN_PRICES.get('taste'):
-            user.token_balance += 1500
-        elif price_id == PLAN_PRICES.get('best'):
-            user.token_balance += 4500
-        elif price_id == PLAN_PRICES.get('pro'):
-            user.token_balance += 15000
+        token_map = {'taste': 1500, 'best': 4500, 'pro': 15000}
+        plan_name = next((name for name, id in PLAN_PRICES.items() if id == price_id), None)
+        
+        # Начисляем токены только если это не триал (чтобы не дублировать)
+        if plan_name in token_map and not subscription.trial_end:
+            user.token_balance += token_map[plan_name]
+        
         db.session.commit()
 
 # --- Маршруты для биллинга и Stripe Webhook ---
@@ -326,32 +312,22 @@ def archive():
 @login_required
 def create_checkout_session():
     price_id = request.form.get('price_id')
-    # Новый параметр из формы для определения, является ли это триалом
     is_trial = request.form.get('trial') == 'true'
 
-    # Проверяем, может ли пользователь использовать триал
     if is_trial and (current_user.trial_used or current_user.subscription_status == 'active'):
         flash('Free trial can only be used once.', 'warning')
         return redirect(url_for('billing'))
 
     mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
-    
     try:
         checkout_params = {
-            'payment_method_types': ['card'],
-            'line_items': [{'price': price_id, 'quantity': 1}],
-            'mode': mode,
-            'automatic_tax': {'enabled': True},
+            'payment_method_types': ['card'], 'line_items': [{'price': price_id, 'quantity': 1}],
+            'mode': mode, 'automatic_tax': {'enabled': True},
             'success_url': url_for('billing', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url': url_for('billing', _external=True),
         }
-
-        # --- НОВАЯ ЛОГИКА ДЛЯ FREE TRIAL ---
         if is_trial and mode == 'subscription':
-            checkout_params['subscription_data'] = {
-                'trial_period_days': 3
-            }
-        # ------------------------------------
+            checkout_params['subscription_data'] = {'trial_period_days': 3}
 
         if current_user.stripe_customer_id:
             checkout_params['customer'] = current_user.stripe_customer_id
@@ -362,7 +338,6 @@ def create_checkout_session():
 
         checkout_session = stripe.checkout.Session.create(**checkout_params)
         return redirect(checkout_session.url, code=303)
-        
     except Exception as e:
         flash(f'Stripe error: {str(e)}', 'error')
         return redirect(url_for('billing'))
@@ -379,6 +354,55 @@ def create_portal_session():
     )
     return redirect(portal_session.url, code=303)
 
+@app.route('/cancel-subscription', methods=['POST'])
+@login_required
+def cancel_subscription():
+    if not current_user.stripe_subscription_id:
+        flash('No active subscription to cancel.', 'error')
+        return redirect(url_for('billing'))
+    try:
+        stripe.Subscription.modify(current_user.stripe_subscription_id, cancel_at_period_end=True)
+        flash('Your subscription will be canceled at the end of the current period.', 'success')
+    except Exception as e:
+        flash(f'Error cancelling subscription: {str(e)}', 'error')
+    return redirect(url_for('billing'))
+
+@app.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    try:
+        user_email = current_user.email
+        user_id = current_user.id
+        stripe_subscription_id = current_user.stripe_subscription_id
+
+        if stripe_subscription_id:
+            try:
+                stripe.Subscription.cancel(stripe_subscription_id)
+            except stripe.error.InvalidRequestError as e:
+                print(f"Subscription {stripe_subscription_id} might already be canceled or invalid: {e}")
+
+        # Удаляем связанные генерации (cascade должен сработать, но для надежности)
+        Prediction.query.filter_by(user_id=user_id).delete()
+        
+        if not UsedTrialEmail.query.filter_by(email=user_email).first():
+            db.session.add(UsedTrialEmail(email=user_email))
+        
+        user_to_delete = User.query.get(user_id)
+        logout_user() # Важно выйти из системы перед удалением
+        db.session.delete(user_to_delete)
+        
+        # Удаляем пользователя из Firebase
+        auth.delete_user(user_id)
+        
+        db.session.commit()
+        
+        flash('Your account and all associated data have been successfully deleted.', 'success')
+        return redirect(url_for('login'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while deleting your account: {str(e)}', 'error')
+        return redirect(url_for('billing'))
+
 @app.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
     payload = request.get_data(as_text=True)
@@ -387,105 +411,18 @@ def stripe_webhook():
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.error.SignatureVerificationError) as e:
         return 'Invalid payload or signature', 400
-    with app.app_context():
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            handle_checkout_session(session)
-        if event['type'] in ['customer.subscription.updated', 'customer.subscription.deleted']:
-            subscription = event['data']['object']
-            handle_subscription_change(subscription)
-        if event['type'] == 'invoice.payment_succeeded':
-            invoice = event['data']['object']
-            handle_successful_payment(invoice=invoice)
-    return 'OK', 200
-
-@app.route('/cancel-subscription', methods=['POST'])
-@login_required
-def cancel_subscription():
-    if not current_user.stripe_subscription_id:
-        flash('No active subscription to cancel.', 'error')
-        return redirect(url_for('billing'))
-
-    try:
-        # Отменяем автопродление в Stripe
-        stripe.Subscription.modify(
-            current_user.stripe_subscription_id,
-            cancel_at_period_end=True
-        )
-        # Обновляем статус в нашей БД
-        current_user.subscription_status = 'canceled'
-        db.session.commit()
-        flash('Your subscription has been cancelled. You will have access until the end of the current period.', 'success')
-    except Exception as e:
-        flash(f'Error cancelling subscription: {str(e)}', 'error')
     
-    return redirect(url_for('billing'))
+    event_map = {
+        'checkout.session.completed': handle_checkout_session,
+        'customer.subscription.updated': handle_subscription_change,
+        'customer.subscription.deleted': handle_subscription_change,
+        'invoice.payment_succeeded': handle_successful_payment,
+    }
+    handler = event_map.get(event['type'])
+    if handler:
+        handler(event['data']['object'])
 
-@app.route('/delete-account', methods=['POST'])
-@login_required
-def delete_account():
-    try:
-        # 1. Немедленно отменяем подписку в Stripe, если она есть
-        if current_user.stripe_subscription_id:
-            stripe.Subscription.cancel(current_user.stripe_subscription_id)
-
-        # 2. Удаляем все связанные данные (например, генерации)
-        Prediction.query.filter_by(user_id=current_user.id).delete()
-        
-        # 3. Сохраняем email, чтобы предотвратить повторное использование триала
-        used_email = UsedTrialEmail.query.filter_by(email=current_user.email).first()
-        if not used_email:
-            db.session.add(UsedTrialEmail(email=current_user.email))
-            
-        # 4. Удаляем пользователя из Firebase
-        auth.delete_user(current_user.id)
-        
-        # 5. Удаляем пользователя из нашей БД
-        user_to_delete = User.query.get(current_user.id)
-        logout_user() # Выходим из системы перед удалением
-        db.session.delete(user_to_delete)
-        
-        db.session.commit()
-        
-        flash('Your account and all associated data have been successfully deleted.', 'success')
-        return redirect(url_for('login'))
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f'An error occurred while deleting your account: {str(e)}', 'error')
-        return redirect(url_for('billing'))
-
-@app.route('/replicate-webhook', methods=['POST'])
-def replicate_webhook():
-    """
-    Принимает вебхук от Replicate по завершении генерации.
-    """
-    data = request.json
-    replicate_id = data.get('id')
-    status = data.get('status')
-    if not replicate_id:
-        return 'Invalid payload, missing ID', 400
-    with app.app_context():
-        prediction = Prediction.query.filter_by(replicate_id=replicate_id).first()
-        if not prediction:
-            print(f"!!! Вебхук получен для неизвестного Replicate ID: {replicate_id}")
-            return 'Prediction not found', 404
-        if status == 'succeeded':
-            output_url = data.get('output')
-            if output_url and isinstance(output_url, list):
-                prediction.output_url = output_url[0]
-            else:
-                 prediction.output_url = output_url
-            prediction.status = 'completed'
-            print(f"!!! Вебхук успешно обработан для Prediction {prediction.id}. Статус: completed.")
-        elif status == 'failed':
-            prediction.status = 'failed'
-            user = User.query.get(prediction.user_id)
-            if user:
-                user.token_balance += prediction.token_cost
-            print(f"!!! Вебхук обработан для Prediction {prediction.id}. Статус: failed. Токены возвращены.")
-        db.session.commit()
-    return 'Webhook received', 200
+    return 'OK', 200
 
 # --- Маршруты API и обработки изображений ---
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
@@ -624,7 +561,7 @@ def index():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out.', 'success') # Добавим сообщение для пользователя
+    flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
 # --- Final app setup ---
