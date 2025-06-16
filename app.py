@@ -577,7 +577,44 @@ def process_image():
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
 
-# --- Главный маршрут ---
+@app.route('/replicate-webhook', methods=['POST'])
+def replicate_webhook():
+    data = request.json
+    replicate_id = data.get('id')
+    status = data.get('status')
+    if not replicate_id:
+        return 'Invalid payload, missing ID', 400
+    with app.app_context():
+        prediction = Prediction.query.filter_by(replicate_id=replicate_id).first()
+        if not prediction:
+            print(f"!!! Вебхук получен для неизвестного Replicate ID: {replicate_id}")
+            return 'Prediction not found', 404
+        if status == 'succeeded':
+            output_url = data.get('output')
+            prediction.output_url = output_url[0] if isinstance(output_url, list) else output_url
+            prediction.status = 'completed'
+        elif status == 'failed':
+            prediction.status = 'failed'
+            user = User.query.get(prediction.user_id)
+            if user:
+                user.token_balance += prediction.token_cost
+        db.session.commit()
+    return 'Webhook received', 200
+
+# --- Маршруты API и обработки изображений ---
+@app.route('/get-result/<string:prediction_id>', methods=['GET'])
+@login_required
+def get_result(prediction_id):
+    prediction = Prediction.query.get(prediction_id)
+    if not prediction or prediction.user_id != current_user.id:
+        return jsonify({'error': 'Prediction not found or access denied'}), 404
+    if prediction.status == 'completed':
+        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
+    if prediction.status == 'failed':
+        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': User.query.get(current_user.id).token_balance})
+    return jsonify({'status': 'pending'})
+
+# --- Главный маршрут и выход ---
 @app.route('/')
 @login_required
 @subscription_required
@@ -590,6 +627,8 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
+
+# --- Конец блока для вставки ---
 
 # --- Final app setup ---
 with app.app_context():
