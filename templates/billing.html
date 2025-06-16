@@ -27,21 +27,12 @@
                 } %}
                 {% set display_name = plan_display_name.get(current_user.current_plan, 'Free') %}
 
-                {% if current_user.is_authenticated %}
-                <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
-                    <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-                
-                        {% if current_user.subscription_status in ['active', 'trial'] %}
-                        <form action="{{ url_for('cancel_subscription') }}" method="POST">
-                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to cancel your subscription? It will not renew after the current period ends.')">Cancel Subscription</button>
-                        </form>
-                        {% endif %}
-                
-                        <form action="{{ url_for('delete_account') }}" method="POST">
-                            <button type="submit" class="btn btn-danger" onclick="return confirm('WARNING: This will immediately cancel your subscription and permanently delete your account and all data. This action cannot be undone. Are you sure?')">Delete Account</button>
-                        </form>
-                    </div>
-                </div>
+                {% if current_user.subscription_status in ['active', 'trial'] and current_user.subscription_ends_at %}
+                    {{ 'Free Trial' if current_user.subscription_status == 'trial' else display_name }} renew on {{ current_user.subscription_ends_at.strftime('%B %d, %Y') }}
+                {% elif current_user.subscription_status == 'canceled' and current_user.subscription_ends_at %}
+                    {{ display_name }} ends on {{ current_user.subscription_ends_at.strftime('%B %d, %Y') }}
+                {% else %}
+                    Free
                 {% endif %}
                 </strong>
             </p>
