@@ -69,12 +69,14 @@
                     <label>Resolution</label>
                     <div class="resolution-selector">
                         <button class="resolution-btn active" data-value="2">x2</button>
-                        {% if current_user.current_plan == 'taste' %}
+                        
+                        {% if current_user.current_plan in ['taste', 'trial'] %}
                             <button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x4</button>
                         {% else %}
                             <button class="resolution-btn" data-value="4">x4</button>
                         {% endif %}
-                        {% if current_user.current_plan in ['taste', 'best'] %}
+
+                        {% if current_user.current_plan not in ['pro'] %}
                             <button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x8</button>
                         {% else %}
                             <button class="resolution-btn" data-value="8">x8</button>
