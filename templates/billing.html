@@ -17,17 +17,26 @@
     <div class="billing-header" style="max-width: 1100px; margin: 0 auto 40px auto;">
         <div class="current-plan-info">
             <h1>Manage your plan</h1>
-            <p>Your current plan: <strong>{{ (current_user.current_plan or 'None').replace('_', ' ')|title }}</strong></p>
             
-            {% if current_user.subscription_ends_at %}
+            {% if current_user.current_plan == 'trial' and current_user.subscription_status == 'trial' %}
+                <p>Your current plan: <strong>Free Trial</strong></p>
+                {% if current_user.subscription_ends_at %}
+                <p>Trial ends: <strong>{{ current_user.subscription_ends_at.strftime('%B %d, %Y') }}</strong></p>
+                {% endif %}
+            {% elif current_user.subscription_status in ['active', 'canceled'] %}
+                <p>Your current plan: <strong>{{ (current_user.current_plan or 'None').replace('_', ' ')|title }}</strong></p>
+                {% if current_user.subscription_ends_at %}
                 <p>
                     {% if current_user.subscription_status == 'canceled' %}
-                        Subscription ends: 
+                        Access ends: 
                     {% else %}
                         Next billing date: 
                     {% endif %}
                     <strong>{{ current_user.subscription_ends_at.strftime('%B %d, %Y') }}</strong>
                 </p>
+                {% endif %}
+            {% else %}
+                 <p>Your current plan: <strong>Free</strong></p>
             {% endif %}
 
             <p>You have <strong>{{ current_user.token_balance }}</strong> credits.</p>
@@ -36,7 +45,7 @@
             <form action="{{ url_for('create_portal_session') }}" method="POST" style="margin-top: 20px;">
                 <button class="btn btn-secondary" type="submit">Manage Payment & Invoices</button>
             </form>
-            {% elif current_user.subscription_status != 'canceled' %}
+            {% elif current_user.subscription_status not in ['active', 'canceled', 'trial'] %}
             <p style="margin-top: 20px; color: var(--secondary-text-color);">You do not have an active subscription. Choose a plan below to start.</p>
             {% endif %}
 
@@ -81,12 +90,10 @@
                 <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Credit Top-Up</li>
                 <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
             </ul>
-            {% if current_user.subscription_status == 'active' %}
-                {% if current_user.current_plan == 'taste' %}
-                    <button class="btn-disabled" disabled>Your Current Plan</button>
-                {% else %}
-                    <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
-                {% endif %}
+            {% if current_user.subscription_status == 'active' and current_user.current_plan == 'taste' %}
+                <button class="btn-disabled" disabled>Your Current Plan</button>
+            {% elif current_user.subscription_status in ['active', 'trial'] %}
+                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
             {% else %}
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
                     <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
@@ -112,12 +119,10 @@
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
                 <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
             </ul>
-            {% if current_user.subscription_status == 'active' %}
-                {% if current_user.current_plan == 'best' %}
-                    <button class="btn-disabled" disabled>Your Current Plan</button>
-                {% else %}
-                    <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
-                {% endif %}
+            {% if current_user.subscription_status == 'active' and current_user.current_plan == 'best' %}
+                <button class="btn-disabled" disabled>Your Current Plan</button>
+            {% elif current_user.subscription_status in ['active', 'trial'] %}
+                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
             {% else %}
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
                     <input type="hidden" name="price_id" value="{{ PLAN_PRICES.best }}">
@@ -143,12 +148,10 @@
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Early Access to New Features</li>
             </ul>
-            {% if current_user.subscription_status == 'active' %}
-                {% if current_user.current_plan == 'pro' %}
-                    <button class="btn-disabled" disabled>Your Current Plan</button>
-                {% else %}
-                    <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
-                {% endif %}
+            {% if current_user.subscription_status == 'active' and current_user.current_plan == 'pro' %}
+                <button class="btn-disabled" disabled>Your Current Plan</button>
+            {% elif current_user.subscription_status in ['active', 'trial'] %}
+                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
             {% else %}
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
                     <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}">
@@ -158,13 +161,13 @@
         </div>
     </div>
     
-    {% if current_user.subscription_status in ['active', 'canceled'] %}
+    {% if current_user.subscription_status in ['active', 'trial', 'canceled'] %}
     <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
             
-            {% if current_user.subscription_status == 'active' %}
+            {% if current_user.subscription_status in ['active', 'trial'] %}
             <form action="{{ url_for('cancel_subscription') }}" method="POST">
-                <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to cancel your subscription? Your access will remain until the end of the current billing period.')">Cancel Subscription</button>
+                <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to cancel your subscription? It will not renew after the current period ends.')">Cancel Subscription</button>
             </form>
             {% endif %}
 
