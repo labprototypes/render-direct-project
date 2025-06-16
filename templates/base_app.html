@@ -152,7 +152,6 @@
             color: var(--primary-text-color); background-color: rgba(0,0,0,0.05);
         }
         
-        /* ИЗМЕНЕНО: Активные кнопки Edit/Autofix теперь тоже акцентного цвета */
         .edit-mode-btn.active, .resolution-btn.active {
             background-color: var(--accent-color);
             color: var(--accent-text-color);
@@ -339,7 +338,7 @@
         /* ИЗМЕНЕНО: Цвет текста неактивной кнопки Generate */
         .submit-button-element:disabled {
             background-color: var(--border-color);
-            color: var(--secondary-text-color) !important;
+            color: var(--primary-text-color) !important;
             border-color: transparent;
             cursor: not-allowed;
             transform: none;
@@ -347,7 +346,7 @@
         }
         .submit-button-element:disabled:hover {
             background-color: var(--border-color);
-            color: var(--secondary-text-color) !important;
+            color: var(--primary-text-color) !important;
         }
 
         .control-group { width: 100%; display: flex; flex-direction: column; gap: 12px; }
@@ -491,7 +490,15 @@
         .plan-includes { list-style: none; padding: 0; margin: 20px 0; text-align: left; flex-grow: 1;}
         .plan-includes li { margin-bottom: 12px; display: flex; align-items: center; font-size: 0.95rem; color: var(--primary-text-color);}
         .plan-includes li.unavailable { color: var(--disabled-color); text-decoration: line-through; }
-        .plan-includes li svg { width: 18px; height: 18px; margin-right: 10px; }
+        
+        /* ИЗМЕНЕНО: Иконки-чекбоксы на странице биллинга */
+        .plan-includes li svg {
+            width: 18px; height: 18px; margin-right: 10px;
+            background-color: var(--light-surface-color);
+            border-radius: 6px;
+            padding: 4px;
+            box-sizing: content-box;
+        }
         .plan-includes li.available svg { color: var(--accent-color); }
         .plan-includes li.unavailable svg { color: var(--disabled-color); }
         
