@@ -162,13 +162,30 @@
     {% if current_user.subscription_status in ['active', 'trial'] %}
     <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-            
+    
             {% if current_user.subscription_status in ['active', 'trial'] %}
             <form action="{{ url_for('cancel_subscription') }}" method="POST">
                 <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to cancel your subscription? It will not renew after the current period ends.')">Cancel Subscription</button>
             </form>
             {% endif %}
-
+    
+            <form action="{{ url_for('delete_account') }}" method="POST">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('WARNING: This will immediately cancel your subscription and permanently delete your account and all data. This action cannot be undone. Are you sure?')">Delete Account</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.is_authenticated %}
+    <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+    
+            {% if current_user.subscription_status in ['active', 'trial'] %}
+            <form action="{{ url_for('cancel_subscription') }}" method="POST">
+                <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to cancel your subscription? Your access will remain until the end of the current billing period.')">Cancel Subscription</button>
+            </form>
+            {% endif %}
+    
             <form action="{{ url_for('delete_account') }}" method="POST">
                 <button type="submit" class="btn btn-danger" onclick="return confirm('WARNING: This will immediately cancel your subscription and permanently delete your account and all data. This action cannot be undone. Are you sure?')">Delete Account</button>
             </form>
