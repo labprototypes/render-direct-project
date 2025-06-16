@@ -517,7 +517,7 @@ def process_image():
             if edit_mode == 'autofix':
                 print("!!! Запрос к OpenAI Vision API для Autofix...")
                 autofix_system_prompt = (
-                    "You are an advanced AI image analysis and correction expert..."
+                    "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
                 )
                 messages = [
                     {"role": "system", "content": autofix_system_prompt},
@@ -526,7 +526,7 @@ def process_image():
             else:
                 print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
                 edit_system_prompt = (
-                    "You are an AI image analysis and editing expert..."
+                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
                 )
                 messages = [
                     {"role": "system", "content": edit_system_prompt},
