@@ -229,22 +229,29 @@ def handle_checkout_session(session_data):
             subscription = stripe.Subscription.retrieve(subscription_id)
             user.stripe_subscription_id = subscription_id
             user.subscription_status = subscription.status
-            user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
             
-            # Логика для триала
-            if subscription.trial_end and not user.trial_used:
-                user.trial_used = True
-                user.token_balance += 1500 # Начисляем 1500 токенов за триал
-                user.current_plan = 'taste' # Триал всегда для плана 'taste'
-                print(f"User {user.id} started a free trial. Added 1500 tokens.")
-            else: # Логика для обычной подписки
+            # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
+            # Проверяем, есть ли у подписки триал, и используем правильное поле для даты
+            if subscription.trial_end:
+                # Это триальная подписка
+                user.subscription_ends_at = datetime.fromtimestamp(subscription.trial_end, tz=timezone.utc)
+                if not user.trial_used:
+                    user.trial_used = True
+                    user.token_balance += 1500 # Начисляем 1500 токенов за триал
+                    user.current_plan = 'taste' # Триал всегда для плана 'taste'
+                    print(f"User {user.id} started a free trial. Added 1500 tokens.")
+            elif subscription.current_period_end:
+                # Это обычная платная подписка
+                user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
                 price_id = subscription.items.data[0].price.id
                 user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), user.current_plan)
 
+            # Если сессия включает успешный платеж (например, после триала), начисляем токены
             if session_data.get('payment_status') == 'paid':
                 handle_successful_payment(subscription=subscription)
 
         elif session_data.get('payment_intent'):
+            # Это разовая покупка токенов
             user.token_balance += 1000
 
         db.session.commit()
