@@ -6,6 +6,7 @@ monkey.patch_all()
 import os
 import uuid
 import time
+import io
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -579,26 +580,75 @@ def process_image():
 
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
+    """
+    Принимает вебхук от Replicate, СКАЧИВАЕТ результат
+    и ПЕРЕЗАГРУЖАЕТ его в наш постоянный S3 бакет.
+    """
     data = request.json
     replicate_id = data.get('id')
     status = data.get('status')
+
     if not replicate_id:
         return 'Invalid payload, missing ID', 400
+
     with app.app_context():
         prediction = Prediction.query.filter_by(replicate_id=replicate_id).first()
         if not prediction:
             print(f"!!! Вебхук получен для неизвестного Replicate ID: {replicate_id}")
             return 'Prediction not found', 404
+
         if status == 'succeeded':
-            output_url = data.get('output')
-            prediction.output_url = output_url[0] if isinstance(output_url, list) else output_url
-            prediction.status = 'completed'
+            temp_url = data.get('output')
+            if temp_url and isinstance(temp_url, list):
+                temp_url = temp_url[0]
+            
+            if temp_url:
+                try:
+                    # Шаг 1: Скачиваем изображение по временной ссылке
+                    image_response = requests.get(temp_url, stream=True)
+                    image_response.raise_for_status()
+                    
+                    # Шаг 2: Готовим его к загрузке в S3
+                    image_data = io.BytesIO(image_response.content)
+                    s3_client = boto3.client('s3', region_name=AWS_S3_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+                    
+                    # Генерируем новое имя файла
+                    file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
+                    object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
+                    
+                    # Шаг 3: Загружаем в наш S3 бакет
+                    s3_client.upload_fileobj(
+                        image_data,
+                        AWS_S3_BUCKET_NAME,
+                        object_name,
+                        ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png')}
+                    )
+                    
+                    # Шаг 4: Сохраняем постоянную ссылку в базу данных
+                    permanent_s3_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
+                    prediction.output_url = permanent_s3_url
+                    prediction.status = 'completed'
+                    print(f"!!! Изображение для Prediction {prediction.id} сохранено в S3: {permanent_s3_url}")
+
+                except Exception as e:
+                    print(f"!!! Ошибка при скачивании/перезагрузке изображения из Replicate: {e}")
+                    prediction.status = 'failed'
+                    # Возвращаем токены, если не удалось сохранить результат
+                    user = User.query.get(prediction.user_id)
+                    if user:
+                        user.token_balance += prediction.token_cost
+            else:
+                prediction.status = 'failed'
+
         elif status == 'failed':
             prediction.status = 'failed'
             user = User.query.get(prediction.user_id)
             if user:
                 user.token_balance += prediction.token_cost
+            print(f"!!! Вебхук обработан для Prediction {prediction.id}. Статус: failed. Токены возвращены.")
+            
         db.session.commit()
+        
     return 'Webhook received', 200
 
 
