@@ -90,6 +90,8 @@ class User(db.Model, UserMixin):
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
     current_plan = db.Column(db.String(50), nullable=True, default='trial')
+    trial_used = db.Column(db.Boolean, default=False, nullable=False)
+    subscription_ends_at = db.Column(db.DateTime, nullable=True)
 
     # Поле password больше не нужно
 
@@ -222,6 +224,26 @@ def handle_checkout_session(session):
             user.stripe_customer_id = customer_id
             print(f"!!! Stripe customer ID {customer_id} saved for user {user.id}")
 
+        if session.get('subscription'):
+            subscription_id = session.get('subscription')
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            user.stripe_subscription_id = subscription_id
+            user.subscription_status = subscription.status
+            
+            # --- ОБНОВЛЕННАЯ ЛОГИКА ---
+            # Устанавливаем дату окончания подписки/триала
+            user.subscription_ends_at = datetime.fromtimestamp(subscription.current_period_end)
+            
+            # Отмечаем использование триала
+            if subscription.trial_end:
+                 user.trial_used = True
+
+            price_id = subscription.items.data[0].price.id
+            user.current_plan = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
+            
+            if session.get('payment_status') == 'paid':
+                 handle_successful_payment(invoice=None, subscription=subscription)
+
         # Дальнейшая логика по обработке подписки или платежа
         if session.get('subscription'):
             subscription_id = session.get('subscription')
@@ -294,10 +316,17 @@ def archive():
 @login_required
 def create_checkout_session():
     price_id = request.form.get('price_id')
+    # Новый параметр из формы для определения, является ли это триалом
+    is_trial = request.form.get('trial') == 'true'
+
+    # Проверяем, может ли пользователь использовать триал
+    if is_trial and (current_user.trial_used or current_user.subscription_status == 'active'):
+        flash('Free trial can only be used once.', 'warning')
+        return redirect(url_for('billing'))
+
     mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
     
     try:
-        # Готовим базовые параметры для Stripe
         checkout_params = {
             'payment_method_types': ['card'],
             'line_items': [{'price': price_id, 'quantity': 1}],
@@ -307,14 +336,16 @@ def create_checkout_session():
             'cancel_url': url_for('billing', _external=True),
         }
 
-        # ПРОВЕРКА: Если у пользователя уже есть ID клиента Stripe...
+        # --- НОВАЯ ЛОГИКА ДЛЯ FREE TRIAL ---
+        if is_trial and mode == 'subscription':
+            checkout_params['subscription_data'] = {
+                'trial_period_days': 3
+            }
+        # ------------------------------------
+
         if current_user.stripe_customer_id:
-            # ...тогда используем его И разрешаем ему обновлять адрес.
             checkout_params['customer'] = current_user.stripe_customer_id
-            checkout_params['customer_update'] = {'address': 'auto'} # <-- ПЕРЕМЕСТИЛИ СЮДА
-        
-        # ЕСЛИ НЕТ: Передаем email для создания нового клиента.
-        # customer_update здесь не используется, что и требовалось.
+            checkout_params['customer_update'] = {'address': 'auto'}
         else:
             checkout_params['customer_email'] = current_user.email
             checkout_params['metadata'] = {'user_id': current_user.id}
@@ -357,6 +388,62 @@ def stripe_webhook():
             invoice = event['data']['object']
             handle_successful_payment(invoice=invoice)
     return 'OK', 200
+
+@app.route('/cancel-subscription', methods=['POST'])
+@login_required
+def cancel_subscription():
+    if not current_user.stripe_subscription_id:
+        flash('No active subscription to cancel.', 'error')
+        return redirect(url_for('billing'))
+
+    try:
+        # Отменяем автопродление в Stripe
+        stripe.Subscription.modify(
+            current_user.stripe_subscription_id,
+            cancel_at_period_end=True
+        )
+        # Обновляем статус в нашей БД
+        current_user.subscription_status = 'canceled'
+        db.session.commit()
+        flash('Your subscription has been cancelled. You will have access until the end of the current period.', 'success')
+    except Exception as e:
+        flash(f'Error cancelling subscription: {str(e)}', 'error')
+    
+    return redirect(url_for('billing'))
+
+@app.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    try:
+        # 1. Немедленно отменяем подписку в Stripe, если она есть
+        if current_user.stripe_subscription_id:
+            stripe.Subscription.cancel(current_user.stripe_subscription_id)
+
+        # 2. Удаляем все связанные данные (например, генерации)
+        Prediction.query.filter_by(user_id=current_user.id).delete()
+        
+        # 3. Сохраняем email, чтобы предотвратить повторное использование триала
+        used_email = UsedTrialEmail.query.filter_by(email=current_user.email).first()
+        if not used_email:
+            db.session.add(UsedTrialEmail(email=current_user.email))
+            
+        # 4. Удаляем пользователя из Firebase
+        auth.delete_user(current_user.id)
+        
+        # 5. Удаляем пользователя из нашей БД
+        user_to_delete = User.query.get(current_user.id)
+        logout_user() # Выходим из системы перед удалением
+        db.session.delete(user_to_delete)
+        
+        db.session.commit()
+        
+        flash('Your account and all associated data have been successfully deleted.', 'success')
+        return redirect(url_for('login'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while deleting your account: {str(e)}', 'error')
+        return redirect(url_for('billing'))
 
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
