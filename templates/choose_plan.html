@@ -26,18 +26,10 @@
             <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Credit Top-Up</li>
             <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
         </ul>
-        <form action="{{ url_for('create_checkout_session') }}" method="POST" style="margin-bottom: 10px;">
-            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
-            <button type="submit" class="btn">Subscribe</button>
-        </form>
-        
-        {% if not current_user.trial_used and current_user.subscription_status != 'active' %}
         <form action="{{ url_for('create_checkout_session') }}" method="POST">
             <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
-            <input type="hidden" name="trial" value="true">
-            <button type="submit" class="btn btn-secondary" style="background-color: transparent; border: 2px solid var(--accent-color);">3 days Free Trial</button>
+            <button type="submit" class="btn">Choose A Taste Of It</button>
         </form>
-        {% endif %}
     </div>
 
     <div class="plan-card highlighted">
@@ -51,7 +43,7 @@
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
-            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1440p)</li>
+            <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 4K)</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
             <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
@@ -64,7 +56,7 @@
     </div>
 
     <div class="plan-card">
-        <h3 class="plan-name">Pick&Flip PRO</h3>
+        <h3 class="plan-name">Pifly PRO</h3>
         <p class="plan-description">Teams and advanced creators</p>
         <div class="plan-price">&euro;35<span>/mo</span></div>
         <ul class="plan-includes">
@@ -82,8 +74,18 @@
         </ul>
         <form action="{{ url_for('create_checkout_session') }}" method="POST">
             <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}">
-            <button type="submit" class="btn">Choose Pick&Flip PRO</button>
+            <button type="submit" class="btn">Choose Pifly PRO</button>
         </form>
     </div>
+</div>
+
+<div class="bottom-link">
+    {% if not current_user.is_authenticated or not current_user.subscription_status in ['active', 'trial'] %}
+    <form action="{{ url_for('create_checkout_session') }}" method="POST" style="display: inline;">
+        <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
+        <input type="hidden" name="trial" value="true">
+        <button type="submit" class="btn btn-white">Start Free Trial</button>
+    </form>
+    {% endif %}
 </div>
 {% endblock %}
