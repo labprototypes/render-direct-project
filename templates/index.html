@@ -1,5 +1,4 @@
 {% extends "base_app.html" %}
-{# FIX: Removed the no-scroll block to enable scrolling on this page #}
 
 {% block title %}Changer AI - Generate{% endblock %}
 
@@ -80,11 +79,50 @@
                         {% else %}
                             <button class="resolution-btn" data-value="8">x8</button>
                         {% endif %}
-    </div>
-</div>
-                <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="creativity-slider" data-tooltip="How strong Pifly enhance the image">Creativity</label><span class="slider-value" id="creativity-value">30</span></div><input type="range" id="creativity-slider" min="0" max="100" value="30" class="custom-slider"></div></div>
-                <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="resemblance-slider" data-tooltip="Similarity to the base image">Resemblance</label><span class="slider-value" id="resemblance-value">20</span></div><input type="range" id="resemblance-slider" min="0" max="100" value="20" class="custom-slider"></div></div>
-                <div class="control-group"><div class="slider-container"><div class="slider-header"><label for="hdr-slider" data-tooltip="Increases definition and detail">HDR</label><span class="slider-value" id="hdr-value">10</span></div><input type="range" id="hdr-slider" min="0" max="100" value="10" class="custom-slider"></div></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="creativity-slider">
+                                Creativity
+                                <span class="tooltip-trigger" data-tooltip="How strong Pifly enhance the image. Higher values may cause strange results. We suggest to try 20/30/50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
+                                </span>
+                            </label>
+                            <span class="slider-value" id="creativity-value">30</span>
+                        </div>
+                        <input type="range" id="creativity-slider" min="0" max="100" value="30" class="custom-slider">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="resemblance-slider">
+                                Resemblance
+                                <span class="tooltip-trigger" data-tooltip="Higher value will make the generation more closely to the original image, but may cause dirty look. We suggest to try 10/20/40">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
+                                </span>
+                            </label>
+                            <span class="slider-value" id="resemblance-value">20</span>
+                        </div>
+                        <input type="range" id="resemblance-slider" min="0" max="100" value="20" class="custom-slider">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="hdr-slider">
+                                HDR
+                                <span class="tooltip-trigger" data-tooltip="Increases definition and detail. High values can result in images with an artificial appearance. We suggest to try 10/20/30">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
+                                </span>
+                            </label>
+                            <span class="slider-value" id="hdr-value">10</span>
+                        </div>
+                        <input type="range" id="hdr-slider" min="0" max="100" value="10" class="custom-slider">
+                    </div>
+                </div>
             </div>
             <div class="submit-action-group">
                 <button type="submit" id="submit-button-upscale" class="submit-button-element">Upscale</button>
@@ -120,7 +158,7 @@
         const editControlsContainer = document.getElementById('edit-controls-container');
         const allTemplateButtons = document.querySelectorAll('.template-btn');
         const promptInput = document.getElementById('prompt');
-        const editForm = document.getElementById('edit-form'); // <-- Вот недостающая переменная
+        const editForm = document.getElementById('edit-form'); 
         const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
         
         // Элементы для режима Upscale
@@ -227,51 +265,35 @@
         }
 
         function updateUpscaleView() {
-        // Находим элемент для отображения стоимости
-        const upscaleTokenCostSpan = document.getElementById('token-cost-upscale').querySelector('span');
-
-        if (!upscaleOriginalWidth || !upscaleOriginalHeight) {
-            finalSizeDisplay.textContent = '';
-            finalSizeDisplay.style.display = 'none';
-            resolutionLimitWarning.style.display = 'none';
-            upscaleSubmitButton.disabled = false;
-            // Устанавливаем стоимость по умолчанию, если изображение не выбрано
-            upscaleTokenCostSpan.textContent = 'Estimated cost: 17';
-            upscaleTokenCost.style.display = 'flex';
-            return;
+            const upscaleTokenCostSpan = document.getElementById('token-cost-upscale').querySelector('span');
+            if (!upscaleOriginalWidth || !upscaleOriginalHeight) {
+                finalSizeDisplay.textContent = '';
+                finalSizeDisplay.style.display = 'none';
+                resolutionLimitWarning.style.display = 'none';
+                upscaleSubmitButton.disabled = false;
+                upscaleTokenCostSpan.textContent = 'Estimated cost: 17';
+                upscaleTokenCost.style.display = 'flex';
+                return;
+            }
+            const multiplier = parseInt(document.querySelector('.resolution-btn.active').dataset.value, 10);
+            const finalWidth = upscaleOriginalWidth * multiplier;
+            const finalHeight = upscaleOriginalHeight * multiplier;
+            finalSizeDisplay.textContent = `Final size: ${finalWidth} x ${finalHeight}`;
+            let cost = (multiplier <= 2) ? 17 : (multiplier <= 4) ? 65 : 150;
+            upscaleTokenCostSpan.textContent = `Estimated cost: ${cost}`;
+            const limit = 9000;
+            if (finalWidth > limit || finalHeight > limit) {
+                finalSizeDisplay.style.display = 'none';
+                resolutionLimitWarning.style.display = 'block';
+                upscaleTokenCost.style.display = 'none';
+                upscaleSubmitButton.disabled = true;
+            } else {
+                finalSizeDisplay.style.display = 'block';
+                resolutionLimitWarning.style.display = 'none';
+                upscaleTokenCost.style.display = 'flex';
+                upscaleSubmitButton.disabled = false;
+            }
         }
-
-        const multiplier = parseInt(document.querySelector('.resolution-btn.active').dataset.value, 10);
-        const finalWidth = upscaleOriginalWidth * multiplier;
-        const finalHeight = upscaleOriginalHeight * multiplier;
-
-        finalSizeDisplay.textContent = `Final size: ${finalWidth} x ${finalHeight}`;
-
-        // Новая логика расчета стоимости
-        let cost = 0;
-        if (multiplier <= 2) {
-            cost = 17;
-        } else if (multiplier <= 4) {
-            cost = 65;
-        } else { // для multiplier === 8
-            cost = 150;
-        }
-        upscaleTokenCostSpan.textContent = `Estimated cost: ${cost}`;
-
-
-        const limit = 9000;
-        if (finalWidth > limit || finalHeight > limit) {
-            finalSizeDisplay.style.display = 'none';
-            resolutionLimitWarning.style.display = 'block';
-            upscaleTokenCost.style.display = 'none';
-            upscaleSubmitButton.disabled = true;
-        } else {
-            finalSizeDisplay.style.display = 'block';
-            resolutionLimitWarning.style.display = 'none';
-            upscaleTokenCost.style.display = 'flex';
-            upscaleSubmitButton.disabled = false;
-        }
-    }
 
         function setupDragAndDrop(dropArea, fileInputElement) {
             if (!dropArea || !fileInputElement) return;
@@ -464,6 +486,28 @@
 
         setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
         setupDragAndDrop(document.getElementById('image-drop-area-upscale'), upscaleImageInput);
+        
+        // --- НОВЫЙ СКРИПТ ДЛЯ ПОДСКАЗОК ---
+        document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation(); // Останавливаем всплытие, чтобы не сработал клик по документу
+                // Закрываем все другие активные подсказки
+                document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
+                    if (activeTrigger !== this) {
+                        activeTrigger.classList.remove('active');
+                    }
+                });
+                // Переключаем текущую
+                this.classList.toggle('active');
+            });
+        });
+
+        // Закрываем подсказку при клике в любом другом месте
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
+                activeTrigger.classList.remove('active');
+            });
+        });
 
         // --- ИНИЦИАЛИЗАЦИЯ ---
         appModeButtons[0].click();
