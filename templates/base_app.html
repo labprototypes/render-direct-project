@@ -321,9 +321,11 @@
         .submit-action-group {
             width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;
         }
+        
+        /* ИЗМЕНЕНО: цвет текста и рамки для неактивной кнопки */
         .submit-button-element {
-            width: 100%; background-color: transparent; color: var(--accent-color);
-            border: 1px solid var(--accent-color); cursor: pointer; padding: 16px;
+            width: 100%; background-color: transparent; color: var(--primary-text-color);
+            border: 1px solid var(--border-color); cursor: pointer; padding: 16px;
             border-radius: var(--button-border-radius); font-size: 1.1rem;
             font-family: 'Norms', sans-serif; font-weight: 700; 
             transition: all var(--transition-speed) ease-out;
@@ -332,10 +334,10 @@
         .submit-button-element:hover {
             transform: translateY(-3px); background-color: var(--accent-color);
             color: var(--accent-text-color); box-shadow: 0 5px 20px var(--accent-glow);
+            border-color: var(--accent-color);
         }
         .submit-button-element:active { transform: translateY(0); }
         
-        /* ИЗМЕНЕНО: Цвет текста неактивной кнопки Generate */
         .submit-button-element:disabled {
             background-color: var(--border-color);
             color: var(--primary-text-color) !important;
@@ -491,16 +493,16 @@
         .plan-includes li { margin-bottom: 12px; display: flex; align-items: center; font-size: 0.95rem; color: var(--primary-text-color);}
         .plan-includes li.unavailable { color: var(--disabled-color); text-decoration: line-through; }
         
-        /* ИЗМЕНЕНО: Иконки-чекбоксы на странице биллинга */
+        /* ИЗМЕНЕНО: цвет фона и иконок для чекбоксов на странице биллинга */
         .plan-includes li svg {
             width: 18px; height: 18px; margin-right: 10px;
-            background-color: var(--light-surface-color);
+            background-color: var(--toggle-active-bg);
             border-radius: 6px;
             padding: 4px;
             box-sizing: content-box;
         }
         .plan-includes li.available svg { color: var(--accent-color); }
-        .plan-includes li.unavailable svg { color: var(--disabled-color); }
+        .plan-includes li.unavailable svg { color: var(--secondary-text-color); }
         
         .btn {
             font-family: 'Norms', sans-serif; font-weight: 700; background-color: var(--accent-color); color: var(--accent-text-color);
@@ -645,6 +647,38 @@
     .footer-links a:hover { color: var(--accent-color); }
     .btn-danger { background-color: #E53E3E; color: white; }
     .btn-danger:hover { background-color: #C53030; }
+
+    /* === СТИЛИ ДЛЯ ВСПЛЫВАЮЩИХ ПОДСКАЗОК (TOOLTIPS) === */
+    [data-tooltip] {
+        position: relative;
+        cursor: help;
+    }
+    [data-tooltip]::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 125%; /* Расположение над элементом */
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--toggle-active-bg);
+        color: var(--toggle-active-text);
+        padding: 8px 12px;
+        border-radius: var(--element-border-radius);
+        font-size: 0.85rem;
+        font-weight: 500;
+        line-height: 1.4;
+        width: max-content;
+        max-width: 250px;
+        text-align: center;
+        z-index: 10;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s, visibility 0.2s;
+        pointer-events: none; /* Чтобы подсказка не мешала курсору */
+    }
+    [data-tooltip]:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
 </style>
 
 <footer class="footer-container">
