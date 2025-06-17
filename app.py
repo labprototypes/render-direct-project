@@ -15,7 +15,7 @@ import boto3
 import openai
 import requests
 import stripe
-from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session
+from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session, get_flashed_messages
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -157,7 +157,7 @@ def session_login():
             terms_accepted = data.get('termsAccepted')
             if not terms_accepted:
                 return jsonify({"status": "error", "message": "You must accept the Terms of Service and Privacy Policy."}), 400
-            
+            get_flashed_messages()
             trial_used_record = UsedTrialEmail.query.filter_by(email=email).first()
             initial_tokens = 0
             marketing_consent = data.get('marketingConsent', True)
