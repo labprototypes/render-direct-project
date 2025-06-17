@@ -281,21 +281,23 @@
             box-shadow: 0 10px 40px var(--shadow-color); display: block;
         }
         .download-action-link {
-            display: flex; align-items: center; justify-content: center;
-            position: absolute; bottom: 12px; right: 12px;
-            width: 40px;
-            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
             z-index: 10;
             cursor: pointer;
             transition: all var(--transition-speed) ease;
             opacity: 0;
             visibility: hidden;
             transform: scale(0.8);
-            background-color: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(26, 26, 26, 0.7); /* Темная полупрозрачная подложка */
+            border-radius: 50%; /* Делаем ее круглой */
+            color: white; /* Делаем иконку внутри белой */
         }
         .archive-item:hover .download-action-link,
         .history-item:hover .download-action-link { opacity: 1; visibility: visible; transform: scale(1); }
