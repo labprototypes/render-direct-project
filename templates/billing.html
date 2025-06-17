@@ -91,12 +91,19 @@
             {% if (current_user.subscription_status == 'active' and current_user.current_plan == 'taste') or current_user.subscription_status == 'trial' %}
                 <button class="btn btn-disabled" disabled>Your Current Plan</button>
             {% elif current_user.subscription_status == 'active' %}
-                 <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
+                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
             {% else %}
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
                     <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
                     <button type="submit" class="btn">Subscribe</button>
                 </form>
+                {% if not current_user.trial_used %}
+                <form action="{{ url_for('create_checkout_session') }}" method="POST" style="margin-top: 10px;">
+                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
+                    <input type="hidden" name="trial" value="true">
+                    <button type="submit" class="btn">3 Days Free Trial</button>
+                </form>
+                {% endif %}
             {% endif %}
         </div>
 
@@ -157,16 +164,6 @@
                 </form>
             {% endif %}
         </div>
-    </div>
-    
-    <div class="bottom-link" style="text-align: center; margin-top: 20px;">
-        {% if current_user.subscription_status not in ['active', 'trial', 'canceled'] and not current_user.trial_used %}
-        <form action="{{ url_for('create_checkout_session') }}" method="POST" style="display: inline;">
-            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
-            <input type="hidden" name="trial" value="true">
-            <button type="submit" class="btn btn-white" style="border: 1px solid; max-width: 300px;">Start Free Trial</button>
-        </form>
-        {% endif %}
     </div>
 
     {% if current_user.is_authenticated %}
