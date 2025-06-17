@@ -91,10 +91,10 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(255), nullable=True)
     token_balance = db.Column(db.Integer, default=100, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
-    subscription_status = db.Column(db.String(50), default='trial', nullable=False)
+    subscription_status = db.Column(db.String(50), default='free', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
     stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True)
-    current_plan = db.Column(db.String(50), nullable=True, default='trial')
+    current_plan = db.Column(db.String(50), nullable=True, default='free')
     trial_used = db.Column(db.Boolean, default=False, nullable=False)
     subscription_ends_at = db.Column(db.DateTime, nullable=True)
 
@@ -174,7 +174,7 @@ def session_login():
             db.session.commit()
             
             login_user(user)
-            return jsonify({"status": "success", "action": "redirect", "url": url_for('choose_plan')})
+            return jsonify({"status": "success", "action": "redirect", "url": url_for('billing')})
 
         login_user(user)
         return jsonify({"status": "success", "action": "redirect", "url": url_for('index')})
