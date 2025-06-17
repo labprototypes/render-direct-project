@@ -55,7 +55,7 @@
             <ul class="plan-includes">
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>One-time purchase of 1,000 credits</li>
             </ul>
-            {% if current_user.current_plan == 'taste' or current_user.current_plan == 'trial' %}
+            {% if current_user.current_plan in ['taste', 'trial', 'free'] %}
                 <div> <button class="btn feature-locked" disabled title="Please upgrade your plan to use this feature">Top up credits</button>
                 </div>
             {% else %}
