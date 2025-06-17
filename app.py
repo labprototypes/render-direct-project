@@ -504,15 +504,41 @@ def process_image():
         return jsonify({'error': 'Insufficient tokens'}), 403
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
-    # ЗАМЕНИТЕ НА ЭТОТ БЛОК
     try:
-        # Эта часть остается без изменений
-        s3_url = upload_to_s3(request.files['image'])
+        s3_url = upload_file_to_s3(request.files['image'])
         replicate_input = {}
         model_version_id = ""
         if mode == 'edit':
-            # ... (остальной код внутри try остается таким же) ...
-            # ... до самого конца ...
+            edit_mode = request.form.get('edit_mode')
+            prompt = request.form.get('prompt', '')
+            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            if not openai_client:
+                raise Exception("System error, your tokens have been refunded")
+            final_prompt = ""
+            if edit_mode == 'autofix':
+                print("!!! Запрос к OpenAI Vision API для Autofix...")
+                autofix_system_prompt = (
+                    "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
+                )
+                messages = [
+                    {"role": "system", "content": autofix_system_prompt},
+                    {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
+                ]
+            else:
+                print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
+                edit_system_prompt = (
+                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
+                )
+                messages = [
+                    {"role": "system", "content": edit_system_prompt},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": s3_url}}
+                    ]}
+                ]
+            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
+            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+            print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
             replicate_input = {"input_image": s3_url, "prompt": final_prompt}
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
@@ -521,40 +547,24 @@ def process_image():
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
             dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
             replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
-    
         if not model_version_id or not replicate_input:
-            raise Exception(f"Invalid mode or missing inputs...")
+            raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
         if not REPLICATE_API_TOKEN:
             raise Exception("System error, your tokens have been refunded")
-    
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
         db.session.commit()
-    
         headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
         print(f"!!! Replicate Payload: {post_payload}")
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
-    
         prediction_data = start_response.json()
         replicate_prediction_id = prediction_data.get('id')
         new_prediction.replicate_id = replicate_prediction_id
         current_user.token_balance -= token_cost
         db.session.commit()
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
-    
-    # --- НАЧАЛО ИЗМЕНЕНИЙ В ОБРАБОТКЕ ОШИБОК ---
-    except openai.BadRequestError as e:
-        # Ловим конкретную ошибку от OpenAI
-        print(f"!!! ОШИБКА OpenAI: {e}")
-        if "Image size exceeds the limit" in str(e):
-            # Если ошибка именно про размер файла, отдаем понятное сообщение
-            error_message = "Image is too large. Please upload a file smaller than 20MB."
-            return jsonify({'error': error_message}), 400
-        # Если это другая ошибка от OpenAI, отдаем ее текст
-        return jsonify({'error': f"An error occurred: {str(e)}"}), 500
-    
     except requests.exceptions.HTTPError as e:
         error_details = "No details in response."
         if e.response is not None:
@@ -564,9 +574,7 @@ def process_image():
                 pass
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (HTTPError): {e}\nReplicate Response: {error_details}")
         return jsonify({'error': 'System error, your tokens have been refunded'}), 500
-    
     except Exception as e:
-        # Общий обработчик для всех остальных ошибок
         print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
         return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
 
