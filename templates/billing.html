@@ -91,7 +91,7 @@
             {% if (current_user.subscription_status == 'active' and current_user.current_plan == 'taste') or current_user.subscription_status == 'trial' %}
                 <button class="btn btn-disabled" disabled>Your Current Plan</button>
             {% elif current_user.subscription_status == 'active' %}
-                 <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
+                 <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
             {% else %}
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
                     <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
@@ -120,7 +120,7 @@
             {% if current_user.subscription_status == 'active' and current_user.current_plan == 'best' %}
                 <button class="btn btn-disabled" disabled>Your Current Plan</button>
             {% elif current_user.subscription_status in ['active', 'trial'] %}
-                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
+                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
             {% else %}
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
                     <input type="hidden" name="price_id" value="{{ PLAN_PRICES.best }}">
@@ -149,7 +149,7 @@
             {% if current_user.subscription_status == 'active' and current_user.current_plan == 'pro' %}
                 <button class="btn btn-disabled" disabled>Your Current Plan</button>
             {% elif current_user.subscription_status in ['active', 'trial'] %}
-                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Change Plan</button></form>
+                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
             {% else %}
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
                     <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}">
@@ -159,23 +159,16 @@
         </div>
     </div>
     
-    {% if current_user.subscription_status in ['active', 'trial'] %}
-    <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
-        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-    
-            {% if current_user.subscription_status in ['active', 'trial'] %}
-            <form action="{{ url_for('cancel_subscription') }}" method="POST">
-                <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to cancel your subscription? It will not renew after the current period ends.')">Cancel Subscription</button>
-            </form>
-            {% endif %}
-    
-            <form action="{{ url_for('delete_account') }}" method="POST">
-                <button type="submit" class="btn btn-danger" onclick="return confirm('WARNING: This will immediately cancel your subscription and permanently delete your account and all data. This action cannot be undone. Are you sure?')">Delete Account</button>
-            </form>
-        </div>
+    <div class="bottom-link" style="text-align: center; margin-top: 20px;">
+        {% if current_user.subscription_status not in ['active', 'trial', 'canceled'] and not current_user.trial_used %}
+        <form action="{{ url_for('create_checkout_session') }}" method="POST" style="display: inline;">
+            <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
+            <input type="hidden" name="trial" value="true">
+            <button type="submit" class="btn btn-white" style="border: 1px solid; max-width: 300px;">Start Free Trial</button>
+        </form>
+        {% endif %}
     </div>
-    {% endif %}
-    
+
     {% if current_user.is_authenticated %}
     <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
