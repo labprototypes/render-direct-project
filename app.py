@@ -403,7 +403,7 @@ def upload_file_to_s3(file_to_upload):
     print(f"!!! Изображение загружено на Selectel S3: {hosted_image_url}")
     return hosted_image_url
 
-# ИСПРАВЛЕННАЯ И ПОЛНАЯ ФУНКЦИЯ
+# ФИНАЛЬНАЯ ВЕРСИЯ ФУНКЦИИ. ЗАМЕНИТЕ СТАРУЮ ЦЕЛИКОМ.
 @app.route('/process-image', methods=['POST'])
 @login_required
 @check_confirmed
@@ -420,14 +420,14 @@ def process_image():
             token_cost = 65
         else:
             token_cost = 150
-
+    
     if token_cost == 0:
         return jsonify({'error': 'Invalid processing mode'}), 400
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Недостаточно токенов'}), 403
     if 'image' not in request.files:
         return jsonify({'error': 'Изображение отсутствует'}), 400
-
+    
     try:
         s3_url = upload_file_to_s3(request.files['image'])
         replicate_input = {}
@@ -436,20 +436,43 @@ def process_image():
         if mode == 'edit':
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
-            # Убедимся, что openai_client существует
-            if not openai_client:
-                raise Exception("Сервис улучшения промптов недоступен. Токены возвращены.")
-
-            final_prompt = ""
-            # ... (здесь вся логика с OpenAI для autofix и edit) ...
-            # Этот блок очень длинный, я для краткости его сверну, но он должен быть здесь
-            # Важно, что он использует openai_client и s3_url
-            final_prompt = "A simplified prompt for now" # Заглушка для промпта
-
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            if not openai_client:
+                raise Exception("Сервис улучшения промптов недоступен.")
+            
+            # --- НАЧАЛО ВОССТАНОВЛЕННОЙ ЛОГИКИ OPENAI ---
+            final_prompt = ""
+            if edit_mode == 'autofix':
+                print("!!! Запрос к OpenAI Vision API для Autofix...")
+                autofix_system_prompt = (
+                    "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
+                )
+                messages = [
+                    {"role": "system", "content": autofix_system_prompt},
+                    {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
+                ]
+            else: # 'edit' mode
+                print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
+                edit_system_prompt = (
+                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
+                )
+                messages = [
+                    {"role": "system", "content": edit_system_prompt},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": s3_url}}
+                    ]}
+                ]
+            
+            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
+            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+            print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
+            # --- КОНЕЦ ВОССТАНОВЛЕННОЙ ЛОГИКИ OPENAI ---
+
             replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
+            # ... (эта часть остается без изменений)
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             scale_factor = float(request.form.get('scale_factor', '2'))
             creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
@@ -471,7 +494,7 @@ def process_image():
             "webhook": url_for('replicate_webhook', _external=True),
             "webhook_events_filter": ["completed", "failed"]
         }
-
+        
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
         prediction_data = start_response.json()
@@ -485,9 +508,10 @@ def process_image():
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         # Возвращаем токены в случае ошибки
-        current_user.token_balance += token_cost
-        db.session.commit()
-        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
+        db.session.rollback() # Откатываем списание токенов
+        # current_user.token_balance += token_cost # Эта логика может быть сложной из-за сессий
+        # db.session.commit()
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {e}'}), 500
 
 
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
