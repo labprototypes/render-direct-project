@@ -130,6 +130,15 @@
             color: #BEE3F8; background-color: rgba(66, 153, 225, 0.3);
             border: 1px solid rgba(66, 153, 225, 0.5);
         }
+        .yandex-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; padding: 12px; font-size: 1rem; font-weight: 700;
+            border-radius: var(--button-border-radius); border: 1px solid #ffde00;
+            background-color: #ffde00; color: #000000;
+            cursor: pointer; transition: all 0.2s ease; gap: 10px; text-decoration: none;
+        }
+        .yandex-btn:hover { background-color: #f2d200; transform: translateY(-2px); }
+        }
     </style>
 </head>
 <body>
@@ -162,7 +171,18 @@
             
             <button type="submit" class="primary-btn">Войти</button>
         </form>
-
+        <div style="display: flex; align-items: center; text-align: center; color: var(--secondary-text-color); margin: 25px 0; font-size: 0.9rem;">
+            <div style="flex: 1; border-bottom: 1px solid var(--border-color); margin-right: 1em;"></div>
+            Или
+            <div style="flex: 1; border-bottom: 1px solid var(--border-color); margin-left: 1em;"></div>
+        </div>
+        
+        <a href="{{ url_for('yandex_login') }}" class="yandex-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 10px;">
+                <path d="M7.32135 6H10.852L13.8427 18H10.364L7.32135 6Z" fill="#FC3F1D"/>
+            </svg>
+            Войти через Яндекс ID
+        </a>
         <div class="bottom-text">
             Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a>
         </div>
