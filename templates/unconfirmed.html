@@ -1,0 +1,79 @@
+{% extends "base_app.html" %}
+
+{% block title %}Подтвердите ваш Email{% endblock %}
+
+{% block body_class %}unconfirmed-page{% endblock %}
+
+{% block content %}
+<style>
+    /* Добавляем простые стили для этой страницы.
+       Их можно вынести в основной CSS-файл, но для простоты оставим здесь.
+    */
+    .unconfirmed-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        flex-grow: 1; /* Занимает все доступное пространство */
+        padding: 40px;
+    }
+    .unconfirmed-box {
+        max-width: 550px;
+        background-color: var(--surface-color);
+        padding: 50px;
+        border-radius: var(--content-border-radius);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 40px var(--shadow-color);
+    }
+    .unconfirmed-box h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-text-color);
+        margin-bottom: 15px;
+    }
+    .unconfirmed-box p {
+        font-size: 1rem;
+        color: var(--secondary-text-color);
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+    .unconfirmed-box p strong {
+        color: var(--primary-text-color);
+        font-weight: 700;
+    }
+    .unconfirmed-box a.resend-link {
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+    .unconfirmed-box a.resend-link:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="unconfirmed-container">
+    <div class="unconfirmed-box">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div style="padding: 12px; border-radius: 10px; margin-bottom: 20px; background-color: rgba(74, 189, 111, 0.3); color: #C6F6D5;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h1>Остался один шаг...</h1>
+        <p>
+            Мы отправили письмо с ссылкой для подтверждения на ваш адрес <strong>{{ current_user.email }}</strong>.
+            <br><br>
+            Пожалуйста, проверьте ваш почтовый ящик (включая папку "Спам") и перейдите по ссылке, чтобы активировать ваш аккаунт и получить доступ ко всем функциям.
+        </p>
+        
+        <a href="{{ url_for('resend_confirmation') }}" class="resend-link">Отправить письмо еще раз</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block mode_selector %}{% endblock %}
