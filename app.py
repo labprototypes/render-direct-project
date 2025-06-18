@@ -22,6 +22,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from authlib.integrations.flask_client import OAuth
 
 # --- Настройки приложения ---
 app = Flask(__name__)
@@ -45,6 +46,8 @@ app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'false').lower() in 
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME') # noreply@pifly.io
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD') # Пароль приложения из Яндекса
 app.config['MAIL_DEFAULT_SENDER'] = ('Pifly.io', os.environ.get('MAIL_USERNAME'))
+app.config['YANDEX_CLIENT_ID'] = os.environ.get('YANDEX_CLIENT_ID')
+app.config['YANDEX_CLIENT_SECRET'] = os.environ.get('YANDEX_CLIENT_SECRET')
 
 # --- Конфигурация внешних сервисов (без изменений) ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -58,6 +61,7 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 db = SQLAlchemy(app)
 mail = Mail(app) # Инициализация Flask-Mail
 login_manager = LoginManager()
+oauth = OAuth(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login' # Указываем view для входа
 login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
@@ -83,7 +87,7 @@ class User(db.Model, UserMixin):
     # Новые поля для подтверждения email
     email_confirmed = db.Column(db.Boolean, nullable=False, default=False)
     email_confirmed_at = db.Column(db.DateTime, nullable=True)
-
+    yandex_id = db.Column(db.String(255), unique=True, nullable=True)
     token_balance = db.Column(db.Integer, default=100, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -116,6 +120,17 @@ class Prediction(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     token_cost = db.Column(db.Integer, nullable=False, default=1)
     user = db.relationship('User', backref=db.backref('predictions', lazy=True, cascade="all, delete-orphan"))
+
+oauth.register(
+    name='yandex',
+    client_id=app.config['YANDEX_CLIENT_ID'],
+    client_secret=app.config['YANDEX_CLIENT_SECRET'],
+    access_token_url='https://oauth.yandex.ru/token',
+    authorize_url='https://oauth.yandex.ru/authorize',
+    api_base_url='https://login.yandex.ru/',
+    client_kwargs=None,
+    userinfo_endpoint='info?format=json',
+)
 
 # --- Загрузчик пользователя и декораторы ---
 @login_manager.user_loader
@@ -153,6 +168,53 @@ def is_safe_url(target):
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+@app.route('/login/yandex')
+def yandex_login():
+    redirect_uri = url_for('yandex_callback', _external=True)
+    return oauth.yandex.authorize_redirect(redirect_uri)
+
+@app.route('/login/yandex/callback')
+def yandex_callback():
+    try:
+        token = oauth.yandex.authorize_access_token()
+        user_info_resp = oauth.yandex.get('info?format=json')
+        user_info_resp.raise_for_status()
+        user_info = user_info_resp.json()
+    except Exception as e:
+        flash(f"Произошла ошибка при аутентификации через Яндекс: {e}", "danger")
+        return redirect(url_for('login'))
+
+    yandex_id = user_info.get('id')
+    email = user_info.get('default_email')
+    
+    user = User.query.filter_by(yandex_id=yandex_id).first()
+    if not user:
+        user = User.query.filter_by(email=email).first()
+
+    if user:
+        if not user.yandex_id:
+            user.yandex_id = yandex_id
+        if not user.email_confirmed:
+            user.email_confirmed = True
+            user.email_confirmed_at = datetime.utcnow()
+        db.session.commit()
+    else:
+        user = User(
+            id=str(uuid.uuid4()),
+            yandex_id=yandex_id,
+            email=email,
+            username=user_info.get('login'),
+            password_hash='social_login',
+            email_confirmed=True,
+            email_confirmed_at=datetime.utcnow()
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    login_user(user)
+    flash("Вы успешно вошли через Яндекс!", "success")
+    return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
