@@ -110,15 +110,16 @@
             padding: 12px; border-radius: 10px; margin-bottom: 20px;
             font-size: 0.9rem; text-align: center;
         }
-        legal-checkboxes a {
-            color: var(--primary-text-color); /* Задаем основной цвет текста */
-            font-weight: 500;
-            text-decoration: underline; /* Делаем ссылки подчеркнутыми для ясности */
-            transition: color 0.2s ease;
+        .legal-checkboxes input[type="checkbox"] {
+            accent-color: var(--accent-color);
         }
         
+        /* Стиль для ссылок внутри текста, чтобы они соответствовали вашим требованиям */
+        .legal-checkboxes a, 
         .legal-checkboxes a:hover {
-            color: var(--secondary-text-color); /* Немного осветляем при наведении */
+            color: #1B1B1E; /* Цвет текста, как вы указали */
+            font-weight: 700; /* Жирный шрифт */
+            text-decoration: underline; /* Всегда подчеркнутый */
         }
     </style>
 </head>
