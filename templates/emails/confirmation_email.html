@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтвердите ваш email</title>
+    <style>
+        /* Минимальные стили для превью в почтовых клиентах */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 20px 0; background-color: #f4f4f4;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <h1 style="margin: 0; font-size: 28px; color: #1c1c1f;">Pifly.io</h1>
+            </td>
+        </tr>
+        <tr>
+            <td bgcolor="#ffffff" style="padding: 40px 30px; border-radius: 24px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                    <tr>
+                        <td style="color: #1c1c1f; font-size: 22px; font-weight: bold; padding-bottom: 20px;">
+                            Добро пожаловать!
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #333333; font-size: 16px; line-height: 1.5; padding-bottom: 30px;">
+                            Спасибо за регистрацию на Pifly.io! Остался всего один шаг до активации вашего аккаунта. Пожалуйста, нажмите на кнопку ниже, чтобы подтвердить свой адрес электронной почты.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding-bottom: 30px;">
+                            <table border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+                                <tr>
+                                    <td align="center" style="border-radius: 14px;" bgcolor="#D9F47A">
+                                        <a href="{{ confirm_url }}" target="_blank" style="font-size: 16px; font-weight: bold; color: #1A1A1A; text-decoration: none; display: inline-block; padding: 14px 30px; border-radius: 14px;">
+                                            Подтвердить Email
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #333333; font-size: 16px; line-height: 1.5; padding-bottom: 30px;">
+                           Если кнопка не работает, скопируйте и вставьте следующую ссылку в адресную строку вашего браузера:
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-bottom: 40px;">
+                            <a href="{{ confirm_url }}" target="_blank" style="color: #007bff; text-decoration: none; word-break: break-all;">{{ confirm_url }}</a>
+                        </td>
+                    </tr>
+                     <tr>
+                        <td style="color: #888888; font-size: 14px; line-height: 1.5; border-top: 1px solid #eeeeee; padding-top: 20px;">
+                           Если вы не регистрировались на Pifly.io, просто проигнорируйте это письмо.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+         <tr>
+            <td align="center" style="padding: 20px 0; color: #888888; font-size: 12px;">
+                &copy; 2024 Pifly.io. Все права защищены.
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
