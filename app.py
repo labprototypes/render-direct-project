@@ -64,7 +64,6 @@ login_manager = LoginManager()
 oauth = OAuth(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login' # Указываем view для входа
-login_manager.login_message = "Пожалуйста, войдите, чтобы получить доступ к этой странице."
 login_manager.login_message_category = "info"
 
 # Сериализатор для токенов подтверждения
@@ -288,7 +287,7 @@ def register():
 
         login_user(new_user)
 
-        flash('Вы успешно зарегистрированы! Письмо с подтверждением было отправлено на ваш email.', 'success')
+        flash('Пожалуйста, подтвердите свой email. Письмо было отправлено на указанный вами электронный адрес', 'info')
         return redirect(url_for('unconfirmed'))
 
     return render_template('register.html')
@@ -313,7 +312,7 @@ def confirm_email(token):
         user.email_confirmed_at = datetime.utcnow()
         db.session.add(user)
         db.session.commit()
-        flash('Ваш email успешно подтвержден! Теперь вы можете пользоваться всеми функциями.', 'success')
+        flash('Ваш email успешно подтвержден! Теперь вы можете зайти в свой личный кабинет.', 'success')
 
     return redirect(url_for('index'))
 
