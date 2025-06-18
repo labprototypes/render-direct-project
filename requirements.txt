@@ -1,18 +1,14 @@
 Flask-SQLAlchemy
 flask-login
 Flask-Mail
-psycopg2-binary  # Драйвер для PostgreSQL
+psycopg2-binary
 flask
 gunicorn
 boto3
 requests
 openai
-bleach 
-argon2_cffi
-Flask-Babel
-Jinja2>=3.0
 werkzeug
-email-validator
+itsdangerous
+email_validator
 gevent
 stripe
-firebase-admin
