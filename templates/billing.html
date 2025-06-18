@@ -66,7 +66,10 @@
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>До 90 изображений в месяц</li>
                 <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Покупка доп. кредитов</li>
                 </ul>
-            <button class="btn btn-disabled" disabled>Выбрать план</button>
+            <form action="{{ url_for('create_payment') }}" method="POST">
+                <input type="hidden" name="plan" value="taste">
+                <button type="submit" class="btn">Выбрать план</button>
+            </form>
         </div>
 
         <div class="plan-card highlighted">
@@ -78,7 +81,10 @@
                  <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>До 270 изображений в месяц</li>
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Покупка доп. кредитов</li>
                 </ul>
-            <button class="btn">Выбрать план</button> </div>
+            <form action="{{ url_for('create_payment') }}" method="POST">
+                <input type="hidden" name="plan" value="best">
+                <button type="submit" class="btn">Выбрать план</button>
+            </form>
 
         <div class="plan-card">
             <h3 class="plan-name">Pifly PRO</h3>
@@ -89,7 +95,10 @@
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>До 900 изображений в месяц</li>
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Покупка доп. кредитов</li>
                 </ul>
-            <button class="btn btn-disabled" disabled>Выбрать план</button>
+            <form action="{{ url_for('create_payment') }}" method="POST">
+                <input type="hidden" name="plan" value="pro">
+                <button type="submit" class="btn">Выбрать план</button>
+            </form>
         </div>
     </div>
 
