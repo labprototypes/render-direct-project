@@ -414,19 +414,13 @@ def process_image():
         token_cost = 65
     elif mode == 'upscale':
         scale_factor = int(request.form.get('scale_factor', '2'))
-        if scale_factor <= 2:
-            token_cost = 17
-        elif scale_factor <= 4:
-            token_cost = 65
-        else:
-            token_cost = 150
+        if scale_factor <= 2: token_cost = 17
+        elif scale_factor <= 4: token_cost = 65
+        else: token_cost = 150
     
-    if token_cost == 0:
-        return jsonify({'error': 'Invalid processing mode'}), 400
-    if current_user.token_balance < token_cost:
-        return jsonify({'error': 'Недостаточно токенов'}), 403
-    if 'image' not in request.files:
-        return jsonify({'error': 'Изображение отсутствует'}), 400
+    if token_cost == 0: return jsonify({'error': 'Invalid processing mode'}), 400
+    if current_user.token_balance < token_cost: return jsonify({'error': 'Недостаточно токенов'}), 403
+    if 'image' not in request.files: return jsonify({'error': 'Изображение отсутствует'}), 400
     
     try:
         s3_url = upload_file_to_s3(request.files['image'])
@@ -437,80 +431,65 @@ def process_image():
             edit_mode = request.form.get('edit_mode')
             prompt = request.form.get('prompt', '')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-            if not openai_client:
-                raise Exception("Сервис улучшения промптов недоступен.")
             
-            # --- НАЧАЛО ВОССТАНОВЛЕННОЙ ЛОГИКИ OPENAI ---
-            final_prompt = ""
+            # --- НАЧАЛО ИЗМЕНЕННОЙ ЛОГИКИ: ВЫЗОВ OpenAI ЧЕРЕЗ ПРОКСИ ---
+            messages = []
             if edit_mode == 'autofix':
-                print("!!! Запрос к OpenAI Vision API для Autofix...")
-                autofix_system_prompt = (
-                    "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
-                )
-                messages = [
-                    {"role": "system", "content": autofix_system_prompt},
-                    {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
-                ]
+                autofix_system_prompt = "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
+                messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
             else: # 'edit' mode
-                print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
-                edit_system_prompt = (
-                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
-                )
-                messages = [
-                    {"role": "system", "content": edit_system_prompt},
-                    {"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": s3_url}}
-                    ]}
-                ]
+                edit_system_prompt = "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
+                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
             
-            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
-            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
-            print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
-            # --- КОНЕЦ ВОССТАНОВЛЕННОЙ ЛОГИКИ OPENAI ---
+            print("!!! Отправка запроса на прокси-сервер Render...")
+            proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
+            proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
+            
+            if not proxy_secret_key:
+                raise Exception("PROXY_SECRET_KEY не установлен на сервере.")
 
+            headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
+            openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
+
+            proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers)
+            proxy_response.raise_for_status()
+            
+            openai_response_data = proxy_response.json()
+            final_prompt = openai_response_data['choices'][0]['message']['content'].strip().replace('\n', ' ').replace('\r', ' ').strip()
+            print(f"!!! Улучшенный промпт (через прокси): {final_prompt}")
+            # --- КОНЕЦ ИЗМЕНЕННОЙ ЛОГИКИ ---
+            
             replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
-            # ... (эта часть остается без изменений)
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            scale_factor = float(request.form.get('scale_factor', '2'))
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
-            dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
-            replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
+            replicate_input = {
+                "image": s3_url,
+                "scale_factor": float(request.form.get('scale_factor', '2')),
+                "creativity": round(float(request.form.get('creativity', '30')) / 100.0, 4),
+                "resemblance": round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4),
+                "dynamic": round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
+            }
 
+        # ... (остальная часть функции с созданием Prediction и вызовом Replicate остается без изменений) ...
         if not model_version_id or not replicate_input:
             raise Exception("Неверный режим или отсутствуют входные данные.")
-
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
         db.session.commit()
-
         headers = {"Authorization": f"Bearer {os.environ.get('REPLICATE_API_TOKEN')}", "Content-Type": "application/json"}
-        post_payload = {
-            "version": model_version_id,
-            "input": replicate_input,
-            "webhook": url_for('replicate_webhook', _external=True),
-            "webhook_events_filter": ["completed", "failed"]
-        }
-        
+        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
         prediction_data = start_response.json()
-
         new_prediction.replicate_id = prediction_data.get('id')
         current_user.token_balance -= token_cost
         db.session.commit()
-
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
-        # Возвращаем токены в случае ошибки
-        db.session.rollback() # Откатываем списание токенов
-        # current_user.token_balance += token_cost # Эта логика может быть сложной из-за сессий
-        # db.session.commit()
+        db.session.rollback()
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {e}'}), 500
 
 
