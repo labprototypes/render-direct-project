@@ -98,13 +98,26 @@
     
         /* ИСПРАВЛЕННЫЙ СТИЛЬ ДЛЯ КНОПКИ ЯНДЕКСА */
         .yandex-btn {
-            display: flex; align-items: center; justify-content: center;
-            width: 100%; padding: 12px; font-size: 1rem; font-weight: 700;
-            border-radius: var(--button-border-radius); border: 1px solid var(--border-color);
-            background-color: var(--surface-color); color: var(--primary-text-color);
-            cursor: pointer; transition: all 0.2s ease; gap: 10px; text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px 20px; /* Такие же отступы, как у кнопки "Войти" для одинаковой высоты */
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: var(--button-border-radius);
+            border: none; /* Убираем рамку */
+            background-color: #FC3F1D; /* Фирменный красный цвет Яндекса */
+            color: #FFFFFF; /* Белый цвет текста */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            box-sizing: border-box; /* Гарантирует правильный расчет ширины */
         }
-        .yandex-btn:hover { border-color: #999; transform: translateY(-2px); }
+        .yandex-btn:hover {
+            background-color: #e03415; /* Более темный красный при наведении */
+            transform: translateY(-2px);
+        }
         .flash-message { /* Стили для сообщений об ошибках, если понадобятся */
             padding: 12px; border-radius: 10px; margin-bottom: 20px;
             font-size: 0.9rem; text-align: center;
@@ -147,12 +160,8 @@
             <div style="flex: 1; border-bottom: 1px solid var(--border-color); margin-left: 1em;"></div>
         </div>
         
-        <a href="{{ url_for('yandex_login') }}" class="yandex-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 10px;">
-                <path d="M7.32135 6H10.852L13.8427 18H10.364L7.32135 6Z" fill="#FC3F1D"/>
-            </svg>
-            Войти через Яндекс ID
-        </a>
+        <a href="{{ url_for('yandex_login') }}" class="yandex-btn">Войти через Яндекс ID</a>
+        
         <div class="bottom-text">
             Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a>
         </div>
