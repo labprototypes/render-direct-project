@@ -30,7 +30,7 @@ def proxy_openai():
     try:
         # 4. Отправляем "сырые" данные напрямую в OpenAI
         response = requests.post(OPENAI_API_URL, data=raw_body, headers=headers)
-
+        
         # 5. Возвращаем ответ от OpenAI (включая статус и заголовки) 
         # нашему российскому серверу
         return Response(response.content, status=response.status_code, content_type=response.headers['Content-Type'])
