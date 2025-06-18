@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="ru"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sign in - pifly.io</title>
+    <title>Вход - pifly.io</title>
     <style>
         /* ИМПОРТ ШРИФТОВ И ОСНОВНЫЕ ПЕРЕМЕННЫЕ */
         @font-face {
@@ -65,27 +64,8 @@
             margin-bottom: 30px;
         }
 
-        /* КАСТОМНАЯ КНОПКА GOOGLE */
-        .google-btn {
-            display: flex; align-items: center; justify-content: center;
-            width: 100%; padding: 12px; font-size: 1rem; font-weight: 700;
-            border-radius: var(--button-border-radius); border: 1px solid var(--border-color);
-            background-color: #FFFFFF; color: #1A1A1A;
-            cursor: pointer; transition: all 0.2s ease; gap: 10px;
-        }
-        .google-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .google-btn img { height: 20px; width: 20px; }
-        
-        /* РАЗДЕЛИТЕЛЬ "OR" */
-        .separator {
-            display: flex; align-items: center; text-align: center;
-            color: var(--secondary-text-color); margin: 25px 0; font-size: 0.9rem;
-        }
-        .separator::before, .separator::after {
-            content: ''; flex: 1; border-bottom: 1px solid var(--border-color);
-        }
-        .separator:not(:empty)::before { margin-right: 1em; }
-        .separator:not(:empty)::after { margin-left: 1em; }
+        /* УДАЛЕНА КАСТОМНАЯ КНОПКА GOOGLE */
+        /* УДАЛЕН РАЗДЕЛИТЕЛЬ "OR" */
         
         /* ГРУППА ПОЛЕЙ ВВОДА */
         .form-group {
@@ -105,32 +85,18 @@
             box-shadow: 0 0 10px rgba(217, 244, 122, 0.3);
         }
         .password-header { display: flex; justify-content: space-between; align-items: baseline; }
-        #forgot-password-link {
+        
+        /* Ссылка "Забыли пароль" (пока неактивна) */
+        a.forgot-password-link {
             font-size: 0.85rem; color: var(--accent-color); text-decoration: none;
             cursor: pointer;
         }
-        #forgot-password-link:hover { text-decoration: underline; }
-
-        /* ЧЕКБОКСЫ */
-        .legal-checkboxes {
-            text-align: left; margin: 15px 0 5px 0;
-            font-size: 0.85rem; color: var(--secondary-text-color);
+        a.forgot-password-link.disabled {
+            color: var(--secondary-text-color);
+            cursor: not-allowed;
+            opacity: 0.6;
         }
-        .legal-checkboxes .checkbox-group {
-            display: flex; align-items: center; margin-bottom: 12px;
-            cursor: pointer;
-        }
-        .legal-checkboxes input[type="checkbox"] {
-            margin-right: 10px; accent-color: var(--accent-color);
-            width: 16px; height: 16px; cursor: pointer;
-        }
-        .legal-checkboxes label {
-             line-height: 1.4;
-        }
-        .legal-checkboxes a {
-            color: var(--accent-color); text-decoration: none; font-weight: 500;
-        }
-        .legal-checkboxes a:hover { text-decoration: underline; }
+        a.forgot-password-link:not(.disabled):hover { text-decoration: underline; }
 
         /* КНОПКА ВХОДА */
         .primary-btn {
@@ -141,23 +107,28 @@
             width: 100%; margin-top: 10px;
         }
         .primary-btn:hover { background-color: #c8e070; transform: translateY(-2px); }
-        .primary-btn:disabled {
-            background-color: var(--secondary-text-color);
-            cursor: not-allowed;
-            transform: none;
-        }
 
         /* ССЫЛКА НА РЕГИСТРАЦИЮ */
         .bottom-text { margin-top: 30px; color: var(--secondary-text-color); font-size: 0.9rem; }
         .bottom-text a { color: var(--accent-color); text-decoration: none; font-weight: 700; cursor: pointer; }
         .bottom-text a:hover { text-decoration: underline; }
 
-        /* Сообщение об ошибке */
-        #error-message {
+        /* Сообщения об ошибках и инфо (flash-сообщения) */
+        .flash-message {
+            padding: 12px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 0.9rem; text-align: center;
+        }
+        .flash-message.danger {
             color: #FED7D7; background-color: rgba(229, 62, 62, 0.3);
-            border: 1px solid rgba(229, 62, 62, 0.5); padding: 10px;
-            border-radius: 10px; margin-bottom: 20px;
-            display: none; /* Прячем по умолчанию */
+            border: 1px solid rgba(229, 62, 62, 0.5);
+        }
+        .flash-message.success {
+            color: #C6F6D5; background-color: rgba(74, 189, 111, 0.3);
+            border: 1px solid rgba(74, 189, 111, 0.5);
+        }
+         .flash-message.info {
+            color: #BEE3F8; background-color: rgba(66, 153, 225, 0.3);
+            border: 1px solid rgba(66, 153, 225, 0.5);
         }
     </style>
 </head>
@@ -166,229 +137,36 @@
         <a href="{{ url_for('index') }}" class="main-logo-link">
             <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Pifly.io Logo" class="main-logo">
         </a>
-        <h2 id="auth-title">Sign in to Pifly.io</h2>
+        <h2 id="auth-title">Вход в Pifly.io</h2>
         
-        <div id="error-message"></div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-        <button id="google-signin-btn" class="google-btn">
-            <img src="{{ url_for('static', filename='images/google-logo.svg') }}" alt="Google logo">
-            Sign in with Google
-        </button>
-
-        <div class="separator">Or</div>
-
-        <form id="password-form">
+        <form method="POST" action="{{ url_for('login') }}">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" class="form-input" required autocomplete="email">
+                <input type="email" id="email" name="email" class="form-input" required autocomplete="email">
             </div>
             <div class="form-group">
                 <div class="password-header">
-                    <label for="password">Password</label>
-                    <a id="forgot-password-link">Forgot password?</a>
+                    <label for="password">Пароль</label>
+                    <a href="#" class="forgot-password-link disabled" title="Функция в разработке">Забыли пароль?</a>
                 </div>
-                <input type="password" id="password" class="form-input" required autocomplete="current-password">
-            </div>
-
-            <div id="legal-checkboxes" class="legal-checkboxes" style="display: none;">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="terms-check">
-                    <label for="terms-check">I agree to the <a href="{{ url_for('terms') }}" target="_blank">Terms of Service</a> and <a href="{{ url_for('privacy') }}" target="_blank">Privacy Policy</a>.</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="marketing-check" checked>
-                    <label for="marketing-check">I agree to the <a href="{{ url_for('marketing_policy') }}" target="_blank">Marketing Policy</a>.</label>
-                </div>
+                <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
             </div>
             
-            <button type="submit" id="submit-btn" class="primary-btn">Sign in</button>
+            <button type="submit" class="primary-btn">Войти</button>
         </form>
 
-        <div id="bottom-text-container" class="bottom-text">
-            Don't have an account? <a id="switch-to-signup">Sign up</a>
+        <div class="bottom-text">
+            Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { 
-            getAuth, 
-            GoogleAuthProvider, 
-            signInWithPopup, 
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            sendPasswordResetEmail
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-        // ВАЖНО: Этот конфиг должен быть здесь
-        const firebaseConfig = {
-          apiKey: "AIzaSyA7IQDOcbIA18OHSHSJTKNqEwjzNKiY8hw",
-          authDomain: "pifly-cf45f.firebaseapp.com",
-          projectId: "pifly-cf45f",
-          storageBucket: "pifly-cf45f.firebasestorage.app",
-          messagingSenderId: "516997916662",
-          appId: "1:516997916662:web:dd3d34e3160d7176ff09d7",
-          measurementId: "G-GTKNFZFZXY"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // --- DOM Elements ---
-        const googleSigninBtn = document.getElementById('google-signin-btn');
-        const passwordForm = document.getElementById('password-form');
-        const forgotPasswordLink = document.getElementById('forgot-password-link');
-        const errorMessageDiv = document.getElementById('error-message');
-        const authTitle = document.getElementById('auth-title');
-        const submitBtn = document.getElementById('submit-btn');
-        const bottomTextContainer = document.getElementById('bottom-text-container');
-        const legalCheckboxes = document.getElementById('legal-checkboxes');
-        const termsCheck = document.getElementById('terms-check');
-        const marketingCheck = document.getElementById('marketing-check');
-
-        let isSignUpMode = false;
-
-        // --- Functions ---
-
-        function toggleMode(toSignUp) {
-            isSignUpMode = toSignUp;
-            errorMessageDiv.style.display = 'none'; // Hide errors on mode switch
-            submitBtn.disabled = isSignUpMode; // Блокируем кнопку при регистрации по умолчанию
-
-            if (isSignUpMode) {
-                authTitle.textContent = 'Create an account on Pifly.io';
-                submitBtn.textContent = 'Sign Up';
-                forgotPasswordLink.style.display = 'none';
-                legalCheckboxes.style.display = 'block';
-                bottomTextContainer.innerHTML = 'Already have an account? <a id="switch-to-signin">Sign in</a>';
-                document.getElementById('password').setAttribute('autocomplete', 'new-password');
-            } else {
-                authTitle.textContent = 'Sign in to Pifly.io';
-                submitBtn.textContent = 'Sign In';
-                forgotPasswordLink.style.display = 'block';
-                legalCheckboxes.style.display = 'none';
-                bottomTextContainer.innerHTML = 'Don\'t have an account? <a id="switch-to-signup">Sign up</a>';
-                document.getElementById('password').setAttribute('autocomplete', 'current-password');
-            }
-            addSwitchListeners(); // Re-attach listeners to the newly created links
-        }
-        
-        function addSwitchListeners() {
-            const signupLink = document.getElementById('switch-to-signup');
-            const signinLink = document.getElementById('switch-to-signin');
-            if(signupLink) signupLink.addEventListener('click', () => toggleMode(true));
-            if(signinLink) signinLink.addEventListener('click', () => toggleMode(false));
-        }
-
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ: Принимает доп. данные для отправки на сервер
-        function sendTokenToServer(user, extraData = {}) {
-            user.getIdToken().then(idToken => {
-                const payload = { 
-                    idToken: idToken,
-                    ...extraData  // Добавляем termsAccepted и marketingConsent сюда
-                };
-
-                fetch('/session-login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // ОБНОВЛЕННАЯ ЛОГИКА: Обрабатываем редирект с бэкенда
-                    if (data.status === 'success' && data.action === 'redirect' && data.url) {
-                        window.location.assign(data.url);
-                    } else if (data.status === 'success') {
-                        window.location.assign('/'); // Фоллбэк, если бэкенд не прислал URL
-                    } else {
-                        showError(data.message || 'Authentication failed on the server.');
-                    }
-                });
-            });
-        }
-        
-        function showError(message) {
-            let friendlyMessage = message;
-            // ... (существующая логика обработки ошибок)
-            errorMessageDiv.textContent = friendlyMessage;
-            errorMessageDiv.style.display = 'block';
-        }
-
-        // --- Event Listeners ---
-        googleSigninBtn.addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider)
-                .then((result) => {
-                    // Для Google входа мы не можем показать чекбоксы,
-                    // поэтому отправляем данные по умолчанию или бэкенд решает сам.
-                    sendTokenToServer(result.user, { termsAccepted: true, marketingConsent: true });
-                })
-                .catch((error) => { showError(error.code); });
-        });
-
-        passwordForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            errorMessageDiv.style.display = 'none';
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            if (isSignUpMode) {
-                // --- Sign Up Logic ---
-                if (!termsCheck.checked) {
-                    showError('You must agree to the Terms of Service and Privacy Policy to create an account.');
-                    return;
-                }
-                
-                // Собираем данные из чекбоксов
-                const extraData = {
-                    termsAccepted: termsCheck.checked,
-                    marketingConsent: marketingCheck.checked
-                };
-
-                createUserWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        // Передаем доп. данные на сервер
-                        sendTokenToServer(userCredential.user, extraData);
-                    })
-                    .catch((error) => {
-                        showError(error.code);
-                    });
-
-            } else {
-                // --- Sign In Logic ---
-                signInWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        sendTokenToServer(userCredential.user); // Для входа доп. данные не нужны
-                    })
-                    .catch((error) => {
-                        showError(error.code);
-                    });
-            }
-        });
-
-        forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            if (!email) {
-                alert('Please enter your email address in the email field first.');
-                return;
-            }
-            sendPasswordResetEmail(auth, email)
-                .then(() => {
-                    alert('Password reset email sent! Please check your inbox.');
-                })
-                .catch((error) => { showError(error.code); });
-        });
-
-        // Блокируем/разблокируем кнопку "Sign Up" в зависимости от чекбокса
-        termsCheck.addEventListener('change', () => {
-            if (isSignUpMode) {
-                submitBtn.disabled = !termsCheck.checked;
-            }
-        });
-
-        // Initial setup
-        addSwitchListeners();
-    </script>
-</body>
+    </body>
 </html>
