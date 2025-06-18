@@ -1,24 +1,34 @@
 {% extends "base_app.html" %}
 
-{% block title %}Manage Your Plan{% endblock %}
+{% block title %}Управление планом{% endblock %}
 
 {% block content %}
+<style>
+    /* Дополнительный стиль для информационного блока */
+    .notice-bar {
+        text-align: center;
+        padding: 15px;
+        background-color: rgba(255, 222, 0, 0.2);
+        border: 1px solid rgba(255, 222, 0, 0.4);
+        border-radius: var(--button-border-radius);
+        margin: 0 auto 40px auto;
+        max-width: 1100px;
+        color: var(--primary-text-color);
+        font-weight: 500;
+    }
+</style>
+
 <div class="app-container" style="display: block; padding-bottom: 40px;">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul class="flash-messages" style="list-style: none; padding: 0; margin-bottom: 20px; text-align: center;">
-            {% for category, message in messages %}
-                <li class="{{ category }}">{{ message }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+
+    <div class="notice-bar">
+        Раздел управления подписками и платежами находится в разработке.
+    </div>
 
     <div class="billing-header" style="max-width: 1100px; margin: 0 auto 40px auto;">
         <div class="current-plan-info">
-            <h1>Manage your plan</h1>
+            <h1>Управление планом</h1>
             
-            <p>Your current plan: 
+            <p>Ваш текущий план: 
                 <strong>
                 {% set plan_display_name = {
                     'taste': 'A Taste Of It',
@@ -26,44 +36,20 @@
                     'pro': 'Pifly PRO'
                 } %}
                 {% set display_name = plan_display_name.get(current_user.current_plan, 'Free') %}
-
-                {% if current_user.subscription_status in ['active', 'trial'] and current_user.subscription_ends_at %}
-                    {{ 'Free Trial' if current_user.subscription_status == 'trial' else display_name }} renew on {{ current_user.subscription_ends_at.strftime('%B %d, %Y') }}
-                {% elif current_user.subscription_status == 'canceled' and current_user.subscription_ends_at %}
-                    {{ display_name }} ends on {{ current_user.subscription_ends_at.strftime('%B %d, %Y') }}
-                {% else %}
-                    Free
-                {% endif %}
+                {{ display_name }}
                 </strong>
             </p>
 
-            <p>You have <strong>{{ current_user.token_balance }}</strong> credits.</p>
-            
-            {% if current_user.subscription_status == 'active' %}
-            <form action="{{ url_for('create_portal_session') }}" method="POST" style="margin-top: 20px;">
-                <button class="btn btn-secondary" type="submit">Manage Payment & Invoices</button>
-            </form>
-            {% elif current_user.subscription_status not in ['active', 'canceled', 'trial'] %}
-            <p style="margin-top: 20px; color: var(--secondary-text-color);">You do not have an active subscription. Choose a plan below to start.</p>
-            {% endif %}
-
+            <p>У вас <strong>{{ current_user.token_balance }}</strong> кредитов.</p>
         </div>
         <div class="plan-card">
-            <h3 class="plan-name">Top Up Credits</h3>
-            <p class="plan-description">Need more credits before your next renewal?</p>
+            <h3 class="plan-name">Пополнить кредиты</h3>
+            <p class="plan-description">Нужно больше кредитов до следующего обновления?</p>
             <div class="plan-price">&euro;5</div>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>One-time purchase of 1,000 credits</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Разовая покупка 1,000 кредитов</li>
             </ul>
-            {% if current_user.current_plan in ['taste', 'trial', 'free'] %}
-                <div> <button class="btn feature-locked" disabled title="Please upgrade your plan to use this feature">Top up credits</button>
-                </div>
-            {% else %}
-                <form action="{{ url_for('create_checkout_session') }}" method="POST">
-                    <input type="hidden" name="price_id" value="{{ TOKEN_PRICE_ID }}">
-                    <button type="submit" class="btn">Top up credits</button>
-                </form>
-            {% endif %}
+            <button class="btn btn-disabled" disabled>Функция в разработке</button>
         </div>
     </div>
 
@@ -71,113 +57,47 @@
 
     <div class="plans-grid" style="max-width: 1100px; margin: 40px auto 0 auto;">
         
-        <div class="plan-card {% if current_user.current_plan == 'taste' or current_user.current_plan == 'trial' %}highlighted{% endif %}">
+        <div class="plan-card">
             <h3 class="plan-name">A Taste Of It</h3>
-            <p class="plan-description">For those who wants to start</p>
-            <div class="plan-price">&euro;9<span>/mo</span></div>
+            <p class="plan-description">Для тех, кто хочет начать</p>
+            <div class="plan-price">&euro;9<span>/мес</span></div>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>1,500 credits</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 90 images monthly</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>AI promt enhancer</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 1080p)</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
-                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Artifacts autofix mode</li>
-                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Credit Top-Up</li>
-                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
-            </ul>
-            {% if (current_user.subscription_status == 'active' and current_user.current_plan == 'taste') or current_user.subscription_status == 'trial' %}
-                <button class="btn btn-disabled" disabled>Your Current Plan</button>
-            {% elif current_user.subscription_status == 'active' %}
-                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
-            {% else %}
-                <form action="{{ url_for('create_checkout_session') }}" method="POST">
-                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
-                    <button type="submit" class="btn">Subscribe</button>
-                </form>
-                {% if not current_user.trial_used %}
-                <form action="{{ url_for('create_checkout_session') }}" method="POST" style="margin-top: 10px;">
-                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.taste }}">
-                    <input type="hidden" name="trial" value="true">
-                    <button type="submit" class="btn">3 Days Free Trial</button>
-                </form>
-                {% endif %}
-            {% endif %}
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>1,500 кредитов</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>До 90 изображений в месяц</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Покупка доп. кредитов</li>
+                </ul>
+            <button class="btn btn-disabled" disabled>Выбрать план</button>
         </div>
 
-        <div class="plan-card {% if current_user.current_plan == 'best' %}highlighted{% endif %}">
+        <div class="plan-card highlighted">
             <h3 class="plan-name">The Best Pick</h3>
-            <p class="plan-description">Best for full-time creators</p>
-            <div class="plan-price">&euro;19<span>/mo</span></div>
+            <p class="plan-description">Лучший выбор для постоянных авторов</p>
+            <div class="plan-price">&euro;19<span>/мес</span></div>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4,500 credits</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 270 images monthly</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>AI promt enhancer</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 4K)</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
-                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Early Access to New Features</li>
-            </ul>
-            {% if current_user.subscription_status == 'active' and current_user.current_plan == 'best' %}
-                <button class="btn btn-disabled" disabled>Your Current Plan</button>
-            {% elif current_user.subscription_status in ['active', 'trial'] %}
-                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
-            {% else %}
-                <form action="{{ url_for('create_checkout_session') }}" method="POST">
-                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.best }}">
-                    <button type="submit" class="btn">Subscribe</button>
-                </form>
-            {% endif %}
-        </div>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4,500 кредитов</li>
+                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>До 270 изображений в месяц</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Покупка доп. кредитов</li>
+                </ul>
+            <button class="btn">Выбрать план</button> </div>
 
-        <div class="plan-card {% if current_user.current_plan == 'pro' %}highlighted{% endif %}">
+        <div class="plan-card">
             <h3 class="plan-name">Pifly PRO</h3>
-            <p class="plan-description">Teams and advanced creators</p>
-            <div class="plan-price">&euro;35<span>/mo</span></div>
+            <p class="plan-description">Для команд и продвинутых пользователей</p>
+            <div class="plan-price">&euro;35<span>/мес</span></div>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>15,000 credits</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 900 images monthly</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>AI promt enhancer</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Remove objects from images</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Change only parts of the image</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Create product content with input image</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Image Enhance (up to 8K)</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Standart processing speed</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Artifacts autofix mode</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Early Access to New Features</li>
-            </ul>
-            {% if current_user.subscription_status == 'active' and current_user.current_plan == 'pro' %}
-                <button class="btn btn-disabled" disabled>Your Current Plan</button>
-            {% elif current_user.subscription_status in ['active', 'trial'] %}
-                <form action="{{ url_for('create_portal_session') }}" method="POST"><button type="submit" class="btn">Upgrade Plan</button></form>
-            {% else %}
-                <form action="{{ url_for('create_checkout_session') }}" method="POST">
-                    <input type="hidden" name="price_id" value="{{ PLAN_PRICES.pro }}">
-                    <button type="submit" class="btn">Subscribe</button>
-                </form>
-            {% endif %}
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>15,000 кредитов</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>До 900 изображений в месяц</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Покупка доп. кредитов</li>
+                </ul>
+            <button class="btn btn-disabled" disabled>Выбрать план</button>
         </div>
     </div>
 
     {% if current_user.is_authenticated %}
     <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-    
-            {% if current_user.subscription_status in ['active', 'trial'] %}
-            <form action="{{ url_for('cancel_subscription') }}" method="POST">
-                <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to cancel your subscription? Your access will remain until the end of the current billing period.')">Cancel Subscription</button>
-            </form>
-            {% endif %}
-    
             <form action="{{ url_for('delete_account') }}" method="POST">
-                <button type="submit" class="btn btn-danger" onclick="return confirm('WARNING: This will immediately cancel your subscription and permanently delete your account and all data. This action cannot be undone. Are you sure?')">Delete Account</button>
+                <button type="submit" class="btn btn-danger" onclick="return confirm('ВНИМАНИЕ: Это действие немедленно и навсегда удалит ваш аккаунт и все данные. Отменить это будет невозможно. Вы уверены?')">Удалить аккаунт</button>
             </form>
         </div>
     </div>
