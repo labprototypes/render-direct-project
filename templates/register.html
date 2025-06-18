@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Регистрация - pifly.io</title>
+    <style>
+        /* ИМПОРТ ШРИФТОВ И ОСНОВНЫЕ ПЕРЕМЕННЫЕ */
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'Norms';
+            src: url("{{ url_for('static', filename='fonts/norms_bold.woff2') }}") format('woff2');
+            font-weight: 700;
+        }
+        :root {
+            --accent-color: #D9F47A;
+            --accent-glow: rgba(217, 244, 122, 0.7);
+            --base-bg-color: #0c0d10;
+            --surface-color: #1c1c1f;
+            --primary-text-color: #EAEAEA;
+            --secondary-text-color: #888888;
+            --accent-text-color: #1A1A1A;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --content-border-radius: 24px;
+            --button-border-radius: 14px;
+        }
+        body {
+            font-family: 'Norms', sans-serif;
+            font-weight: 400;
+            background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
+            background-size: cover; background-position: center; background-attachment: fixed;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
+            color: var(--primary-text-color);
+        }
+        .auth-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 40px 50px;
+            border-radius: var(--content-border-radius);
+            box-shadow: 0 10px 40px var(--shadow-color);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        
+        /* СТИЛИ ДЛЯ ЛОГОТИПА И ЗАГОЛОВКОВ */
+        .main-logo-link {
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        .main-logo {
+            height: 42px; /* Размер вашего лого */
+            width: auto;
+        }
+        .auth-container h2 {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--secondary-text-color);
+            margin-bottom: 30px;
+        }
+        
+        /* ГРУППА ПОЛЕЙ ВВОДА */
+        .form-group {
+            text-align: left; margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: 500;
+        }
+        .form-input {
+            width: 100%; padding: 12px 15px; border-radius: var(--button-border-radius);
+            border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
+            color: var(--primary-text-color); font-size: 1rem; box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-input:focus {
+            outline: none; border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(217, 244, 122, 0.3);
+        }
+        
+        /* ЧЕКБОКСЫ */
+        .legal-checkboxes {
+            text-align: left; margin: 15px 0 20px 0; /* Увеличен нижний отступ */
+            font-size: 0.85rem; color: var(--secondary-text-color);
+        }
+        .legal-checkboxes .checkbox-group {
+            display: flex; align-items: center; margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .legal-checkboxes input[type="checkbox"] {
+            margin-right: 10px; accent-color: var(--accent-color);
+            width: 16px; height: 16px; cursor: pointer;
+        }
+        .legal-checkboxes label {
+             line-height: 1.4;
+        }
+        .legal-checkboxes a {
+            color: var(--accent-color); text-decoration: none; font-weight: 500;
+        }
+        .legal-checkboxes a:hover { text-decoration: underline; }
+
+        /* КНОПКА РЕГИСТРАЦИИ */
+        .primary-btn {
+            font-family: 'Norms', sans-serif; font-weight: 700;
+            background-color: var(--accent-color); color: var(--accent-text-color);
+            border: none; padding: 14px 20px; border-radius: var(--button-border-radius);
+            cursor: pointer; font-size: 1rem; transition: all 0.3s ease;
+            width: 100%;
+        }
+        .primary-btn:hover { background-color: #c8e070; transform: translateY(-2px); }
+        .primary-btn:disabled {
+            background-color: #555; /* Более темный цвет для неактивной кнопки */
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ССЫЛКА НА ВХОД */
+        .bottom-text { margin-top: 30px; color: var(--secondary-text-color); font-size: 0.9rem; }
+        .bottom-text a { color: var(--accent-color); text-decoration: none; font-weight: 700; cursor: pointer; }
+        .bottom-text a:hover { text-decoration: underline; }
+
+        /* Сообщения (flash-сообщения) */
+        .flash-message {
+            padding: 12px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 0.9rem; text-align: center;
+        }
+        .flash-message.danger {
+            color: #FED7D7; background-color: rgba(229, 62, 62, 0.3);
+            border: 1px solid rgba(229, 62, 62, 0.5);
+        }
+        .flash-message.warning {
+            color: #FEEBC8; background-color: rgba(221, 107, 32, 0.3);
+            border: 1px solid rgba(221, 107, 32, 0.5);
+        }
+        .flash-message.success {
+            color: #C6F6D5; background-color: rgba(74, 189, 111, 0.3);
+            border: 1px solid rgba(74, 189, 111, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <a href="{{ url_for('index') }}" class="main-logo-link">
+            <img src="{{ url_for('static', filename='images/LOGO_CHANGER.svg') }}" alt="Pifly.io Logo" class="main-logo">
+        </a>
+        <h2 id="auth-title">Создать аккаунт в Pifly.io</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-input" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" name="password" class="form-input" required autocomplete="new-password" minlength="8">
+            </div>
+            
+            <div class="legal-checkboxes">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms-check" name="terms_check" required>
+                    <label for="terms-check">Я согласен с <a href="{{ url_for('terms') }}" target="_blank">Условиями обслуживания</a> и <a href="{{ url_for('privacy') }}" target="_blank">Политикой конфиденциальности</a>.</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="marketing-check" name="marketing_check" checked>
+                    <label for="marketing-check">Я согласен с <a href="{{ url_for('marketing_policy') }}" target="_blank">Маркетинговой политикой</a>.</label>
+                </div>
+            </div>
+            
+            <button type="submit" id="submit-btn" class="primary-btn" disabled>Зарегистрироваться</button>
+        </form>
+
+        <div class="bottom-text">
+            Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const termsCheck = document.getElementById('terms-check');
+            const submitBtn = document.getElementById('submit-btn');
+
+            // Проверяем состояние при загрузке страницы
+            if (termsCheck.checked) {
+                submitBtn.disabled = false;
+            }
+
+            // Добавляем слушатель событий
+            termsCheck.addEventListener('change', () => {
+                submitBtn.disabled = !termsCheck.checked;
+            });
+        });
+    </script>
+</body>
+</html>
