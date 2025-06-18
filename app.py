@@ -313,26 +313,28 @@ def marketing_policy():
 
 # --- Функции-помощники и маршруты для работы с изображениями (без существенных изменений) ---
 # Функция для загрузки в S3 хранилище Selectel
+# ИСПРАВЛЕННАЯ ВЕРСИЯ ФУНКЦИИ
 def upload_file_to_s3(file_to_upload):
-    # Endpoint URL нужно будет указать для Selectel
-    s3_endpoint_url = f'https://s3.{AWS_S3_REGION}.amazonaws.com' # ЗАМЕНИТЬ НА URL SELECTEL S3 API
-    if 'selectel' in AWS_S3_REGION: # Просто пример, как можно определить
-         s3_endpoint_url = f'https://s3.{AWS_S3_REGION}.selcloud.ru'
+    # Используем новую переменную окружения AWS_S3_ENDPOINT_URL
+    s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
+    if not s3_endpoint_url:
+        # Запасной вариант, если переменная не задана
+        s3_endpoint_url = f'https://s3.{AWS_S3_REGION}.selcloud.ru'
 
     s3_client = boto3.client(
         's3',
         endpoint_url=s3_endpoint_url,
-        region_name=AWS_S3_REGION,
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        region_name=os.environ.get('AWS_S3_REGION'),
+        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
     )
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
     file_to_upload.stream.seek(0)
-    s3_client.upload_fileobj(file_to_upload.stream, AWS_S3_BUCKET_NAME, object_name, ExtraArgs={'ContentType': file_to_upload.content_type})
-    
+    s3_client.upload_fileobj(file_to_upload.stream, os.environ.get('AWS_S3_BUCKET_NAME'), object_name, ExtraArgs={'ContentType': file_to_upload.content_type})
+
     # URL сгенерированного файла
-    hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.selcloud.ru/{object_name}"
+    hosted_image_url = f"{s3_endpoint_url}/{os.environ.get('AWS_S3_BUCKET_NAME')}/{object_name}"
     print(f"!!! Изображение загружено на Selectel S3: {hosted_image_url}")
     return hosted_image_url
 
