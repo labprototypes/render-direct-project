@@ -12,3 +12,4 @@ itsdangerous
 email_validator
 gevent
 stripe
+Authlib
