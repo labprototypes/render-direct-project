@@ -189,17 +189,34 @@ def register():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        
+        # Новая проверка на согласие с условиями
+        terms_accepted = request.form.get('terms_check')
+        if not terms_accepted:
+            flash('Вы должны согласиться с Условиями обслуживания и Политикой конфиденциальности.', 'danger')
+            return redirect(url_for('register'))
 
         if User.query.filter_by(email=email).first():
             flash('Этот email уже зарегистрирован.', 'warning')
             return redirect(url_for('register'))
+        
+        if not password or len(password) < 8:
+            flash('Пароль должен содержать не менее 8 символов.', 'danger')
+            return redirect(url_for('register'))
 
-        new_user = User(email=email, username=email.split('@')[0])
+        # Новая обработка согласия на маркетинг
+        marketing_consent = True if request.form.get('marketing_check') else False
+
+        new_user = User(
+            email=email,
+            username=email.split('@')[0],
+            marketing_consent=marketing_consent
+        )
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
 
-        # Отправка письма для подтверждения
+        # Отправка письма для подтверждения (без изменений)
         subject = "Подтверждение регистрации на Pifly.io"
         token = ts.dumps(new_user.email, salt='email-confirm-salt')
         confirm_url = url_for('confirm_email', token=token, _external=True)
@@ -212,7 +229,7 @@ def register():
         flash('Вы успешно зарегистрированы! Письмо с подтверждением было отправлено на ваш email.', 'success')
         return redirect(url_for('unconfirmed'))
 
-    return render_template('register.html') # Будет создан на следующем шаге
+    return render_template('register.html')
 
 @app.route('/confirm/<token>')
 def confirm_email(token):
