@@ -624,6 +624,41 @@ def tinkoff_notification():
     # Отвечаем банку, что все получили
     return "OK", 200
 
+@app.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    """Удаляет пользователя и все его данные."""
+    try:
+        user_id = current_user.id
+
+        # Сначала удаляем связанные записи (генерации), чтобы избежать ошибок
+        Prediction.query.filter_by(user_id=user_id).delete()
+
+        # Теперь находим самого пользователя
+        user_to_delete = User.query.get(user_id)
+        if not user_to_delete:
+            flash("Не удалось найти пользователя для удаления.", "error")
+            return redirect(url_for('billing'))
+
+        # Выходим из системы ПЕРЕД удалением, чтобы избежать ошибок сессии
+        logout_user()
+
+        # Удаляем пользователя из нашей базы данных
+        db.session.delete(user_to_delete)
+        db.session.commit()
+
+        # TODO: В будущем здесь нужно будет добавить логику удаления пользователя
+        # из социальной сети (Яндекс), если он был создан через нее.
+
+        flash('Ваш аккаунт и все связанные данные были успешно удалены.', 'success')
+        return redirect(url_for('login'))
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"!!! Ошибка при удалении аккаунта: {e}")
+        flash('Произошла ошибка при удалении вашего аккаунта.', 'error')
+        return redirect(url_for('billing'))
+
 if __name__ == '__main__':
     # Для локального запуска, debug=True. На сервере будет False.
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
