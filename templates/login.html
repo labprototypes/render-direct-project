@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Вход - pifly.io</title>
     <style>
-        /* ИМПОРТ ШРИФТОВ И ОСНОВНЫЕ ПЕРЕМЕННЫЕ */
+        /* ИМПОРТ ШРИФТОВ И ПЕРЕМЕННЫЕ СВЕТЛОЙ ТЕМЫ */
         @font-face {
             font-family: 'Norms';
             src: url("{{ url_for('static', filename='fonts/norms_regular.woff2') }}") format('woff2');
@@ -16,23 +16,22 @@
             font-weight: 700;
         }
         :root {
-            --accent-color: #D9F47A;
-            --accent-glow: rgba(217, 244, 122, 0.7);
-            --base-bg-color: #0c0d10;
-            --surface-color: #1c1c1f;
-            --primary-text-color: #EAEAEA;
-            --secondary-text-color: #888888;
-            --accent-text-color: #1A1A1A;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --shadow-color: rgba(0, 0, 0, 0.5);
+            --primary-text-color: #1B1B1E;
+            --secondary-text-color: #6c757d;
+            --base-bg-color: #EFEFEF; /* Светлый фон, как на основном сайте */
+            --accent-color: #D1FF5A; /* Ваш фирменный зеленый */
+            --accent-text-color: #1B1B1E;
+            --border-color: #E0E0E0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --surface-color: #FFFFFF; /* Белый фон для контейнера */
             --content-border-radius: 24px;
             --button-border-radius: 14px;
         }
         body {
             font-family: 'Norms', sans-serif;
             font-weight: 400;
-            background-image: url("{{ url_for('static', filename='images/desktop_background.webp') }}");
-            background-size: cover; background-position: center; background-attachment: fixed;
+            background-color: var(--base-bg-color); /* Используем светлый фон */
+            background-image: none; /* Убираем темную картинку, чтобы соответствовать сайту */
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; margin: 0;
             color: var(--primary-text-color);
@@ -47,58 +46,35 @@
             max-width: 420px;
             text-align: center;
         }
-        
-        /* СТИЛИ ДЛЯ ЛОГОТИПА И ЗАГОЛОВКОВ */
-        .main-logo-link {
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-        .main-logo {
-            height: 42px; /* Размер вашего лого */
-            width: auto;
-        }
+        .main-logo-link { display: inline-block; margin-bottom: 5px; }
+        .main-logo { height: 42px; width: auto; }
         .auth-container h2 {
-            font-size: 1rem;
-            font-weight: 400;
-            color: var(--secondary-text-color);
+            font-size: 1.2rem; /* Немного увеличим для читаемости */
+            font-weight: 700;
+            color: var(--primary-text-color);
             margin-bottom: 30px;
         }
-
-        /* УДАЛЕНА КАСТОМНАЯ КНОПКА GOOGLE */
-        /* УДАЛЕН РАЗДЕЛИТЕЛЬ "OR" */
-        
-        /* ГРУППА ПОЛЕЙ ВВОДА */
-        .form-group {
-            text-align: left; margin-bottom: 20px;
-        }
+        .form-group { text-align: left; margin-bottom: 20px; }
         .form-group label {
             display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: 500;
         }
         .form-input {
             width: 100%; padding: 12px 15px; border-radius: var(--button-border-radius);
-            border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.25);
-            color: var(--primary-text-color); font-size: 1rem; box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            background-color: #f8f9fa; /* Светлый фон для полей ввода */
+            color: var(--primary-text-color);
+            font-size: 1rem; box-sizing: border-box;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
         .form-input:focus {
             outline: none; border-color: var(--accent-color);
-            box-shadow: 0 0 10px rgba(217, 244, 122, 0.3);
+            box-shadow: 0 0 10px rgba(209, 255, 90, 0.5);
         }
         .password-header { display: flex; justify-content: space-between; align-items: baseline; }
-        
-        /* Ссылка "Забыли пароль" (пока неактивна) */
         a.forgot-password-link {
-            font-size: 0.85rem; color: var(--accent-color); text-decoration: none;
-            cursor: pointer;
+            font-size: 0.85rem; color: var(--primary-text-color); text-decoration: none;
+            cursor: pointer; opacity: 0.7;
         }
-        a.forgot-password-link.disabled {
-            color: var(--secondary-text-color);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-        a.forgot-password-link:not(.disabled):hover { text-decoration: underline; }
-
-        /* КНОПКА ВХОДА */
         .primary-btn {
             font-family: 'Norms', sans-serif; font-weight: 700;
             background-color: var(--accent-color); color: var(--accent-text-color);
@@ -107,37 +83,31 @@
             width: 100%; margin-top: 10px;
         }
         .primary-btn:hover { background-color: #c8e070; transform: translateY(-2px); }
-
-        /* ССЫЛКА НА РЕГИСТРАЦИЮ */
         .bottom-text { margin-top: 30px; color: var(--secondary-text-color); font-size: 0.9rem; }
-        .bottom-text a { color: var(--accent-color); text-decoration: none; font-weight: 700; cursor: pointer; }
+        .bottom-text a { color: var(--primary-text-color); text-decoration: none; font-weight: 700; cursor: pointer; }
         .bottom-text a:hover { text-decoration: underline; }
-
-        /* Сообщения об ошибках и инфо (flash-сообщения) */
-        .flash-message {
-            padding: 12px; border-radius: 10px; margin-bottom: 20px;
-            font-size: 0.9rem; text-align: center;
+        .separator {
+            display: flex; align-items: center; text-align: center;
+            color: var(--secondary-text-color); margin: 25px 0; font-size: 0.9rem;
         }
-        .flash-message.danger {
-            color: #FED7D7; background-color: rgba(229, 62, 62, 0.3);
-            border: 1px solid rgba(229, 62, 62, 0.5);
+        .separator::before, .separator::after {
+            content: ''; flex: 1; border-bottom: 1px solid var(--border-color);
         }
-        .flash-message.success {
-            color: #C6F6D5; background-color: rgba(74, 189, 111, 0.3);
-            border: 1px solid rgba(74, 189, 111, 0.5);
-        }
-         .flash-message.info {
-            color: #BEE3F8; background-color: rgba(66, 153, 225, 0.3);
-            border: 1px solid rgba(66, 153, 225, 0.5);
-        }
+        .separator:not(:empty)::before { margin-right: 1em; }
+        .separator:not(:empty)::after { margin-left: 1em; }
+    
+        /* ИСПРАВЛЕННЫЙ СТИЛЬ ДЛЯ КНОПКИ ЯНДЕКСА */
         .yandex-btn {
             display: flex; align-items: center; justify-content: center;
             width: 100%; padding: 12px; font-size: 1rem; font-weight: 700;
-            border-radius: var(--button-border-radius); border: 1px solid #ffde00;
-            background-color: #ffde00; color: #000000;
+            border-radius: var(--button-border-radius); border: 1px solid var(--border-color);
+            background-color: var(--surface-color); color: var(--primary-text-color);
             cursor: pointer; transition: all 0.2s ease; gap: 10px; text-decoration: none;
         }
-        .yandex-btn:hover { background-color: #f2d200; transform: translateY(-2px); }
+        .yandex-btn:hover { border-color: #999; transform: translateY(-2px); }
+        .flash-message { /* Стили для сообщений об ошибках, если понадобятся */
+            padding: 12px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 0.9rem; text-align: center;
         }
     </style>
 </head>
