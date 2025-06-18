@@ -7,6 +7,8 @@ import os
 import uuid
 import time
 import io
+import hashlib
+import json
 from datetime import datetime, timezone
 from functools import wraps
 from urllib.parse import urlparse, urljoin
@@ -48,6 +50,8 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD') # Пароль п�
 app.config['MAIL_DEFAULT_SENDER'] = ('Pifly.io', os.environ.get('MAIL_USERNAME'))
 app.config['YANDEX_CLIENT_ID'] = os.environ.get('YANDEX_CLIENT_ID')
 app.config['YANDEX_CLIENT_SECRET'] = os.environ.get('YANDEX_CLIENT_SECRET')
+app.config['TINKOFF_TERMINAL_KEY'] = os.environ.get('TINKOFF_TERMINAL_KEY')
+app.config['TINKOFF_SECRET_KEY'] = os.environ.get('TINKOFF_SECRET_KEY')
 
 # --- Конфигурация внешних сервисов (без изменений) ---
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -524,6 +528,101 @@ def billing():
 # --- Final app setup ---
 with app.app_context():
     db.create_all()
+
+def _generate_tinkoff_token(data):
+    """Генерирует токен подписи для запроса к API Тинькофф."""
+    secret_key = app.config['TINKOFF_SECRET_KEY']
+    # Отфильтровываем все None значения и добавляем пароль
+    filtered_data = {k: v for k, v in data.items() if v is not None}
+    filtered_data['Password'] = secret_key
+    
+    # Сортируем по ключу и конкатенируем значения
+    sorted_data = sorted(filtered_data.items())
+    values_str = "".join(str(v) for _, v in sorted_data)
+    
+    # Хэшируем и возвращаем
+    return hashlib.sha256(values_str.encode('utf-8')).hexdigest()
+
+@app.route('/create-payment', methods=['POST'])
+@login_required
+def create_payment():
+    """Создает платеж и перенаправляет пользователя на страницу оплаты."""
+    # В будущем здесь будет логика выбора плана и определения суммы
+    amount_kopecks = 999 * 100  # Например, 999 рублей в копейках
+    order_id = str(uuid.uuid4()) # Уникальный ID заказа
+
+    payload = {
+        "TerminalKey": app.config['TINKOFF_TERMINAL_KEY'],
+        "Amount": amount_kopecks,
+        "OrderId": order_id,
+        "Description": "Покупка кредитов Pifly.io",
+        "DATA": {
+            "Email": current_user.email,
+            "UserId": current_user.id
+        },
+        "Receipt": {
+            "Email": current_user.email,
+            "Taxation": "usn_income",
+            "Items": [
+                {
+                    "Name": "Кредиты Pifly.io",
+                    "Price": amount_kopecks,
+                    "Quantity": 1.00,
+                    "Amount": amount_kopecks,
+                    "Tax": "none"
+                }
+            ]
+        }
+    }
+    
+    # Генерируем токен и добавляем его в payload
+    payload['Token'] = _generate_tinkoff_token(payload)
+
+    try:
+        response = requests.post('https://securepay.tinkoff.ru/v2/Init', json=payload)
+        response.raise_for_status()
+        result = response.json()
+
+        if result.get("Success"):
+            # TODO: Сохранить `order_id` и `result.get('PaymentId')` в нашей БД
+            # чтобы связать их с пользователем и проверить при уведомлении.
+            return redirect(result.get('PaymentURL'))
+        else:
+            error_message = result.get('Message', 'Неизвестная ошибка')
+            flash(f"Ошибка при создании платежа: {error_message}", "danger")
+            return redirect(url_for('billing'))
+            
+    except Exception as e:
+        flash(f"Не удалось связаться с платежным шлюзом: {e}", "danger")
+        return redirect(url_for('billing'))
+
+
+@app.route('/tinkoff-notification', methods=['POST'])
+def tinkoff_notification():
+    """Обрабатывает уведомления о статусе платежа от Т-Банка."""
+    data = request.json
+    
+    # Проверяем токен, чтобы убедиться, что это запрос от Т-Банка
+    received_token = data.pop('Token', None)
+    expected_token = _generate_tinkoff_token(data)
+
+    if received_token != expected_token:
+        # Если токен не совпадает, игнорируем запрос
+        return "error: invalid token", 400
+
+    # Если статус платежа CONFIRMED, начисляем кредиты
+    if data.get('Status') == 'CONFIRMED':
+        user_id = data.get('DATA', {}).get('UserId')
+        if user_id:
+            user = User.query.get(user_id)
+            if user:
+                # TODO: Определять количество кредитов на основе суммы
+                user.token_balance += 1500 
+                db.session.commit()
+                print(f"Пользователю {user_id} успешно начислено 1500 токенов.")
+
+    # Отвечаем банку, что все получили
+    return "OK", 200
 
 if __name__ == '__main__':
     # Для локального запуска, debug=True. На сервере будет False.
