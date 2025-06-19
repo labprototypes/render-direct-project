@@ -382,7 +382,9 @@ def marketing_policy():
 # Функция для загрузки в S3 хранилище Selectel
 # ИСПРАВЛЕННАЯ ВЕРСИЯ ФУНКЦИИ
 def upload_file_to_s3(file_to_upload):
-    """Загружает файл в S3 хранилище Selectel и возвращает публичную ссылку."""
+    """
+    Загружает исходный файл в S3 и возвращает ОТНОСИТЕЛЬНУЮ ссылку на наш прокси-маршрут.
+    """
     s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
     bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
     region = os.environ.get('AWS_S3_REGION')
@@ -399,24 +401,25 @@ def upload_file_to_s3(file_to_upload):
     
     file_to_upload.stream.seek(0)
     
-    # --- ИСПРАВЛЕНИЕ: Добавляем 'ACL': 'public-read' ---
-    # Этот параметр делает загруженный файл публично доступным для чтения.
+    # ACL: 'public-read' больше не нужен, контейнер может быть приватным
     s3_client.upload_fileobj(
         file_to_upload.stream, 
         bucket_name, 
         object_name, 
-        ExtraArgs={'ContentType': file_to_upload.content_type, 'ACL': 'public-read'}
+        ExtraArgs={'ContentType': file_to_upload.content_type}
     )
 
-    public_url = f"https://{bucket_name}.{region}.storage.selcloud.ru/{object_name}"
-    print(f"!!! Изображение загружено на Selectel S3: {public_url}")
-    return public_url
+    # ИЗМЕНЕНИЕ: Формируем относительную ссылку на наш прокси-маршрут
+    proxy_url = f"/media/{object_name}"
+    
+    print(f"!!! Изображение загружено, прокси-ссылка: {proxy_url}")
+    return proxy_url
 
-# Замените вашу текущую функцию _reupload_and_save_result этим кодом
+
 def _reupload_and_save_result(prediction, temp_url):
     """
-    Скачивает результат с временного URL, загружает в наш S3 (делая его публичным)
-    и обновляет запись в БД.
+    Скачивает результат с Replicate, загружает в наш S3 и обновляет запись в БД,
+    сохраняя ОТНОСИТЕЛЬНУЮ ссылку на наш прокси-маршрут.
     """
     try:
         print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
@@ -439,21 +442,21 @@ def _reupload_and_save_result(prediction, temp_url):
         file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
         object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
         
-        # --- ИСПРАВЛЕНИЕ: Добавляем 'ACL': 'public-read' ---
-        # Этот параметр делает и финальное изображение публично доступным.
+        # ACL: 'public-read' больше не нужен
         s3_client.upload_fileobj(
             image_data,
             bucket_name,
             object_name,
-            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png'), 'ACL': 'public-read'}
+            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png')}
         )
         
-        permanent_s3_url = f"https://{bucket_name}.{region}.storage.selcloud.ru/{object_name}"
+        # ИЗМЕНЕНИЕ: Формируем относительную ссылку на наш прокси-маршрут
+        permanent_proxy_url = f"/media/{object_name}"
         
-        prediction.output_url = permanent_s3_url
+        prediction.output_url = permanent_proxy_url
         prediction.status = 'completed'
         db.session.commit()
-        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено в S3: {permanent_s3_url}")
+        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено, прокси-ссылка: {permanent_proxy_url}")
 
     except Exception as e:
         print(f"!!! Ошибка при перезаливке изображения из Replicate: {e}")
@@ -462,6 +465,51 @@ def _reupload_and_save_result(prediction, temp_url):
         if user:
             user.token_balance += prediction.token_cost
         db.session.commit()
+
+
+# ===============================================================
+# ДОБАВЬТЕ ЭТОТ НОВЫЙ МАРШРУТ В КОНЕЦ ВАШЕГО ФАЙЛА, ПЕРЕД `if __name__ == '__main__':`
+# ===============================================================
+
+@app.route('/media/<path:object_name>')
+@login_required
+def serve_media_file(object_name):
+    """
+    Прокси-маршрут для безопасной отдачи файлов из приватного S3-хранилища.
+    Это решает все проблемы с CORS.
+    """
+    try:
+        # Проверка, чтобы пользователи не могли "гулять" по чужим директориям.
+        if not object_name.startswith('uploads/') and not object_name.startswith('generations/'):
+            return "Not Found", 404
+
+        # Если это сгенерированное изображение, проверяем, что пользователь имеет к нему доступ.
+        if object_name.startswith('generations/'):
+            parts = object_name.split('/')
+            if len(parts) > 2 and parts[1] != current_user.id:
+                # Этот prediction был создан не текущим пользователем
+                return "Access Denied", 403
+
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os.environ.get('AWS_S3_ENDPOINT_URL'),
+            region_name=os.environ.get('AWS_S3_REGION'),
+            aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+        )
+
+        s3_response = s3_client.get_object(Bucket=os.environ.get('AWS_S3_BUCKET_NAME'), Key=object_name)
+
+        # Отдаем файл пользователю как есть
+        return Response(
+            s3_response['Body'].read(),
+            mimetype=s3_response['ContentType'],
+            headers={"Content-Disposition": f"inline; filename={os.path.basename(object_name)}"}
+        )
+
+    except Exception as e:
+        print(f"!!! Ошибка при отдаче файла через прокси '{object_name}': {e}")
+        return "Not Found", 404
 
 @app.route('/process-image', methods=['POST'])
 @login_required
