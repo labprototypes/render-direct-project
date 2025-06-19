@@ -57,11 +57,11 @@ app.config['TINKOFF_SECRET_KEY'] = os.environ.get('TINKOFF_SECRET_KEY')
 
 # --- ИСПРАВЛЕННАЯ КОНФИГУРАЦИЯ ДЛЯ AMAZON S3 ---
 # Загружаем конфигурацию S3 из переменных окружения, как указано в брифе.
-app.config['AWS_ACCESS_KEY_ID'] = "AKIAUZPNLF3DJP6ZORSX"
-app.config['AWS_SECRET_ACCESS_KEY'] = "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"
-app.config['AWS_S3_BUCKET_NAME'] = "lab-ai-images"
-app.config['AWS_S3_REGION'] = "us-east-2"
-app.config['AWS_S3_ENDPOINT_URL'] = None
+app.config['AWS_ACCESS_KEY_ID'] = os.environ.get('AWS_ACCESS_KEY_ID')
+app.config['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY')
+app.config['AWS_S3_BUCKET_NAME'] = os.environ.get('AWS_S3_BUCKET_NAME')
+app.config['AWS_S3_REGION'] = os.environ.get('AWS_S3_REGION')
+app.config['AWS_S3_ENDPOINT_URL'] = os.environ.get('AWS_S3_ENDPOINT_URL')
 
 # --- Конфигурация внешних сервисов (без изменений) ---
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
