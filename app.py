@@ -483,31 +483,36 @@ def process_image():
         return jsonify({'error': 'Изображение отсутствует'}), 400
     
     uploaded_file = request.files['image']
-    image_bytes_for_base64 = uploaded_file.read()
-    uploaded_file.seek(0)
+    image_bytes = uploaded_file.read()
+    uploaded_file.seek(0) # Возвращаем указатель для других операций
 
     try:
-        # URL на S3 все еще нужен для архива оригиналов, если мы захотим его вести
-        s3_url = upload_file_to_s3(uploaded_file)
+        # --- ОБЩАЯ ЛОГИКА ДЛЯ BASE64, ТАК КАК ОНА НУЖНА ОБОИМ РЕЖИМАМ ---
+        base64_image_str = base64.b64encode(image_bytes).decode('utf-8')
+        image_mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
+        base64_data_url = f"data:{image_mime_type};base64,{base64_image_str}"
+
         replicate_input = {}
         model_version_id = ""
 
-        # --- ОБЩАЯ ЛОГИКА ДЛЯ BASE64, ТАК КАК ОНА НУЖНА ОБОИМ РЕЖИМАМ ---
-        base64_image = base64.b64encode(image_bytes_for_base64).decode('utf-8')
-        image_mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
-        base64_data_url = f"data:{image_mime_type};base64,{base64_image}"
-
         if mode == 'edit':
-            # Логика для 'edit' с прокси и OpenAI
             prompt = request.form.get('prompt', '')
+            edit_mode = request.form.get('edit_mode')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
             
-            # ... (логика вызова прокси, получения final_prompt... она остается прежней)
-            # ... (предполагаем, что final_prompt получен)
+            # Логика получения промпта от OpenAI через прокси
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-            messages = [{"role": "system", "content": "You are a helpful assistant..."}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": base64_data_url}}]}]
+            
+            system_prompt_text = ""
+            if edit_mode == 'autofix':
+                system_prompt_text = "You are an expert image analyst. You will be given an image with potential visual flaws. Your task is to generate a descriptive prompt in English that describes the ideal, corrected version of the image. Focus on technical correction. For example: 'A photorealistic hand with five fingers, correct anatomy, soft lighting'. For artifacts, describe the clean area: 'a clear blue sky'. Output only the prompt."
+                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": base64_data_url}}]}]
+            else:
+                system_prompt_text = "You are a helpful assistant. A user will provide a request in any language to modify an image. Your only task is to accurately translate this request into a concise English command. Do not add any conversational fluff, explanations, or extra descriptions. Output only the direct translation."
+                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": base64_data_url}}]}]
+
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
             proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers, timeout=30)
             proxy_response.raise_for_status()
@@ -517,11 +522,9 @@ def process_image():
             replicate_input = {"input_image": base64_data_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
-            # --- ИСПРАВЛЕНИЕ ДЛЯ UPSCALE ---
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            # Эта модель ожидает параметр 'image', а не 'input_image'
             replicate_input = {
-                "image": base64_data_url, # Используем Base64 вместо s3_url
+                "image": base64_data_url,
                 "scale_factor": float(request.form.get('scale_factor', '2')),
                 "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4),
                 "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4),
