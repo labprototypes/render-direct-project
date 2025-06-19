@@ -535,19 +535,17 @@ def process_image():
     uploaded_file = request.files['image']
 
     try:
-        # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
-        # 1. Сначала читаем файл в память и готовим base64 для OpenAI.
+        # Сначала читаем файл и готовим base64 для OpenAI
         image_bytes = uploaded_file.read()
         base64_image_str = base64.b64encode(image_bytes).decode('utf-8')
         image_mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
         base64_data_url = f"data:{image_mime_type};base64,{base64_image_str}"
 
-        # 2. "Отматываем" файл в начало, чтобы он был готов для следующей операции.
+        # "Отматываем" файл в начало для загрузки в S3
         uploaded_file.seek(0) 
 
-        # 3. И только теперь отправляем его в S3, чтобы получить ссылку для Replicate.
+        # Загружаем в S3, чтобы получить ссылку для Replicate
         public_image_url = upload_file_to_s3(uploaded_file)
-        # --- Конец исправленной логики ---
 
         replicate_input = {}
         model_version_id = ""
@@ -564,10 +562,10 @@ def process_image():
             system_prompt_text = ""
             if edit_mode == 'autofix':
                 system_prompt_text = "You are an expert image analyst. You will be given an image with potential visual flaws. Your task is to generate a descriptive prompt in English that describes the ideal, corrected version of the image. Focus on technical correction. For example: 'A photorealistic hand with five fingers, correct anatomy, soft lighting'. For artifacts, describe the clean area: 'a clear blue sky'. Output only the prompt."
-                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": base64_data_url}}]}]
+                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": public_image_url}}]}] # Используем public_image_url
             else:
                 system_prompt_text = "You are a helpful assistant. A user will provide a request in any language to modify an image. Your only task is to accurately translate this request into a concise English command. Do not add any conversational fluff, explanations, or extra descriptions. Output only the direct translation."
-                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": base64_data_url}}]}]
+                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": public_image_url}}]}] # Используем public_image_url
 
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
             proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers, timeout=30)
@@ -596,7 +594,8 @@ def process_image():
         db.session.commit()
 
         headers = {"Authorization": f"Bearer {os.environ.get('REPLICATE_API_TOKEN')}", "Content-Type": "application/json"}
-        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
+        # ИСПРАВЛЕНИЕ: Убираем "failed" из фильтра вебхуков, как в рабочем файле
+        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
 
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
