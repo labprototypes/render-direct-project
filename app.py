@@ -383,15 +383,12 @@ def marketing_policy():
 # ИСПРАВЛЕННАЯ ВЕРСИЯ ФУНКЦИИ
 def upload_file_to_s3(file_to_upload):
     """
-    Загружает исходный файл в S3 и возвращает ОТНОСИТЕЛЬНУЮ ссылку на наш прокси-маршрут.
+    Загружает исходный файл в Amazon S3 и возвращает публичную ссылку.
     """
-    s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
     bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
     region = os.environ.get('AWS_S3_REGION')
-
     s3_client = boto3.client(
         's3',
-        endpoint_url=s3_endpoint_url,
         region_name=region,
         aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
         aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
@@ -401,42 +398,35 @@ def upload_file_to_s3(file_to_upload):
     
     file_to_upload.stream.seek(0)
     
-    # ACL: 'public-read' больше не нужен, контейнер может быть приватным
     s3_client.upload_fileobj(
-        file_to_upload.stream, 
-        bucket_name, 
-        object_name, 
-        ExtraArgs={'ContentType': file_to_upload.content_type}
+        file_to_upload.stream,
+        bucket_name,
+        object_name,
+        ExtraArgs={'ContentType': file_to_upload.content_type, 'ACL': 'public-read'}
     )
 
-    # ИЗМЕНЕНИЕ: Формируем относительную ссылку на наш прокси-маршрут
-    proxy_url = f"/media/{object_name}"
+    # Формируем стандартную публичную ссылку для Amazon S3
+    public_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{object_name}"
     
-    print(f"!!! Изображение загружено, прокси-ссылка: {proxy_url}")
-    return proxy_url
+    print(f"!!! Изображение загружено на Amazon S3: {public_url}")
+    return public_url
 
 
 def _reupload_and_save_result(prediction, temp_url):
     """
-    Скачивает результат с Replicate, загружает в наш S3 и обновляет запись в БД.
+    Скачивает результат с Replicate, загружает в Amazon S3 и обновляет запись в БД.
     """
     try:
-        # --- ДОБАВЬТЕ ЭТУ ОТЛАДОЧНУЮ СТРОКУ ---
-        app.logger.info(f"!!! DEBUG: Пытаюсь использовать Access Key ID: {os.environ.get('AWS_ACCESS_KEY_ID')}")
-        # --- КОНЕЦ ОТЛАДОЧНОЙ СТРОКИ ---
-
         print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
         
         image_response = requests.get(temp_url, stream=True)
         image_response.raise_for_status()
         image_data = io.BytesIO(image_response.content)
         
-        s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
         bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
         region = os.environ.get('AWS_S3_REGION')
         s3_client = boto3.client(
             's3',
-            endpoint_url=s3_endpoint_url,
             region_name=region,
             aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
             aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
@@ -445,24 +435,22 @@ def _reupload_and_save_result(prediction, temp_url):
         file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
         object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
         
-        # ACL: 'public-read' больше не нужен
         s3_client.upload_fileobj(
             image_data,
             bucket_name,
             object_name,
-            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png')}
+            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png'), 'ACL': 'public-read'}
         )
         
-        # ИЗМЕНЕНИЕ: Формируем относительную ссылку на наш прокси-маршрут
-        permanent_proxy_url = f"/media/{object_name}"
+        permanent_s3_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{object_name}"
         
-        prediction.output_url = permanent_proxy_url
+        prediction.output_url = permanent_s3_url
         prediction.status = 'completed'
         db.session.commit()
-        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено, прокси-ссылка: {permanent_proxy_url}")
+        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено в Amazon S3: {permanent_s3_url}")
 
     except Exception as e:
-        print(f"!!! Ошибка при перезаливке изображения из Replicate: {e}")
+        app.logger.error(f"!!! Ошибка при перезаливке изображения '{prediction.id}': {e}", exc_info=True)
         prediction.status = 'failed'
         user = User.query.get(prediction.user_id)
         if user:
