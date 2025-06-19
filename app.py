@@ -7,6 +7,7 @@ import os
 import uuid
 import time
 import io
+import base64
 import hashlib
 import json
 from datetime import datetime, timezone
