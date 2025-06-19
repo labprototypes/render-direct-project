@@ -512,6 +512,7 @@ def serve_media_file(object_name):
 @login_required
 @check_confirmed
 def process_image():
+    print(f"!!! DEBUG: Использую REPLICATE_API_TOKEN: {os.environ.get('REPLICATE_API_TOKEN')}")
     mode = request.form.get('mode')
     token_cost = 0
     if mode == 'edit':
