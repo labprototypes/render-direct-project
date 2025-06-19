@@ -475,21 +475,23 @@ def _reupload_and_save_result(prediction, temp_url):
 @login_required
 def serve_media_file(object_name):
     """
-    Прокси-маршрут для безопасной отдачи файлов из приватного S3-хранилища.
-    Это решает все проблемы с CORS.
+    Прокси-маршрут для безопасной отдачи файлов из приватного S3-хранилища,
+    с детальным логгированием для отладки.
     """
+    # Записываем в лог сам факт вызова маршрута
+    app.logger.info(f"Запрос на проксирование файла: {object_name}")
     try:
-        # Проверка, чтобы пользователи не могли "гулять" по чужим директориям.
         if not object_name.startswith('uploads/') and not object_name.startswith('generations/'):
+            app.logger.warning(f"Попытка доступа к запрещенному пути: {object_name}")
             return "Not Found", 404
 
-        # Если это сгенерированное изображение, проверяем, что пользователь имеет к нему доступ.
         if object_name.startswith('generations/'):
             parts = object_name.split('/')
             if len(parts) > 2 and parts[1] != current_user.id:
-                # Этот prediction был создан не текущим пользователем
+                app.logger.warning(f"Пользователь {current_user.id} попытался получить доступ к чужому файлу: {object_name}")
                 return "Access Denied", 403
 
+        app.logger.info(f"Создание S3 клиента для объекта: {object_name}")
         s3_client = boto3.client(
             's3',
             endpoint_url=os.environ.get('AWS_S3_ENDPOINT_URL'),
@@ -498,9 +500,12 @@ def serve_media_file(object_name):
             aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
         )
 
-        s3_response = s3_client.get_object(Bucket=os.environ.get('AWS_S3_BUCKET_NAME'), Key=object_name)
+        bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+        app.logger.info(f"Загрузка объекта '{object_name}' из бакета '{bucket_name}'")
+        
+        s3_response = s3_client.get_object(Bucket=bucket_name, Key=object_name)
 
-        # Отдаем файл пользователю как есть
+        app.logger.info(f"Отдача файла '{object_name}' пользователю.")
         return Response(
             s3_response['Body'].read(),
             mimetype=s3_response['ContentType'],
@@ -508,7 +513,8 @@ def serve_media_file(object_name):
         )
 
     except Exception as e:
-        print(f"!!! Ошибка при отдаче файла через прокси '{object_name}': {e}")
+        # Эта часть запишет в лог любую возникшую ошибку с полной трассировкой
+        app.logger.error(f"!!! Ошибка при отдаче файла через прокси '{object_name}': {e}", exc_info=True)
         return "Not Found", 404
 
 @app.route('/process-image', methods=['POST'])
