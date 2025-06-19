@@ -174,58 +174,6 @@ def is_safe_url(target):
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
-def _reupload_and_save_result(prediction, temp_url):
-    """
-    Скачивает результат с временного URL, загружает в наш S3
-    и обновляет запись в БД, сохраняя постоянный URL.
-    """
-    try:
-        print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
-        # Шаг 1: Скачиваем изображение
-        image_response = requests.get(temp_url, stream=True)
-        image_response.raise_for_status()
-        
-        image_data = io.BytesIO(image_response.content)
-        
-        # Шаг 2: Настраиваем клиент для Selectel S3
-        s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
-        s3_client = boto3.client(
-            's3',
-            endpoint_url=s3_endpoint_url,
-            region_name=os.environ.get('AWS_S3_REGION'),
-            aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
-        )
-        
-        # Шаг 3: Генерируем постоянное имя файла
-        file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
-        # Сохраняем в папку generations/id_пользователя/id_генерации.png
-        object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
-        
-        # Шаг 4: Загружаем в Selectel S3
-        s3_client.upload_fileobj(
-            image_data,
-            os.environ.get('AWS_S3_BUCKET_NAME'),
-            object_name,
-            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png')}
-        )
-        
-        # Шаг 5: Обновляем запись в БД постоянной ссылкой
-        permanent_s3_url = f"{s3_endpoint_url}/{os.environ.get('AWS_S3_BUCKET_NAME')}/{object_name}"
-        prediction.output_url = permanent_s3_url
-        prediction.status = 'completed'
-        db.session.commit()
-        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено в S3: {permanent_s3_url}")
-
-    except Exception as e:
-        print(f"!!! Ошибка при перезаливке изображения из Replicate: {e}")
-        prediction.status = 'failed'
-        # Возвращаем токены, если не удалось сохранить результат
-        user = User.query.get(prediction.user_id)
-        if user:
-            user.token_balance += prediction.token_cost
-        db.session.commit()
-
 @app.route('/login/yandex')
 def yandex_login():
     redirect_uri = url_for('yandex_callback', _external=True)
@@ -434,28 +382,91 @@ def marketing_policy():
 # Функция для загрузки в S3 хранилище Selectel
 # ИСПРАВЛЕННАЯ ВЕРСИЯ ФУНКЦИИ
 def upload_file_to_s3(file_to_upload):
-    # Используем новую переменную окружения AWS_S3_ENDPOINT_URL
+    """Загружает файл в S3 хранилище Selectel и возвращает ПРАВИЛЬНУЮ ПУБЛИЧНУЮ ссылку."""
     s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
-    if not s3_endpoint_url:
-        # Запасной вариант, если переменная не задана
-        s3_endpoint_url = f'https://s3.{AWS_S3_REGION}.selcloud.ru'
+    bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+    region = os.environ.get('AWS_S3_REGION')
 
     s3_client = boto3.client(
         's3',
         endpoint_url=s3_endpoint_url,
-        region_name=os.environ.get('AWS_S3_REGION'),
+        region_name=region,
         aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
         aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
     )
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
+    
+    # Убеждаемся, что читаем файл с самого начала
     file_to_upload.stream.seek(0)
-    s3_client.upload_fileobj(file_to_upload.stream, os.environ.get('AWS_S3_BUCKET_NAME'), object_name, ExtraArgs={'ContentType': file_to_upload.content_type})
+    
+    s3_client.upload_fileobj(
+        file_to_upload.stream, 
+        bucket_name, 
+        object_name, 
+        ExtraArgs={'ContentType': file_to_upload.content_type}
+    )
 
-    # URL сгенерированного файла
-    hosted_image_url = f"{s3_endpoint_url}/{os.environ.get('AWS_S3_BUCKET_NAME')}/{object_name}"
-    print(f"!!! Изображение загружено на Selectel S3: {hosted_image_url}")
-    return hosted_image_url
+    # ИСПРАВЛЕНИЕ: Формируем правильный публичный URL для Selectel
+    public_url = f"https://{bucket_name}.{region}.storage.selcloud.ru/{object_name}"
+    
+    print(f"!!! Изображение загружено на Selectel S3: {public_url}")
+    return public_url
+
+# Замените вашу текущую функцию _reupload_and_save_result этим кодом
+def _reupload_and_save_result(prediction, temp_url):
+    """
+    Скачивает результат с временного URL, загружает в наш S3
+    и обновляет запись в БД, сохраняя ПРАВИЛЬНЫЙ постоянный URL.
+    """
+    try:
+        print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
+        
+        # Шаг 1: Скачиваем изображение
+        image_response = requests.get(temp_url, stream=True)
+        image_response.raise_for_status()
+        image_data = io.BytesIO(image_response.content)
+        
+        # Шаг 2: Настраиваем S3 клиент
+        s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
+        bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+        region = os.environ.get('AWS_S3_REGION')
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=s3_endpoint_url,
+            region_name=region,
+            aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+        )
+        
+        # Шаг 3: Генерируем постоянное имя файла
+        file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
+        object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
+        
+        # Шаг 4: Загружаем в Selectel S3
+        s3_client.upload_fileobj(
+            image_data,
+            bucket_name,
+            object_name,
+            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png')}
+        )
+        
+        # Шаг 5: ИСПРАВЛЕНИЕ - Формируем правильный публичный URL
+        permanent_s3_url = f"https://{bucket_name}.{region}.storage.selcloud.ru/{object_name}"
+        
+        # Шаг 6: Обновляем запись в нашей базе данных
+        prediction.output_url = permanent_s3_url
+        prediction.status = 'completed'
+        db.session.commit()
+        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено в S3: {permanent_s3_url}")
+
+    except Exception as e:
+        print(f"!!! Ошибка при перезаливке изображения из Replicate: {e}")
+        prediction.status = 'failed'
+        user = User.query.get(prediction.user_id)
+        if user:
+            user.token_balance += prediction.token_cost
+        db.session.commit()
 
 @app.route('/process-image', methods=['POST'])
 @login_required
