@@ -20,7 +20,7 @@ import boto3
 import openai
 import requests
 # import stripe # TODO: Закомментировано до интеграции с российским провайдером
-from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session, g
+from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session, g, Response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -55,15 +55,17 @@ app.config['YANDEX_CLIENT_SECRET'] = os.environ.get('YANDEX_CLIENT_SECRET')
 app.config['TINKOFF_TERMINAL_KEY'] = os.environ.get('TINKOFF_TERMINAL_KEY')
 app.config['TINKOFF_SECRET_KEY'] = os.environ.get('TINKOFF_SECRET_KEY')
 
+# --- ИСПРАВЛЕННАЯ КОНФИГУРАЦИЯ ДЛЯ AMAZON S3 ---
+# Загружаем конфигурацию S3 из переменных окружения, как указано в брифе.
+app.config['AWS_ACCESS_KEY_ID'] = os.environ.get('AWS_ACCESS_KEY_ID')
+app.config['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY')
+app.config['AWS_S3_BUCKET_NAME'] = os.environ.get('AWS_S3_BUCKET_NAME')
+app.config['AWS_S3_REGION'] = os.environ.get('AWS_S3_REGION')
+app.config['AWS_S3_ENDPOINT_URL'] = os.environ.get('AWS_S3_ENDPOINT_URL') # Для совместимости с Selectel/другими S3-совместимыми хранилищами
+
 # --- Конфигурация внешних сервисов (без изменений) ---
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-HARDCODED_AWS_CONFIG = {
-    "AWS_ACCESS_KEY_ID": "49c1e67c146846f3895c3feddaad0931",
-    "AWS_SECRET_ACCESS_KEY": "7116ae48e4cf49b48894ecb8a23fa6d8",
-    "AWS_S3_BUCKET_NAME": "lab-ai-images",
-    "AWS_S3_REGION": "us-east-2"
-}
 
 # --- Инициализация расширений ---
 db = SQLAlchemy(app)
@@ -248,7 +250,7 @@ def login():
 
         return redirect(next_page or url_for('index'))
 
-    return render_template('login.html') # Будет создан на следующем шаге
+    return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -285,7 +287,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        # Отправка письма для подтверждения (без изменений)
+        # Отправка письма для подтверждения
         subject = "Подтверждение регистрации на Pifly.io"
         token = ts.dumps(new_user.email, salt='email-confirm-salt')
         confirm_url = url_for('confirm_email', token=token, _external=True)
@@ -329,7 +331,7 @@ def confirm_email(token):
 def unconfirmed():
     if current_user.email_confirmed:
         return redirect(url_for('index'))
-    return render_template('unconfirmed.html') # Будет создан на следующем шаге
+    return render_template('unconfirmed.html')
 
 @app.route('/resend_confirmation')
 @login_required
@@ -362,11 +364,6 @@ def logout():
 def index():
     return render_template('index.html')
 
-# --- СТАРЫЕ МАРШРУТЫ FIREBASE И STRIPE УДАЛЕНЫ ИЛИ ЗАКОММЕНТИРОВАНЫ ---
-# @app.route('/session-login', methods=['POST']) -> Удален
-# @app.route('/create-checkout-session', ...) -> Закомментирован
-# @app.route('/stripe-webhook', ...) -> Закомментирован
-
 # --- Маршруты для юридических и вспомогательных страниц (без изменений) ---
 @app.route('/terms')
 def terms():
@@ -380,19 +377,33 @@ def privacy():
 def marketing_policy():
     return render_template('marketing.html')
 
-# --- Функции-помощники и маршруты для работы с изображениями (без существенных изменений) ---
-# Функция для загрузки в S3 хранилище Selectel
-# ИСПРАВЛЕННАЯ ВЕРСИЯ ФУНКЦИИ
+# --- ИСПРАВЛЕННЫЕ ФУНКЦИИ-ПОМОЩНИКИ ДЛЯ РАБОТЫ С S3 ---
+
+def get_s3_client():
+    """Создает и возвращает клиент boto3 S3, используя конфигурацию приложения."""
+    # Проверка наличия всех необходимых ключей конфигурации
+    required_keys = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_REGION']
+    if not all(app.config.get(key) for key in required_keys):
+        app.logger.error("!!! Конфигурация AWS S3 неполная. Проверьте переменные окружения.")
+        return None
+        
+    return boto3.client(
+        's3',
+        region_name=app.config["AWS_S3_REGION"],
+        aws_access_key_id=app.config["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=app.config["AWS_SECRET_ACCESS_KEY"],
+        endpoint_url=app.config.get("AWS_S3_ENDPOINT_URL") # Используется, если задано (для Selectel)
+    )
+
 def upload_file_to_s3(file_to_upload):
     """
-    Загружает исходный файл в Amazon S3 и возвращает публичную ссылку.
+    Загружает исходный файл в S3 и возвращает публичную ссылку.
     """
-    s3_client = boto3.client(
-        's3',
-        region_name=HARDCODED_AWS_CONFIG["AWS_S3_REGION"],
-        aws_access_key_id=HARDCODED_AWS_CONFIG["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=HARDCODED_AWS_CONFIG["AWS_SECRET_ACCESS_KEY"]
-    )
+    s3_client = get_s3_client()
+    if not s3_client:
+        raise Exception("S3 client could not be initialized.")
+
+    bucket_name = app.config["AWS_S3_BUCKET_NAME"]
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
     
@@ -400,51 +411,50 @@ def upload_file_to_s3(file_to_upload):
     
     s3_client.upload_fileobj(
         file_to_upload.stream,
-        HARDCODED_AWS_CONFIG["AWS_S3_BUCKET_NAME"],
+        bucket_name,
         object_name,
         ExtraArgs={'ContentType': file_to_upload.content_type, 'ACL': 'public-read'}
     )
 
-    public_url = f"https://{HARDCODED_AWS_CONFIG['AWS_S3_BUCKET_NAME']}.s3.{HARDCODED_AWS_CONFIG['AWS_S3_REGION']}.amazonaws.com/{object_name}"
+    public_url = f"https://{bucket_name}.s3.{app.config['AWS_S3_REGION']}.amazonaws.com/{object_name}"
     
-    print(f"!!! Исходное изображение загружено на Amazon S3: {public_url}")
+    print(f"!!! Исходное изображение загружено на S3: {public_url}")
     return public_url
 
 
 def _reupload_and_save_result(prediction, temp_url):
     """
-    Скачивает результат с Replicate, загружает в Amazon S3 и обновляет запись в БД.
+    Скачивает результат с Replicate, загружает в S3 и обновляет запись в БД.
     """
     try:
         print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
         
-        image_response = requests.get(temp_url, stream=True)
+        image_response = requests.get(temp_url, stream=True, timeout=60)
         image_response.raise_for_status()
         image_data = io.BytesIO(image_response.content)
         
-        s3_client = boto3.client(
-            's3',
-            region_name=HARDCODED_AWS_CONFIG["AWS_S3_REGION"],
-            aws_access_key_id=HARDCODED_AWS_CONFIG["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=HARDCODED_AWS_CONFIG["AWS_SECRET_ACCESS_KEY"]
-        )
+        s3_client = get_s3_client()
+        if not s3_client:
+            raise Exception("S3 client could not be initialized for re-upload.")
+
+        bucket_name = app.config["AWS_S3_BUCKET_NAME"]
         
         file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
         object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
         
         s3_client.upload_fileobj(
             image_data,
-            HARDCODED_AWS_CONFIG["AWS_S3_BUCKET_NAME"],
+            bucket_name,
             object_name,
             ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png'), 'ACL': 'public-read'}
         )
         
-        permanent_s3_url = f"https://{HARDCODED_AWS_CONFIG['AWS_S3_BUCKET_NAME']}.s3.{HARDCODED_AWS_CONFIG['AWS_S3_REGION']}.amazonaws.com/{object_name}"
+        permanent_s3_url = f"https://{bucket_name}.s3.{app.config['AWS_S3_REGION']}.amazonaws.com/{object_name}"
         
         prediction.output_url = permanent_s3_url
         prediction.status = 'completed'
         db.session.commit()
-        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено в Amazon S3: {permanent_s3_url}")
+        print(f"!!! Изображение для Prediction {prediction.id} успешно сохранено в S3: {permanent_s3_url}")
 
     except Exception as e:
         app.logger.error(f"!!! Ошибка при перезаливке изображения '{prediction.id}': {e}", exc_info=True)
@@ -453,7 +463,6 @@ def _reupload_and_save_result(prediction, temp_url):
         if user:
             user.token_balance += prediction.token_cost
         db.session.commit()
-
 
 
 # ===============================================================
@@ -481,15 +490,11 @@ def serve_media_file(object_name):
                 return "Access Denied", 403
 
         app.logger.info(f"Создание S3 клиента для объекта: {object_name}")
-        s3_client = boto3.client(
-            's3',
-            endpoint_url=os.environ.get('AWS_S3_ENDPOINT_URL'),
-            region_name=os.environ.get('AWS_S3_REGION'),
-            aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
-        )
+        s3_client = get_s3_client()
+        if not s3_client:
+            return "S3 Service Not Configured", 503
 
-        bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+        bucket_name = app.config['AWS_S3_BUCKET_NAME']
         app.logger.info(f"Загрузка объекта '{object_name}' из бакета '{bucket_name}'")
         
         s3_response = s3_client.get_object(Bucket=bucket_name, Key=object_name)
@@ -584,7 +589,7 @@ def process_image():
         db.session.commit()
 
         headers = {"Authorization": f"Bearer {os.environ.get('REPLICATE_API_TOKEN')}", "Content-Type": "application/json"}
-        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
+        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
@@ -600,8 +605,6 @@ def process_image():
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {e}'}), 500
 
 
-
-# Замените существующий маршрут @app.route('/get-result/...')
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
 @login_required
 def get_result(prediction_id):
@@ -616,11 +619,12 @@ def get_result(prediction_id):
         user = User.query.get(current_user.id)
         return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': user.token_balance})
 
+    # Polling logic as a fallback to the webhook
     if prediction.status == 'pending' and prediction.replicate_id:
         try:
             headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
             poll_url = f"https://api.replicate.com/v1/predictions/{prediction.replicate_id}"
-            get_response = requests.get(poll_url, headers=headers)
+            get_response = requests.get(poll_url, headers=headers, timeout=10)
             get_response.raise_for_status()
             status_data = get_response.json()
 
@@ -628,12 +632,11 @@ def get_result(prediction_id):
                 temp_url = status_data.get('output')
                 if temp_url and isinstance(temp_url, list): temp_url = temp_url[0]
                 
-                # ВЫЗЫВАЕМ ХЕЛПЕР ДЛЯ СОХРАНЕНИЯ
                 _reupload_and_save_result(prediction, temp_url)
                 
                 return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
 
-            elif status_data.get("status") == "failed":
+            elif status_data.get("status") in ["failed", "canceled"]:
                 prediction.status = 'failed'
                 user = User.query.get(prediction.user_id)
                 if user: user.token_balance += prediction.token_cost
@@ -645,7 +648,6 @@ def get_result(prediction_id):
     return jsonify({'status': 'pending'})
 
 
-# Замените существующий маршрут @app.route('/replicate-webhook', ...)
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
     data = request.json
@@ -659,27 +661,31 @@ def replicate_webhook():
         if not prediction:
             print(f"!!! Вебхук получен для неизвестного Replicate ID: {replicate_id}")
             return 'Prediction not found', 404
+        
+        # Avoid processing if already completed
+        if prediction.status == 'completed':
+            return 'Webhook already processed', 200
 
         if status == 'succeeded':
             temp_url = data.get('output')
             if temp_url and isinstance(temp_url, list): temp_url = temp_url[0]
             
             if temp_url:
-                # ВЫЗЫВАЕМ ХЕЛПЕР ДЛЯ СОХРАНЕНИЯ
                 _reupload_and_save_result(prediction, temp_url)
-            else:
+            else: # succeeded but no URL
                 prediction.status = 'failed'
                 user = User.query.get(prediction.user_id)
                 if user: user.token_balance += prediction.token_cost
                 db.session.commit()
         
-        elif status == 'failed':
+        elif status in ['failed', 'canceled']:
             prediction.status = 'failed'
             user = User.query.get(prediction.user_id)
             if user: user.token_balance += prediction.token_cost
             db.session.commit()
             
     return 'Webhook received', 200
+
 # --- Маршруты для биллинга и архива ---
 @app.route('/archive')
 @login_required
@@ -692,9 +698,8 @@ def archive():
 @login_required
 @check_confirmed
 def billing():
-    # TODO: Этот шаблон нужно будет переделать под российскую платежную систему
     flash("Страница биллинга находится в разработке.", "info")
-    return render_template('billing.html') # Пока будет использоваться старый шаблон
+    return render_template('billing.html')
 
 
 # --- Final app setup ---
@@ -818,9 +823,6 @@ def delete_account():
         # Удаляем пользователя из нашей базы данных
         db.session.delete(user_to_delete)
         db.session.commit()
-
-        # TODO: В будущем здесь нужно будет добавить логику удаления пользователя
-        # из социальной сети (Яндекс), если он был создан через нее.
 
         flash('Ваш аккаунт и все связанные данные были успешно удалены.', 'success')
         return redirect(url_for('login'))
