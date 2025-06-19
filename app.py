@@ -382,7 +382,7 @@ def marketing_policy():
 # Функция для загрузки в S3 хранилище Selectel
 # ИСПРАВЛЕННАЯ ВЕРСИЯ ФУНКЦИИ
 def upload_file_to_s3(file_to_upload):
-    """Загружает файл в S3 хранилище Selectel и возвращает ПРАВИЛЬНУЮ ПУБЛИЧНУЮ ссылку."""
+    """Загружает файл в S3 хранилище Selectel и возвращает публичную ссылку."""
     s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
     bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
     region = os.environ.get('AWS_S3_REGION')
@@ -397,37 +397,34 @@ def upload_file_to_s3(file_to_upload):
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
     
-    # Убеждаемся, что читаем файл с самого начала
     file_to_upload.stream.seek(0)
     
+    # --- ИСПРАВЛЕНИЕ: Добавляем 'ACL': 'public-read' ---
+    # Этот параметр делает загруженный файл публично доступным для чтения.
     s3_client.upload_fileobj(
         file_to_upload.stream, 
         bucket_name, 
         object_name, 
-        ExtraArgs={'ContentType': file_to_upload.content_type}
+        ExtraArgs={'ContentType': file_to_upload.content_type, 'ACL': 'public-read'}
     )
 
-    # ИСПРАВЛЕНИЕ: Формируем правильный публичный URL для Selectel
     public_url = f"https://{bucket_name}.{region}.storage.selcloud.ru/{object_name}"
-    
     print(f"!!! Изображение загружено на Selectel S3: {public_url}")
     return public_url
 
 # Замените вашу текущую функцию _reupload_and_save_result этим кодом
 def _reupload_and_save_result(prediction, temp_url):
     """
-    Скачивает результат с временного URL, загружает в наш S3
-    и обновляет запись в БД, сохраняя ПРАВИЛЬНЫЙ постоянный URL.
+    Скачивает результат с временного URL, загружает в наш S3 (делая его публичным)
+    и обновляет запись в БД.
     """
     try:
         print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
         
-        # Шаг 1: Скачиваем изображение
         image_response = requests.get(temp_url, stream=True)
         image_response.raise_for_status()
         image_data = io.BytesIO(image_response.content)
         
-        # Шаг 2: Настраиваем S3 клиент
         s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
         bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
         region = os.environ.get('AWS_S3_REGION')
@@ -439,22 +436,20 @@ def _reupload_and_save_result(prediction, temp_url):
             aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
         )
         
-        # Шаг 3: Генерируем постоянное имя файла
         file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
         object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
         
-        # Шаг 4: Загружаем в Selectel S3
+        # --- ИСПРАВЛЕНИЕ: Добавляем 'ACL': 'public-read' ---
+        # Этот параметр делает и финальное изображение публично доступным.
         s3_client.upload_fileobj(
             image_data,
             bucket_name,
             object_name,
-            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png')}
+            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png'), 'ACL': 'public-read'}
         )
         
-        # Шаг 5: ИСПРАВЛЕНИЕ - Формируем правильный публичный URL
         permanent_s3_url = f"https://{bucket_name}.{region}.storage.selcloud.ru/{object_name}"
         
-        # Шаг 6: Обновляем запись в нашей базе данных
         prediction.output_url = permanent_s3_url
         prediction.status = 'completed'
         db.session.commit()
