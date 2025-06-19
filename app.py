@@ -398,6 +398,7 @@ def upload_file_to_s3(file_to_upload):
     
     file_to_upload.stream.seek(0)
     
+    # Делаем файл публично доступным для чтения
     s3_client.upload_fileobj(
         file_to_upload.stream,
         bucket_name,
@@ -408,7 +409,7 @@ def upload_file_to_s3(file_to_upload):
     # Формируем стандартную публичную ссылку для Amazon S3
     public_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{object_name}"
     
-    print(f"!!! Изображение загружено на Amazon S3: {public_url}")
+    print(f"!!! Исходное изображение загружено на Amazon S3: {public_url}")
     return public_url
 
 
@@ -435,6 +436,7 @@ def _reupload_and_save_result(prediction, temp_url):
         file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
         object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
         
+        # Делаем финальный файл публично доступным для чтения
         s3_client.upload_fileobj(
             image_data,
             bucket_name,
@@ -442,6 +444,7 @@ def _reupload_and_save_result(prediction, temp_url):
             ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png'), 'ACL': 'public-read'}
         )
         
+        # Формируем стандартную публичную ссылку для Amazon S3
         permanent_s3_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{object_name}"
         
         prediction.output_url = permanent_s3_url
