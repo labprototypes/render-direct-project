@@ -421,15 +421,15 @@ def _reupload_and_save_result(prediction, temp_url):
     Скачивает результат с Replicate, загружает в наш S3 и обновляет запись в БД.
     """
     try:
+        # --- ДОБАВЬТЕ ЭТУ ОТЛАДОЧНУЮ СТРОКУ ---
+        app.logger.info(f"!!! DEBUG: Пытаюсь использовать Access Key ID: {os.environ.get('AWS_ACCESS_KEY_ID')}")
+        # --- КОНЕЦ ОТЛАДОЧНОЙ СТРОКИ ---
+
         print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
         
         image_response = requests.get(temp_url, stream=True)
         image_response.raise_for_status()
         image_data = io.BytesIO(image_response.content)
-        
-        # --- ДОБАВЬТЕ ЭТУ ОТЛАДОЧНУЮ СТРОКУ ---
-        app.logger.info(f"!!! DEBUG: Пытаюсь использовать Access Key: {os.environ.get('AWS_ACCESS_KEY_ID')}")
-        # --- КОНЕЦ ОТЛАДОЧНОЙ СТРОКИ ---
         
         s3_endpoint_url = os.environ.get('AWS_S3_ENDPOINT_URL')
         bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
