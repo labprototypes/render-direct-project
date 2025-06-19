@@ -526,27 +526,28 @@ def process_image():
         if scale_factor <= 2: token_cost = 17
         elif scale_factor <= 4: token_cost = 65
         else: token_cost = 150
-    
+
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Недостаточно токенов'}), 403
     if 'image' not in request.files or not request.files['image'].filename:
         return jsonify({'error': 'Изображение отсутствует или файл не выбран'}), 400
-    
+
     uploaded_file = request.files['image']
 
     try:
-        # --- ИЗМЕНЕННАЯ ЛОГИКА ---
-        # 1. Сначала загружаем исходный файл в S3, чтобы получить публичную ссылку для Replicate.
-        public_image_url = upload_file_to_s3(uploaded_file)
-        
-        # 2. Подготавливаем base64-версию для OpenAI (он ее требует для анализа)
-        uploaded_file.stream.seek(0) # Возвращаем указатель в начало файла
+        # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
+        # 1. Сначала читаем файл в память и готовим base64 для OpenAI.
         image_bytes = uploaded_file.read()
         base64_image_str = base64.b64encode(image_bytes).decode('utf-8')
         image_mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
         base64_data_url = f"data:{image_mime_type};base64,{base64_image_str}"
-        
-        # --- Конец измененной логики ---
+
+        # 2. "Отматываем" файл в начало, чтобы он был готов для следующей операции.
+        uploaded_file.seek(0) 
+
+        # 3. И только теперь отправляем его в S3, чтобы получить ссылку для Replicate.
+        public_image_url = upload_file_to_s3(uploaded_file)
+        # --- Конец исправленной логики ---
 
         replicate_input = {}
         model_version_id = ""
@@ -555,12 +556,11 @@ def process_image():
             prompt = request.form.get('prompt', '')
             edit_mode = request.form.get('edit_mode')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-            
-            # Логика получения промпта от OpenAI через прокси (остается без изменений, использует base64)
+
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-            
+
             system_prompt_text = ""
             if edit_mode == 'autofix':
                 system_prompt_text = "You are an expert image analyst. You will be given an image with potential visual flaws. Your task is to generate a descriptive prompt in English that describes the ideal, corrected version of the image. Focus on technical correction. For example: 'A photorealistic hand with five fingers, correct anatomy, soft lighting'. For artifacts, describe the clean area: 'a clear blue sky'. Output only the prompt."
@@ -574,13 +574,11 @@ def process_image():
             proxy_response.raise_for_status()
             openai_response_data = proxy_response.json()
             final_prompt = openai_response_data['choices'][0]['message']['content'].strip()
-            
-            # В Replicate передаем ПУБЛИЧНУЮ ССЫЛКУ, а не base64
+
             replicate_input = {"input_image": public_image_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            # В Replicate передаем ПУБЛИЧНУЮ ССЫЛКУ, а не base64
             replicate_input = {
                 "image": public_image_url,
                 "scale_factor": float(request.form.get('scale_factor', '2')),
@@ -599,7 +597,7 @@ def process_image():
 
         headers = {"Authorization": f"Bearer {os.environ.get('REPLICATE_API_TOKEN')}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
-        
+
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
         prediction_data = start_response.json()
@@ -611,7 +609,6 @@ def process_image():
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         db.session.rollback()
-        # Возвращаем более понятное сообщение на фронтенд
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {e}'}), 500
 
 
