@@ -56,12 +56,14 @@ app.config['TINKOFF_TERMINAL_KEY'] = os.environ.get('TINKOFF_TERMINAL_KEY')
 app.config['TINKOFF_SECRET_KEY'] = os.environ.get('TINKOFF_SECRET_KEY')
 
 # --- Конфигурация внешних сервисов (без изменений) ---
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME') # Бакет из Selectel
-AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+HARDCODED_AWS_CONFIG = {
+    "AWS_ACCESS_KEY_ID": "49c1e67c146846f3895c3feddaad0931",
+    "AWS_SECRET_ACCESS_KEY": "7116ae48e4cf49b48894ecb8a23fa6d8",
+    "AWS_S3_BUCKET_NAME": "lab-ai-images",
+    "AWS_S3_REGION": "us-east-2"
+}
 
 # --- Инициализация расширений ---
 db = SQLAlchemy(app)
@@ -385,29 +387,25 @@ def upload_file_to_s3(file_to_upload):
     """
     Загружает исходный файл в Amazon S3 и возвращает публичную ссылку.
     """
-    bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
-    region = os.environ.get('AWS_S3_REGION')
     s3_client = boto3.client(
         's3',
-        region_name=region,
-        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+        region_name=HARDCODED_AWS_CONFIG["AWS_S3_REGION"],
+        aws_access_key_id=HARDCODED_AWS_CONFIG["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=HARDCODED_AWS_CONFIG["AWS_SECRET_ACCESS_KEY"]
     )
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
     
     file_to_upload.stream.seek(0)
     
-    # Делаем файл публично доступным для чтения
     s3_client.upload_fileobj(
         file_to_upload.stream,
-        bucket_name,
+        HARDCODED_AWS_CONFIG["AWS_S3_BUCKET_NAME"],
         object_name,
         ExtraArgs={'ContentType': file_to_upload.content_type, 'ACL': 'public-read'}
     )
 
-    # Формируем стандартную публичную ссылку для Amazon S3
-    public_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{object_name}"
+    public_url = f"https://{HARDCODED_AWS_CONFIG['AWS_S3_BUCKET_NAME']}.s3.{HARDCODED_AWS_CONFIG['AWS_S3_REGION']}.amazonaws.com/{object_name}"
     
     print(f"!!! Исходное изображение загружено на Amazon S3: {public_url}")
     return public_url
@@ -424,28 +422,24 @@ def _reupload_and_save_result(prediction, temp_url):
         image_response.raise_for_status()
         image_data = io.BytesIO(image_response.content)
         
-        bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
-        region = os.environ.get('AWS_S3_REGION')
         s3_client = boto3.client(
             's3',
-            region_name=region,
-            aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+            region_name=HARDCODED_AWS_CONFIG["AWS_S3_REGION"],
+            aws_access_key_id=HARDCODED_AWS_CONFIG["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=HARDCODED_AWS_CONFIG["AWS_SECRET_ACCESS_KEY"]
         )
         
         file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
         object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
         
-        # Делаем финальный файл публично доступным для чтения
         s3_client.upload_fileobj(
             image_data,
-            bucket_name,
+            HARDCODED_AWS_CONFIG["AWS_S3_BUCKET_NAME"],
             object_name,
             ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png'), 'ACL': 'public-read'}
         )
         
-        # Формируем стандартную публичную ссылку для Amazon S3
-        permanent_s3_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{object_name}"
+        permanent_s3_url = f"https://{HARDCODED_AWS_CONFIG['AWS_S3_BUCKET_NAME']}.s3.{HARDCODED_AWS_CONFIG['AWS_S3_REGION']}.amazonaws.com/{object_name}"
         
         prediction.output_url = permanent_s3_url
         prediction.status = 'completed'
@@ -459,6 +453,7 @@ def _reupload_and_save_result(prediction, temp_url):
         if user:
             user.token_balance += prediction.token_cost
         db.session.commit()
+
 
 
 # ===============================================================
