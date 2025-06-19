@@ -523,19 +523,114 @@ def process_image():
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
 @login_required
 def get_result(prediction_id):
-    # ... (логика без изменений)
     prediction = Prediction.query.get(prediction_id)
     if not prediction or prediction.user_id != current_user.id:
         return jsonify({'error': 'Prediction not found or access denied'}), 404
-    # ... остальное как было
+
+    # Если в нашей базе статус уже 'completed', сразу отдаем результат
+    if prediction.status == 'completed':
+        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
+    
+    # Если статус 'failed', сообщаем об ошибке
+    if prediction.status == 'failed':
+        # Важно убедиться, что баланс пользователя актуален
+        user = User.query.get(current_user.id)
+        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': user.token_balance})
+
+    # --- РЕЗЕРВНЫЙ МЕХАНИЗМ ОПРОСА (POLLING) ---
+    # Если статус все еще 'pending' и у нас есть ID от Replicate,
+    # напрямую спрашиваем у Replicate, что с задачей.
+    if prediction.status == 'pending' and prediction.replicate_id:
+        try:
+            headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+            poll_url = f"https://api.replicate.com/v1/predictions/{prediction.replicate_id}"
+            get_response = requests.get(poll_url, headers=headers)
+            get_response.raise_for_status()
+            status_data = get_response.json()
+
+            # Если Replicate говорит, что задача ЗАВЕРШЕНА
+            if status_data.get("status") == "succeeded":
+                print(f"!!! Polling обнаружил успешное завершение Prediction {prediction.id}.")
+                # Выполняем ту же логику, что и в вебхуке: скачиваем, перезаливаем, обновляем БД
+                temp_url = status_data.get('output')
+                if temp_url and isinstance(temp_url, list):
+                    temp_url = temp_url[0]
+                
+                # Запускаем процесс сохранения файла
+                # (Логика перезаливки вынесена в вебхук, чтобы не дублировать код,
+                # но для надежности можно было бы сделать общую функцию)
+                # В данном случае, мы просто обновим статус и URL напрямую
+                prediction.output_url = temp_url # Временно сохраняем временную ссылку
+                prediction.status = 'completed'
+                db.session.commit()
+                # И сразу отдаем результат клиенту
+                return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
+
+            # Если Replicate говорит, что задача ПРОВАЛИЛАСЬ
+            elif status_data.get("status") == "failed":
+                print(f"!!! Polling обнаружил ошибку в Prediction {prediction.id}. Возвращаем токены.")
+                prediction.status = 'failed'
+                user = User.query.get(prediction.user_id)
+                if user:
+                    user.token_balance += prediction.token_cost
+                db.session.commit()
+                return jsonify({'status': 'failed', 'error': f"Generation failed: {status_data.get('error', 'Unknown error')}. Your tokens have been refunded.", 'new_token_balance': user.token_balance})
+
+        except requests.exceptions.RequestException as e:
+            print(f"!!! Ошибка при опросе статуса Replicate для {prediction.id}: {e}")
+    
+    # Если ничего из вышеперечисленного не сработало, значит задача все еще в процессе
     return jsonify({'status': 'pending'})
 
 
+# Замените существующий маршрут @app.route('/replicate-webhook', ...) этим кодом
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
-    # ... (логика без изменений)
+    """
+    Принимает вебхук от Replicate. Этот маршрут ДОЛЖЕН БЫТЬ доступен из интернета.
+    """
     data = request.json
-    # ... остальное как было
+    replicate_id = data.get('id')
+    status = data.get('status')
+
+    if not replicate_id:
+        return 'Invalid payload, missing ID', 400
+
+    with app.app_context():
+        prediction = Prediction.query.filter_by(replicate_id=replicate_id).first()
+        if not prediction:
+            print(f"!!! Вебхук получен для неизвестного Replicate ID: {replicate_id}")
+            return 'Prediction not found', 404
+
+        # Обрабатываем только успешный статус. Обработка ошибок происходит при опросе.
+        if status == 'succeeded':
+            temp_url = data.get('output')
+            if temp_url and isinstance(temp_url, list):
+                temp_url = temp_url[0]
+            
+            if temp_url:
+                # Временно просто сохраняем ссылку от Replicate.
+                # В идеале - нужно скачивать и перезаливать в свое S3 хранилище.
+                prediction.output_url = temp_url
+                prediction.status = 'completed'
+                print(f"!!! Вебхук успешно обработан для Prediction {prediction.id}.")
+            else:
+                # Если вебхук пришел, но без ссылки на результат
+                prediction.status = 'failed'
+                user = User.query.get(prediction.user_id)
+                if user:
+                    user.token_balance += prediction.token_cost
+        
+        # Если пришел статус failed от вебхука (хотя мы его не запрашивали, но на всякий случай)
+        elif status == 'failed':
+            prediction.status = 'failed'
+            user = User.query.get(prediction.user_id)
+            if user:
+                user.token_balance += prediction.token_cost
+            print(f"!!! Вебхук обработан для Prediction {prediction.id}. Статус: failed. Токены возвращены.")
+            
+        db.session.commit()
+        
     return 'Webhook received', 200
 
 # --- Маршруты для биллинга и архива ---
