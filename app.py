@@ -554,25 +554,27 @@ def process_image():
             prompt = request.form.get('prompt', '')
             edit_mode = request.form.get('edit_mode')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-
-            proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
-            proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
-            headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-
-            system_prompt_text = ""
+        
+            # Проверка наличия OpenAI клиента
+            if not openai_client:
+                raise Exception("System error: OpenAI client not configured.")
+        
+            final_prompt = ""
+            messages = []
+        
             if edit_mode == 'autofix':
-                system_prompt_text = "You are an expert image analyst. You will be given an image with potential visual flaws. Your task is to generate a descriptive prompt in English that describes the ideal, corrected version of the image. Focus on technical correction. For example: 'A photorealistic hand with five fingers, correct anatomy, soft lighting'. For artifacts, describe the clean area: 'a clear blue sky'. Output only the prompt."
-                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": public_image_url}}]}] # Используем public_image_url
-            else:
-                system_prompt_text = "You are a helpful assistant. A user will provide a request in any language to modify an image. Your only task is to accurately translate this request into a concise English command. Do not add any conversational fluff, explanations, or extra descriptions. Output only the direct translation."
-                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": public_image_url}}]}] # Используем public_image_url
-
-            openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
-            proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers, timeout=30)
-            proxy_response.raise_for_status()
-            openai_response_data = proxy_response.json()
-            final_prompt = openai_response_data['choices'][0]['message']['content'].strip()
-
+                # Правильный промт для Autofix из международной версии
+                system_prompt_text = "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
+                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": public_image_url}}]}]
+        
+            else: # Для обычного режима 'edit'
+                # Правильный промт для Edit из международной версии
+                system_prompt_text = "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
+                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": public_image_url}}]}]
+        
+            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
+            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+        
             replicate_input = {"input_image": public_image_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
