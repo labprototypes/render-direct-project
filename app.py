@@ -407,18 +407,18 @@ def upload_file_to_s3(file_to_upload):
     bucket_name = app.config["AWS_S3_BUCKET_NAME"]
     _, f_ext = os.path.splitext(file_to_upload.filename)
     object_name = f"uploads/{uuid.uuid4()}{f_ext}"
-    
+
     file_to_upload.stream.seek(0)
-    
+
     s3_client.upload_fileobj(
         file_to_upload.stream,
         bucket_name,
         object_name,
-        ExtraArgs={'ContentType': file_to_upload.content_type, 'ACL': 'public-read'}
+        ExtraArgs={'ContentType': file_to_upload.content_type}
     )
 
     public_url = f"https://{bucket_name}.s3.{app.config['AWS_S3_REGION']}.amazonaws.com/{object_name}"
-    
+
     print(f"!!! Исходное изображение загружено на S3: {public_url}")
     return public_url
 
@@ -429,29 +429,29 @@ def _reupload_and_save_result(prediction, temp_url):
     """
     try:
         print(f"Начало перезаливки для Prediction ID: {prediction.id} с URL: {temp_url}")
-        
+
         image_response = requests.get(temp_url, stream=True, timeout=60)
         image_response.raise_for_status()
         image_data = io.BytesIO(image_response.content)
-        
+
         s3_client = get_s3_client()
         if not s3_client:
             raise Exception("S3 client could not be initialized for re-upload.")
 
         bucket_name = app.config["AWS_S3_BUCKET_NAME"]
-        
+
         file_extension = os.path.splitext(temp_url.split('?')[0])[-1] or '.png'
         object_name = f"generations/{prediction.user_id}/{prediction.id}{file_extension}"
-        
+
         s3_client.upload_fileobj(
             image_data,
             bucket_name,
             object_name,
-            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png'), 'ACL': 'public-read'}
+            ExtraArgs={'ContentType': image_response.headers.get('Content-Type', 'image/png')}
         )
-        
+
         permanent_s3_url = f"https://{bucket_name}.s3.{app.config['AWS_S3_REGION']}.amazonaws.com/{object_name}"
-        
+
         prediction.output_url = permanent_s3_url
         prediction.status = 'completed'
         db.session.commit()
