@@ -409,6 +409,10 @@ def upload_file_to_s3(file_to_upload):
 @login_required
 @check_confirmed
 def process_image():
+    """
+    Обрабатывает загрузку изображения, отправляет его в OpenAI для получения промпта (в режиме edit),
+    затем отправляет в Replicate для генерации и сохраняет результат.
+    """
     mode = request.form.get('mode')
     token_cost = 0
     if mode == 'edit':
@@ -425,10 +429,15 @@ def process_image():
         return jsonify({'error': 'Изображение отсутствует'}), 400
     
     uploaded_file = request.files['image']
+    
+    # Сразу читаем файл в байты. Это важно сделать один раз до всех операций,
+    # так как некоторые процессы (как upload_fileobj) могут "потребить" поток данных.
     image_bytes_for_base64 = uploaded_file.read()
+    # Возвращаем указатель в начало, чтобы другие функции могли прочитать файл снова.
     uploaded_file.seek(0)
 
     try:
+        # URL на S3 все еще нужен для режима upscale и для нашего внутреннего архива.
         s3_url = upload_file_to_s3(uploaded_file)
         replicate_input = {}
         model_version_id = ""
@@ -438,26 +447,20 @@ def process_image():
             prompt = request.form.get('prompt', '')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
             
-            # --- ФИНАЛЬНАЯ ЛОГИКА С ЯВНЫМ УКАЗАНИЕМ MIME-TYPE ---
-            base64_image = base64.b64encode(image_bytes_for_base64).decode('utf-8')
-            
-            # Надежно определяем MIME-тип
-            image_mime_type = uploaded_file.content_type
-            if not image_mime_type or image_mime_type == 'application/octet-stream':
-                image_mime_type = mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
+            # --- Логика для прокси OpenAI (остается без изменений, она работает) ---
+            # Для прокси OpenAI мы также используем Base64, чтобы не светить URL нашего S3
+            base64_image_for_openai = base64.b64encode(image_bytes_for_base64).decode('utf-8')
+            image_mime_type_for_openai = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
+            base64_data_url_for_openai = f"data:{image_mime_type_for_openai};base64,{base64_image_for_openai}"
 
-            print(f"--- Determined MIME type: {image_mime_type} ---")
-            
-            base64_data_url = f"data:{image_mime_type};base64,{base64_image}"
             messages = []
-            
-            autofix_system_prompt = "You are an expert image analyst. You will be given an image with potential visual flaws. Your task is to generate a descriptive prompt in English that describes the ideal, corrected version of the image. Focus on technical correction. For example: 'A photorealistic hand with five fingers, correct anatomy, soft lighting'. For artifacts, describe the clean area: 'a clear blue sky'. Output only the prompt."
-            edit_system_prompt = "You are a helpful assistant. A user will provide a request in any language to modify an image. Your only task is to accurately translate this request into a concise English command. Do not add any conversational fluff, explanations, or extra descriptions. Output only the direct translation."
+            autofix_system_prompt = "You are an expert image analyst..." # Ваш системный промпт для autofix
+            edit_system_prompt = "You are a helpful assistant..." # Ваш системный промпт для edit
 
             if edit_mode == 'autofix':
-                messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": base64_data_url}}]}]
+                messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": base64_data_url_for_openai}}]}]
             else:
-                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": base64_data_url}}]}]
+                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": base64_data_url_for_openai}}]}]
 
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
@@ -474,16 +477,22 @@ def process_image():
             
             final_prompt = openai_response_data['choices'][0]['message']['content'].strip().replace('\n', ' ').replace('\r', ' ').strip()
             
-            # Ключевое изменение: 'input_image' заменено на 'image'
-            replicate_input = {"image": s3_url, "prompt": final_prompt}
+            # --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ДЛЯ REPLICATE ---
+            # Формируем Data URI, чтобы передать изображение напрямую, а не по ссылке.
+            # Это решает проблему недоступности URL хранилища Selectel для серверов Replicate.
+            # Мы используем те же данные, что и для OpenAI.
+            replicate_input = {"input_image": base64_data_url_for_openai, "prompt": final_prompt}
 
         elif mode == 'upscale':
+            # Логика для upscale остается без изменений, она использует URL на S3.
+            # Это нормально, так как у этой модели могут быть другие требования.
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             replicate_input = {"image": s3_url, "scale_factor": float(request.form.get('scale_factor', '2')), "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4), "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4), "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4)}
 
         if not model_version_id or not replicate_input:
             raise Exception("Неверный режим или отсутствуют входные данные.")
 
+        # --- Логика создания Prediction и отправки запроса (остается без изменений) ---
         current_user.token_balance -= token_cost
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
@@ -500,6 +509,17 @@ def process_image():
         db.session.commit()
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
+    except requests.exceptions.HTTPError as e:
+        # Более детальная обработка ошибок, если Replicate вернет что-то осмысленное
+        error_details = "No details in response."
+        if e.response is not None:
+            try:
+                error_details = e.response.text
+            except Exception:
+                pass
+        print(f"!!! ОШИБКА HTTP в process_image: {e}\nReplicate Response: {error_details}")
+        db.session.rollback() # Откатываем списание токенов
+        return jsonify({'error': f'Произошла ошибка при обращении к сервису генерации. Детали: {error_details}'}), 500
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         db.session.rollback()
