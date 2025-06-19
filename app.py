@@ -421,8 +421,6 @@ def process_image():
         else:
             token_cost = 150
     
-    if token_cost == 0:
-        return jsonify({'error': 'Invalid processing mode'}), 400
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Недостаточно токенов'}), 403
     if 'image' not in request.files:
@@ -430,9 +428,8 @@ def process_image():
     
     uploaded_file = request.files['image']
     # Считываем файл в память сразу, чтобы его можно было использовать дважды
-    # (для кодирования в base64 и для загрузки в S3)
     image_bytes_for_base64 = uploaded_file.read()
-    # "Перематываем" указатель файла в начало, чтобы его можно было прочитать снова для загрузки в S3
+    # "Перематываем" указатель файла в начало для загрузки в S3
     uploaded_file.seek(0) 
 
     try:
@@ -445,10 +442,9 @@ def process_image():
             prompt = request.form.get('prompt', '')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
             
-            # --- НАЧАЛО ЛОГИКИ: КОДИРОВАНИЕ В BASE64 И ВЫЗОВ ПРОКСИ ---
+            # Кодируем изображение в Base64 для отправки через прокси
             base64_image = base64.b64encode(image_bytes_for_base64).decode('utf-8')
             image_mime_type = uploaded_file.content_type
-            
             base64_data_url = f"data:{image_mime_type};base64,{base64_image}"
 
             messages = []
@@ -460,22 +456,23 @@ def process_image():
             else: # 'edit' mode
                 messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": base64_data_url}}]}]
 
+            # Отправляем запрос на прокси
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
-            
             if not proxy_secret_key:
                 raise Exception("PROXY_SECRET_KEY не установлен на сервере.")
-
+            
             headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
 
-            proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers)
-            proxy_response.raise_for_status()
+            proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers, timeout=30)
+            proxy_response.raise_for_status() # Вызовет ошибку если статус не 2xx
             
             openai_response_data = proxy_response.json()
-            final_prompt = openai_response_data['choices'][0]['message']['content'].strip().replace('\n', ' ').replace('\r', ' ').strip()
-            # --- КОНЕЦ ЛОГИКИ С ПРОКСИ ---
+            if 'choices' not in openai_response_data or not openai_response_data['choices']:
+                 raise Exception("OpenAI не вернул 'choices' в ответе.")
             
+            final_prompt = openai_response_data['choices'][0]['message']['content'].strip().replace('\n', ' ').replace('\r', ' ').strip()
             replicate_input = {"input_image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
@@ -483,16 +480,19 @@ def process_image():
             replicate_input = {
                 "image": s3_url,
                 "scale_factor": float(request.form.get('scale_factor', '2')),
-                "creativity": round(float(request.form.get('creativity', '30')) / 100.0, 4),
-                "resemblance": round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4),
-                "dynamic": round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
+                "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4),
+                "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4),
+                "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4)
             }
 
         if not model_version_id or not replicate_input:
             raise Exception("Неверный режим или отсутствуют входные данные.")
 
+        # Уменьшаем баланс токенов до вызова Replicate
+        current_user.token_balance -= token_cost
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
+        # Важно закоммитить списание и создание записи до долгого запроса
         db.session.commit()
 
         headers = {"Authorization": f"Bearer {os.environ.get('REPLICATE_API_TOKEN')}", "Content-Type": "application/json"}
@@ -508,16 +508,15 @@ def process_image():
         prediction_data = start_response.json()
 
         new_prediction.replicate_id = prediction_data.get('id')
-        current_user.token_balance -= token_cost
         db.session.commit()
 
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
     except Exception as e:
+        # В случае любой ошибки после списания токенов, откатываем транзакцию
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         db.session.rollback()
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {e}'}), 500
-
 
 
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
