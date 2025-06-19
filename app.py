@@ -473,7 +473,9 @@ def process_image():
                  raise Exception("OpenAI не вернул 'choices' в ответе.")
             
             final_prompt = openai_response_data['choices'][0]['message']['content'].strip().replace('\n', ' ').replace('\r', ' ').strip()
-            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+            
+            # Ключевое изменение: 'input_image' заменено на 'image'
+            replicate_input = {"image": s3_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
