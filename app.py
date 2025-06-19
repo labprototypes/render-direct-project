@@ -10,6 +10,7 @@ import io
 import base64
 import hashlib
 import json
+import mimetypes
 from datetime import datetime, timezone
 from functools import wraps
 from urllib.parse import urlparse, urljoin
@@ -414,12 +415,9 @@ def process_image():
         token_cost = 65
     elif mode == 'upscale':
         scale_factor = int(request.form.get('scale_factor', '2'))
-        if scale_factor <= 2:
-            token_cost = 17
-        elif scale_factor <= 4:
-            token_cost = 65
-        else:
-            token_cost = 150
+        if scale_factor <= 2: token_cost = 17
+        elif scale_factor <= 4: token_cost = 65
+        else: token_cost = 150
     
     if current_user.token_balance < token_cost:
         return jsonify({'error': 'Недостаточно токенов'}), 403
@@ -427,10 +425,8 @@ def process_image():
         return jsonify({'error': 'Изображение отсутствует'}), 400
     
     uploaded_file = request.files['image']
-    # Считываем файл в память сразу, чтобы его можно было использовать дважды
     image_bytes_for_base64 = uploaded_file.read()
-    # "Перематываем" указатель файла в начало для загрузки в S3
-    uploaded_file.seek(0) 
+    uploaded_file.seek(0)
 
     try:
         s3_url = upload_file_to_s3(uploaded_file)
@@ -442,31 +438,35 @@ def process_image():
             prompt = request.form.get('prompt', '')
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
             
-            # Кодируем изображение в Base64 для отправки через прокси
+            # --- ФИНАЛЬНАЯ ЛОГИКА С ЯВНЫМ УКАЗАНИЕМ MIME-TYPE ---
             base64_image = base64.b64encode(image_bytes_for_base64).decode('utf-8')
+            
+            # Надежно определяем MIME-тип
             image_mime_type = uploaded_file.content_type
-            base64_data_url = f"data:{image_mime_type};base64,{base64_image}"
+            if not image_mime_type or image_mime_type == 'application/octet-stream':
+                image_mime_type = mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
 
+            print(f"--- Determined MIME type: {image_mime_type} ---")
+            
+            base64_data_url = f"data:{image_mime_type};base64,{base64_image}"
             messages = []
+            
             autofix_system_prompt = "You are an expert image analyst. You will be given an image with potential visual flaws. Your task is to generate a descriptive prompt in English that describes the ideal, corrected version of the image. Focus on technical correction. For example: 'A photorealistic hand with five fingers, correct anatomy, soft lighting'. For artifacts, describe the clean area: 'a clear blue sky'. Output only the prompt."
             edit_system_prompt = "You are a helpful assistant. A user will provide a request in any language to modify an image. Your only task is to accurately translate this request into a concise English command. Do not add any conversational fluff, explanations, or extra descriptions. Output only the direct translation."
 
             if edit_mode == 'autofix':
                 messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": base64_data_url}}]}]
-            else: # 'edit' mode
+            else:
                 messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": base64_data_url}}]}]
 
-            # Отправляем запрос на прокси
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
-            if not proxy_secret_key:
-                raise Exception("PROXY_SECRET_KEY не установлен на сервере.")
             
             headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
 
             proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers, timeout=30)
-            proxy_response.raise_for_status() # Вызовет ошибку если статус не 2xx
+            proxy_response.raise_for_status()
             
             openai_response_data = proxy_response.json()
             if 'choices' not in openai_response_data or not openai_response_data['choices']:
@@ -477,31 +477,18 @@ def process_image():
 
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            replicate_input = {
-                "image": s3_url,
-                "scale_factor": float(request.form.get('scale_factor', '2')),
-                "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4),
-                "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4),
-                "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4)
-            }
+            replicate_input = {"image": s3_url, "scale_factor": float(request.form.get('scale_factor', '2')), "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4), "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4), "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4)}
 
         if not model_version_id or not replicate_input:
             raise Exception("Неверный режим или отсутствуют входные данные.")
 
-        # Уменьшаем баланс токенов до вызова Replicate
         current_user.token_balance -= token_cost
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
-        # Важно закоммитить списание и создание записи до долгого запроса
         db.session.commit()
 
         headers = {"Authorization": f"Bearer {os.environ.get('REPLICATE_API_TOKEN')}", "Content-Type": "application/json"}
-        post_payload = {
-            "version": model_version_id,
-            "input": replicate_input,
-            "webhook": url_for('replicate_webhook', _external=True),
-            "webhook_events_filter": ["completed", "failed"]
-        }
+        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
         
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
@@ -509,11 +496,9 @@ def process_image():
 
         new_prediction.replicate_id = prediction_data.get('id')
         db.session.commit()
-
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
     except Exception as e:
-        # В случае любой ошибки после списания токенов, откатываем транзакцию
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         db.session.rollback()
         return jsonify({'error': f'Произошла внутренняя ошибка сервера: {e}'}), 500
