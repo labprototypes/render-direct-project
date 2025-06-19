@@ -381,6 +381,7 @@ def marketing_policy():
 
 def get_s3_client():
     """Создает и возвращает клиент boto3 S3, используя конфигурацию приложения."""
+    print(f"!!! DEBUG: Пытаюсь использовать AWS Access Key ID: {app.config.get('AWS_ACCESS_KEY_ID')} !!!")
     # Проверка наличия всех необходимых ключей конфигурации
     required_keys = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_REGION']
     if not all(app.config.get(key) for key in required_keys):
