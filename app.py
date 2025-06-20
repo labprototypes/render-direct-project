@@ -503,10 +503,15 @@ def get_result(prediction_id):
 #@subscription_required <-- ИЗМЕНЕНИЕ 1: Декоратор временно отключен
 def process_image():
     # --- ВРЕМЕННЫЙ КОД ДЛЯ ТЕСТА БЕЗ ЛОГИНА ---
-    class FakeUser: # Создаем фейковый класс, имитирующий пользователя
-        id = "test-debug-user"
-        token_balance = 99999
-    current_user = FakeUser()
+    test_user_id = "test-debug-user"
+    # Пытаемся найти тестового пользователя в базе данных
+    current_user = User.query.get(test_user_id)
+    # Если не нашли - создаем его
+    if not current_user:
+        print("!!! Создание временного тестового пользователя в БД...")
+        current_user = User(id=test_user_id, email="debug@test.com", token_balance=99999)
+        db.session.add(current_user)
+        db.session.commit()
     # --- КОНЕЦ ВРЕМЕННОГО КОДА ---
 
     mode = request.form.get('mode')
