@@ -471,7 +471,7 @@ def get_result(prediction_id):
     if prediction.status == 'completed':
         return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
     if prediction.status == 'failed':
-        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': User.query.get(current_user.id).token_balance})
+        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': 99999})
     if prediction.status == 'pending' and prediction.replicate_id:
         try:
             headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
