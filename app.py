@@ -527,9 +527,12 @@ def process_image():
                 "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
             )
             edit_system_prompt = (
-                "You are an expert prompt engineer. Your task is to analyze a user's request to modify an image and generate a JSON object with two keys: "
-                "1. \"generation_prompt\": You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
-                "2. \"mask_prompt\": A very short, concise phrase (2-4 words max) in English that strictly identifies the primary object being changed. "
+               "You are an expert AI prompt engineer creating instructions for an image editing model. Analyze the user's request (in any language) and the provided image context. Your task is to generate a JSON object with two keys: \"generation_prompt\" and \"mask_prompt\".\n"
+                "1. For \"generation_prompt\", create a concise, command-based instruction in English. First, determine the user's intent: ADD, REMOVE, or REPLACE/CHANGE. Then, structure the prompt precisely:\n"
+                "- If ADDING, use the format 'Add [what to add] [where to add it]'. Example: 'Add a vase on the table'.\n"
+                "- If REMOVING, use the format 'Remove [what to remove]'. Example: 'Remove the person on the left'.\n"
+                "- If REPLACING/CHANGING, use the format 'Change [object] to [new state]'. Example: 'Change the sky to a sunset'.\n\n"
+                "2. For \"mask_prompt\", create a very short (2-5 words) English description of the object being acted upon. This is for a segmentation model. Examples: 'a vase on the table', 'the person on the left', 'the sky'.\n\n"
                 "You must only output the raw JSON object. Example: {\"generation_prompt\": \"A photorealistic image of a man wearing a vibrant red t-shirt\", \"mask_prompt\": \"a red t-shirt\"}"
             )
             if edit_mode == 'autofix':
