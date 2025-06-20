@@ -43,6 +43,18 @@ stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+REDIS_URL = os.environ.get('REDIS_URL')
+
+db = SQLAlchemy(app)
+
+import redis # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
+if REDIS_URL: # <--- ДОБАВЬТЕ ЭТИ 4 СТРОКИ
+    redis_client = redis.from_url(REDIS_URL)
+else:
+    redis_client = None
+    print("!!! ВНИМАНИЕ: REDIS_URL не найден. Отправка задач в воркер не будет работать.")
+
+login_manager = LoginManager()
 
 PLAN_PRICES = {
     'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE',
@@ -488,58 +500,70 @@ def get_result(prediction_id):
 def process_image():
     mode = request.form.get('mode')
     token_cost = 0
-    if mode == 'edit':
-        token_cost = 65
-    elif mode == 'upscale':
-        scale_factor = int(request.form.get('scale_factor', '2'))
-        if scale_factor <= 2:
-            token_cost = 17
-        elif scale_factor <= 4:
-            token_cost = 65
-        else:
-            token_cost = 150
-    if token_cost == 0:
-        return jsonify({'error': 'Invalid processing mode'}), 400
-    if current_user.token_balance < token_cost:
-        return jsonify({'error': 'Insufficient tokens'}), 403
-    if 'image' not in request.files:
-        return jsonify({'error': 'Image is missing'}), 400
-    try:
-        s3_url = upload_file_to_s3(request.files['image'])
-        replicate_input = {}
-        model_version_id = ""
+    # ВНУТРИ ФУНКЦИИ process_image()
         if mode == 'edit':
-            edit_mode = request.form.get('edit_mode')
-            prompt = request.form.get('prompt', '')
-            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-            if not openai_client:
-                raise Exception("System error, your tokens have been refunded")
-            final_prompt = ""
-            if edit_mode == 'autofix':
-                print("!!! Запрос к OpenAI Vision API для Autofix...")
+            token_cost = 65
+            if current_user.token_balance < token_cost:
+                return jsonify({'error': 'Insufficient tokens'}), 403
+            if 'image' not in request.files:
+                return jsonify({'error': 'Image is missing'}), 400
+
+            try:
+                # Шаг 1: Загрузка исходного изображения на S3 (эта логика остается)
+                s3_url = upload_file_to_s3(request.files['image'])
+                edit_mode = request.form.get('edit_mode')
+                prompt = request.form.get('prompt', '')
+
+                # Шаг 2: Улучшение промпта через OpenAI (эта логика остается)
+                if not openai_client:
+                    raise Exception("System error: OpenAI client not configured.")
+
+                # Ваша существующая логика для autofix и edit промптов
                 autofix_system_prompt = (
                     "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
                 )
-                messages = [
-                    {"role": "system", "content": autofix_system_prompt},
-                    {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
-                ]
-            else:
-                print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
                 edit_system_prompt = (
                     "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
                 )
-                messages = [
-                    {"role": "system", "content": edit_system_prompt},
-                    {"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": s3_url}}
-                    ]}
-                ]
-            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
-            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
-            print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
-            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+
+                if edit_mode == 'autofix':
+                    messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
+                else:
+                    messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
+
+                response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
+                final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+                print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
+
+                # Шаг 3: Создаем запись в нашей БД
+                new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
+                db.session.add(new_prediction)
+                current_user.token_balance -= token_cost
+                db.session.commit() # Сохраняем, чтобы получить new_prediction.id
+
+                # Шаг 4: Формируем и отправляем задачу в Redis для воркера
+                if not redis_client:
+                    raise Exception("System error: Redis client not configured.")
+
+                import json
+                job_data = {
+                    "prediction_id": new_prediction.id,
+                    "original_s3_url": s3_url,
+                    "prompt": final_prompt,
+                    "token_cost": token_cost,
+                    "user_id": current_user.id
+                }
+                redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
+                print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
+
+                # Шаг 5: Возвращаем ID предсказания фронтенду, как и раньше
+                return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
+            except Exception as e:
+                db.session.rollback()
+                print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
+                return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
+
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             scale_factor = float(request.form.get('scale_factor', '2'))
