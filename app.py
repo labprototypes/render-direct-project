@@ -494,6 +494,8 @@ def get_result(prediction_id):
 
 ### НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
+### НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
+
 @app.route('/process-image', methods=['POST'])
 @login_required
 @subscription_required
@@ -564,8 +566,7 @@ def process_image():
             
         try:
             s3_url = upload_file_to_s3(request.files['image'])
-            # Эта часть кода теперь выполняется только для апскейла
-            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e" # Upscaler model
+            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
             dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
@@ -611,43 +612,7 @@ def process_image():
     else:
         return jsonify({'error': 'Invalid processing mode'}), 400
 
-        elif mode == 'upscale':
-            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            scale_factor = float(request.form.get('scale_factor', '2'))
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
-            dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
-            replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
-        if not model_version_id or not replicate_input:
-            raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
-        if not REPLICATE_API_TOKEN:
-            raise Exception("System error, your tokens have been refunded")
-        new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
-        db.session.add(new_prediction)
-        db.session.commit()
-        headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
-        print(f"!!! Replicate Payload: {post_payload}")
-        start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-        start_response.raise_for_status()
-        prediction_data = start_response.json()
-        replicate_prediction_id = prediction_data.get('id')
-        new_prediction.replicate_id = replicate_prediction_id
-        current_user.token_balance -= token_cost
-        db.session.commit()
-        return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
-    except requests.exceptions.HTTPError as e:
-        error_details = "No details in response."
-        if e.response is not None:
-            try:
-                error_details = e.response.text
-            except Exception:
-                pass
-        print(f"!!! ОБЩАЯ ОШИБКА в process_image (HTTPError): {e}\nReplicate Response: {error_details}")
-        return jsonify({'error': 'System error, your tokens have been refunded'}), 500
-    except Exception as e:
-        print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
-        return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
+### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
