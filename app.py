@@ -651,8 +651,8 @@ def replicate_webhook():
 
 # --- Главный маршрут и выход ---
 @app.route('/')
-@login_required
-@subscription_required
+#@login_required
+#@subscription_required
 def index():
     return render_template('index.html')
 
