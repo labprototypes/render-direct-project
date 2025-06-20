@@ -520,26 +520,17 @@ def process_image():
         try:
             s3_url = upload_file_to_s3(request.files['image'])
             edit_mode = request.form.get('edit_mode')
-            prompt = request.form.get('prompt', '')
+            prompt = request.form.get('t', '')
             if not openai_client:
                 raise Exception("System error: OpenAI client not configured.")
-            autofix_system_prompt = (
+            autofix_system_t = (
                 "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
             )
             edit_system_prompt = (
-                "You are an expert AI prompt engineer for an image editing model called FLUX. Your primary goal is to translate a user's request into a precise, command-based prompt. "
-                "First, analyze the user's intent to determine if they want to ADD, REMOVE, or REPLACE/CHANGE an object. "
-                "Then, generate a JSON object with two keys: \"generation_prompt\" and \"mask_prompt\".\n\n"
-                
-                "1. For the \"generation_prompt\" key, create a value based on the user's intent:\n"
-                "- If ADDING: Use the format 'Add [what to add] [where to add it]'. Example: 'Add a small boat on the water'.\n"
-                "- If REMOVING: Use the format 'Remove [what to remove]'. Example: 'Remove the person on the left'.\n"
-                "- If REPLACING/CHANGING: Use the format 'Replace [original object] with [new object]' or 'Change [object] to [new state]'. Example: 'Replace the blue car with a red sports car' or 'Change the sky to a dramatic sunset'.\n"
-                "The prompt must be in clear, concise English.\n\n"
-                
-                "2. For the \"mask_prompt\" key, create a value that is a very short (2-5 words) English description of the object being acted upon. This is for a segmentation model. Examples: 'a small boat', 'the person on the left', 'the blue car', 'the sky'.\n\n"
-                
-                "You MUST only output the raw JSON object and nothing else. Do not add any conversational text or explanations."
+                "You are an expert prompt engineer. Your task is to analyze a user's request to modify an image and generate a JSON object with two keys: "
+                "1. \"generation_prompt\": You are an expert AI prompt engineer creating concise, command-based prompts. Analyze the user's request (in any language) and convert it into a single, direct command in English. First, determine the user's intent: ADD, REMOVE, or REPLACE/CHANGE. Structure your output precisely: For ADD requests (e.g., 'поставь вазу на стол'), use the format 'Add [what] [where]' to get 'Add a vase on the table'. For REMOVE requests (e.g., 'убери машину'), use the format 'Remove [what]' to get 'Remove the car'. For REPLACE/CHANGE requests (e.g., 'сделай небо закатным'), use the format 'Change [object] to [new state]' to get 'Change the sky to a sunset'. CRITICAL RULE: Your entire output must be only the single-line command itself, with no explanations, prefixes, or conversational text."
+                "2. \"mask_prompt\": A very short, concise phrase (2-4 words max) in English that strictly identifies the primary object being changed. "
+                "You must only output the raw JSON object. Example: {\"generation_prompt\": \"A photorealistic image of a man wearing a vibrant red t-shirt\", \"mask_prompt\": \"a red t-shirt\"}"
             )
             if edit_mode == 'autofix':
                 messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
