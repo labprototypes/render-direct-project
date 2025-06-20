@@ -528,7 +528,7 @@ def process_image():
             )
             edit_system_prompt = (
                 "You are an expert prompt engineer. Your task is to analyze a user's request to modify an image and generate a JSON object with two keys: "
-                "1. \"generation_prompt\": A highly descriptive, artistic prompt in English for a FLUX AI model to create the final image. "
+                "1. \"generation_prompt\": You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
                 "2. \"mask_prompt\": A very short, concise phrase (2-4 words max) in English that strictly identifies the primary object being changed. "
                 "You must only output the raw JSON object. Example: {\"generation_prompt\": \"A photorealistic image of a man wearing a vibrant red t-shirt\", \"mask_prompt\": \"a red t-shirt\"}"
             )
