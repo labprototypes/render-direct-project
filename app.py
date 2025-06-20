@@ -463,10 +463,10 @@ def stripe_webhook():
 
 # --- Маршруты API и обработки изображений ---
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
-@login_required
+#@login_required  <-- ИЗМЕНЕНИЕ 1: Отключаем проверку логина
 def get_result(prediction_id):
     prediction = Prediction.query.get(prediction_id)
-    if not prediction or prediction.user_id != current_user.id:
+    if not prediction:
         return jsonify({'error': 'Prediction not found or access denied'}), 404
     if prediction.status == 'completed':
         return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
@@ -491,13 +491,7 @@ def get_result(prediction_id):
             print(f"!!! Error polling Replicate status for {prediction.id}: {e}")
     return jsonify({'status': 'pending'})
 
-### НАЧАЛО БЛОКА ДЛЯ ПОЛНОЙ ЗАМЕНЫ ###
-
-### НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
-
-### НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
-
-### НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
+### НАЧАЛО БЛОКА ДЛЯ ПОЛНОЙ ЗАМЕНЫ ##
 
 @app.route('/process-image', methods=['POST'])
 #@login_required      <-- ИЗМЕНЕНИЕ 1: Декоратор временно отключен
