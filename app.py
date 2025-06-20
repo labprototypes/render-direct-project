@@ -469,7 +469,7 @@ def get_result(prediction_id):
     if not prediction:
         return jsonify({'error': 'Prediction not found or access denied'}), 404
     if prediction.status == 'completed':
-        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
+        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': 99999})
     if prediction.status == 'failed':
         return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': 99999})
     if prediction.status == 'pending' and prediction.replicate_id:
@@ -527,20 +527,34 @@ def process_image():
                 "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
             )
             edit_system_prompt = (
-                "You are an expert prompt engineer. A user will provide a request to modify an image. Your task is to analyze the user's request and generate a JSON object with two keys: "
-                "1. \"generation_prompt\": You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
-                "2. \"mask_prompt\": A very short, concise phrase (2-4 words maximum) in English that strictly identifies the primary object being added or changed. This will be used for a segmentation model. For example: 'a red t-shirt', 'a dog wearing sunglasses', 'the window', 'a landscape with sheep'. "
-                "You must only output the raw JSON object and nothing else. Example output: {\"generation_prompt\": \"A photorealistic image of a man wearing a vibrant red t-shirt\", \"mask_prompt\": \"a red t-shirt\"}"
+                "You are an expert prompt engineer. Your task is to analyze a user's request to modify an image and generate a JSON object with two keys: "
+                "1. \"generation_prompt\": A highly descriptive, artistic prompt in English for a FLUX AI model to create the final image. "
+                "2. \"mask_prompt\": A very short, concise phrase (2-4 words max) in English that strictly identifies the primary object being changed. "
+                "You must only output the raw JSON object. Example: {\"generation_prompt\": \"A photorealistic image of a man wearing a vibrant red t-shirt\", \"mask_prompt\": \"a red t-shirt\"}"
             )
             if edit_mode == 'autofix':
                 messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
             else:
                 messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
-            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
-            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
-            print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
+            # Этот код вставляется внутри блока try, после определения `edit_system_prompt`
+
+            if edit_mode == 'autofix':
+                messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
+            else:
+                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
             
-            # Вместо списания токенов, мы просто выведем информацию в лог
+            # Просим OpenAI вернуть ответ в формате JSON
+            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=250, response_format={"type": "json_object"})
+            
+            # Парсим JSON и получаем два разных промпта
+            prompt_data = json.loads(response.choices[0].message.content)
+            generation_prompt = prompt_data.get("generation_prompt", "")
+            mask_prompt = prompt_data.get("mask_prompt", "")
+            
+            print(f"!!! Промпт для генерации: {generation_prompt}")
+            print(f"!!! Промпт для маски: {mask_prompt}")
+            
+            # Код создания Prediction остается, как и был в нашей тестовой версии
             print(f"!!! Тестовый запуск для пользователя {current_user.id}. Списание токенов отключено.")
             new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
             db.session.add(new_prediction)
@@ -549,17 +563,18 @@ def process_image():
             if not redis_client:
                 raise Exception("System error: Redis client not configured.")
             
+            # Создаем задачу с ДВУМЯ промптами
             job_data = {
                 "prediction_id": new_prediction.id,
                 "original_s3_url": s3_url,
-                "prompt": final_prompt,
+                "generation_prompt": generation_prompt, # <--- Новый ключ
+                "mask_prompt": mask_prompt,           # <--- Новый ключ
                 "token_cost": token_cost,
                 "user_id": current_user.id
             }
             redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
             print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
             
-            # Баланс токенов не меняем, возвращаем фейковый
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
         except Exception as e:
