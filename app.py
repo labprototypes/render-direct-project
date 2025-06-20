@@ -496,13 +496,21 @@ def get_result(prediction_id):
 
 ### НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
+### НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
+
 @app.route('/process-image', methods=['POST'])
-@login_required
-@subscription_required
+#@login_required      <-- ИЗМЕНЕНИЕ 1: Декоратор временно отключен
+#@subscription_required <-- ИЗМЕНЕНИЕ 1: Декоратор временно отключен
 def process_image():
+    # --- ВРЕМЕННЫЙ КОД ДЛЯ ТЕСТА БЕЗ ЛОГИНА ---
+    class FakeUser: # Создаем фейковый класс, имитирующий пользователя
+        id = "test-debug-user"
+        token_balance = 99999
+    current_user = FakeUser()
+    # --- КОНЕЦ ВРЕМЕННОГО КОДА ---
+
     mode = request.form.get('mode')
     
-    # --- ЛОГИКА ДЛЯ РЕЖИМА 'EDIT' ---
     if mode == 'edit':
         token_cost = 65
         if current_user.token_balance < token_cost:
@@ -528,12 +536,16 @@ def process_image():
             response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
             final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
             print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
+            
+            # Вместо списания токенов, мы просто выведем информацию в лог
+            print(f"!!! Тестовый запуск для пользователя {current_user.id}. Списание токенов отключено.")
             new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
             db.session.add(new_prediction)
-            current_user.token_balance -= token_cost
             db.session.commit()
+            
             if not redis_client:
                 raise Exception("System error: Redis client not configured.")
+            
             job_data = {
                 "prediction_id": new_prediction.id,
                 "original_s3_url": s3_url,
@@ -543,74 +555,23 @@ def process_image():
             }
             redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
             print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
+            
+            # Баланс токенов не меняем, возвращаем фейковый
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
         except Exception as e:
             db.session.rollback()
             print(f"!!! ОБЩАЯ ОШИБКА в process_image (edit): {e}")
             return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
     
-    # --- ЛОГИКА ДЛЯ РЕЖИМА 'UPSCALE' ---
     elif mode == 'upscale':
-        scale_factor = int(request.form.get('scale_factor', '2'))
-        if scale_factor <= 2:
-            token_cost = 17
-        elif scale_factor <= 4:
-            token_cost = 65
-        else:
-            token_cost = 150
-            
-        if current_user.token_balance < token_cost:
-            return jsonify({'error': 'Insufficient tokens'}), 403
-        if 'image' not in request.files:
-            return jsonify({'error': 'Image is missing'}), 400
-            
-        try:
-            s3_url = upload_file_to_s3(request.files['image'])
-            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
-            dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
-            replicate_input = {
-                "image": s3_url, 
-                "scale_factor": float(scale_factor), 
-                "creativity": creativity, 
-                "resemblance": resemblance, 
-                "dynamic": dynamic
-            }
-            if not REPLICATE_API_TOKEN:
-                raise Exception("System error: Replicate API token not configured")
-
-            new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
-            db.session.add(new_prediction)
-            db.session.commit()
-
-            headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-            post_payload = {
-                "version": model_version_id, 
-                "input": replicate_input, 
-                "webhook": url_for('replicate_webhook', _external=True), 
-                "webhook_events_filter": ["completed", "failed"]
-            }
-            
-            print(f"!!! Replicate Payload (upscale): {post_payload}")
-            start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-            start_response.raise_for_status()
-            
-            prediction_data = start_response.json()
-            new_prediction.replicate_id = prediction_data.get('id')
-            current_user.token_balance -= token_cost
-            db.session.commit()
-            
-            return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
-
-        except Exception as e:
-            db.session.rollback()
-            print(f"!!! ОБЩАЯ ОШИБКА в process_image (upscale): {e}")
-            return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
+        # Для чистоты теста, временно заблокируем этот режим
+        return jsonify({'error': 'Upscale mode is temporarily disabled for testing.'}), 400
     
-    # --- Если пришел неизвестный режим ---
     else:
         return jsonify({'error': 'Invalid processing mode'}), 400
+
+### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
 ### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
