@@ -527,10 +527,11 @@ def process_image():
                 "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
             )
             edit_system_prompt = (
-               "You are an expert AI prompt engineer creating instructions for an image editing model. Analyze the user's request (in any language) and the provided image context. Your task is to generate a JSON object with two keys: \"generation_prompt\" and \"mask_prompt\".\n"
-                "1. For \"generation_prompt\", create a concise, command-based instruction in English based on user's unput text. Only fix and translate the text, don't add new info.:\n"
-                "2. For \"mask_prompt\", create a very short (2-5 words) English description of the object being acted upon. This is for a segmentation model. Examples: 'a vase on the table', 'the person on the left', 'the sky'.\n\n"
-                "You must only output the raw JSON object. Example: {\"generation_prompt\": \"A photorealistic image of a man wearing a vibrant red t-shirt\", \"mask_prompt\": \"a red t-shirt\"}"
+                "You are an expert AI assistant. Your task is to analyze a user's image modification request and generate a JSON object with THREE keys:\n"
+                "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'.\n"
+                "2. \"generation_prompt\": A concise, command-based instruction in English for the image generation model, based on the user's request.\n"
+                "3. \"mask_prompt\": A very short (2-5 words) English name for the object being acted upon.\n"
+                "You MUST only output the raw JSON object. Example for 'add a frog on the leaf': {\"intent\": \"ADD\", \"generation_prompt\": \"Add a frog on the leaf\", \"mask_prompt\": \"a frog\"}"
             )
             if edit_mode == 'autofix':
                 messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
@@ -548,6 +549,7 @@ def process_image():
             
             # Парсим JSON и получаем два разных промпта
             prompt_data = json.loads(response.choices[0].message.content)
+            intent = prompt_data.get("intent", "REPLACE") # По умолчанию считаем, что это замена
             generation_prompt = prompt_data.get("generation_prompt", "")
             mask_prompt = prompt_data.get("mask_prompt", "")
             
@@ -567,8 +569,9 @@ def process_image():
             job_data = {
                 "prediction_id": new_prediction.id,
                 "original_s3_url": s3_url,
-                "generation_prompt": generation_prompt, # <--- Новый ключ
-                "mask_prompt": mask_prompt,           # <--- Новый ключ
+                "intent": intent, # <--- ДОБАВЛЕНО
+                "generation_prompt": generation_prompt,
+                "mask_prompt": mask_prompt,
                 "token_cost": token_cost,
                 "user_id": current_user.id
             }
