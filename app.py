@@ -493,15 +493,14 @@ def get_result(prediction_id):
 
 ### НАЧАЛО БЛОКА ДЛЯ ПОЛНОЙ ЗАМЕНЫ ##
 
+# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
+
 @app.route('/process-image', methods=['POST'])
-#@login_required      <-- ИЗМЕНЕНИЕ 1: Декоратор временно отключен
-#@subscription_required <-- ИЗМЕНЕНИЕ 1: Декоратор временно отключен
+#@login_required # Temporarily disabled for testing
 def process_image():
     # --- ВРЕМЕННЫЙ КОД ДЛЯ ТЕСТА БЕЗ ЛОГИНА ---
     test_user_id = "test-debug-user"
-    # Пытаемся найти тестового пользователя в базе данных
-    current_user = User.query.get(test_user_id)
-    # Если не нашли - создаем его
+    current_user = db.session.get(User, test_user_id)
     if not current_user:
         print("!!! Создание временного тестового пользователя в БД...")
         current_user = User(id=test_user_id, email="debug@test.com", token_balance=99999)
@@ -509,90 +508,71 @@ def process_image():
         db.session.commit()
     # --- КОНЕЦ ВРЕМЕННОГО КОДА ---
 
-    mode = request.form.get('mode')
-    
-    if mode == 'edit':
+    if 'image' not in request.files:
+        return jsonify({'error': 'Image is missing'}), 400
+        
+    try:
+        s3_url = upload_file_to_s3(request.files['image'])
+        prompt = request.form.get('prompt', '')
+        
+        # Самая строгая и простая инструкция для ChatGPT
+        edit_system_prompt = (
+            "You are a literal translator and data extractor. Your task is to take a user's request, which may be in any language and contain typos, and process it into a clean JSON object. "
+            "Your only two tasks are: 1. Translate the user's text to clear, simple English. 2. Correct any spelling or grammatical mistakes. "
+            "You MUST NOT add, remove, or change the core objects or intent of the user's request. If the user says 'add frog', the output must be about adding a frog. "
+            "Generate a JSON object with two keys: "
+            "1. \"generation_prompt\": The corrected and translated user request as a single command. "
+            "2. \"mask_prompt\": The key object from the user's request, in 2-5 words. "
+            "You MUST only output the raw JSON object."
+        )
+        
+        messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
+        
+        # Вызываем OpenAI с низкой "креативностью" и проверкой ответа
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            max_tokens=250,
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+        
+        response_content = response.choices[0].message.content
+        if not response_content:
+            raise Exception("OpenAI returned an empty response, please try rephrasing your request.")
+        
+        prompt_data = json.loads(response_content)
+        generation_prompt = prompt_data.get("generation_prompt")
+        mask_prompt = prompt_data.get("mask_prompt")
+
+        if not generation_prompt or not mask_prompt:
+            raise Exception("OpenAI returned a JSON but it's missing required keys.")
+
+        print(f"!!! Финальный промпт для генерации: {generation_prompt}")
+        print(f"!!! Финальный промпт для маски: {mask_prompt}")
+
         token_cost = 65
-        if current_user.token_balance < token_cost:
-            return jsonify({'error': 'Insufficient tokens'}), 403
-        if 'image' not in request.files:
-            return jsonify({'error': 'Image is missing'}), 400
-        try:
-            s3_url = upload_file_to_s3(request.files['image'])
-            edit_mode = request.form.get('edit_mode')
-            prompt = request.form.get('t', '')
-            if not openai_client:
-                raise Exception("System error: OpenAI client not configured.")
-            autofix_system_t = (
-                "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
-            )
-            edit_system_prompt = (
-                "You are a literal translator and data extractor. Your task is to take a user's request, which may be in any language and contain typos, and process it into a clean JSON object. "
-                "Your only two tasks are: 1. Translate the user's text to clear, simple English. 2. Correct any spelling or grammatical mistakes. "
-                "You MUST NOT add, remove, or change the core objects or intent of the user's request. If the user says 'add frog', the output must be about adding a frog. "
-                "Generate a JSON object with two keys: "
-                "1. \"generation_prompt\": The corrected and translated user request as a single command. "
-                "2. \"mask_prompt\": The key object from the user's request, in 2-5 words. "
-                "You MUST only output the raw JSON object."
-            )
-            if edit_mode == 'autofix':
-                messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
-            else:
-                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
-            # Этот код вставляется внутри блока try, после определения `edit_system_prompt`
+        new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
+        db.session.add(new_prediction)
+        db.session.commit()
 
-            if edit_mode == 'autofix':
-                messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
-            else:
-                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
-            
-            # Просим OpenAI вернуть ответ в формате JSON
-            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=250, response_format={"type": "json_object"}, temperature=0.1)
-            
-            # Парсим JSON и получаем два разных промпта
-            prompt_data = json.loads(response.choices[0].message.content)
-            intent = prompt_data.get("intent", "REPLACE") # По умолчанию считаем, что это замена
-            generation_prompt = prompt_data.get("generation_prompt", "")
-            mask_prompt = prompt_data.get("mask_prompt", "")
-            
-            print(f"!!! Промпт для генерации: {generation_prompt}")
-            print(f"!!! Промпт для маски: {mask_prompt}")
-            
-            # Код создания Prediction остается, как и был в нашей тестовой версии
-            print(f"!!! Тестовый запуск для пользователя {current_user.id}. Списание токенов отключено.")
-            new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
-            db.session.add(new_prediction)
-            db.session.commit()
-            
-            if not redis_client:
-                raise Exception("System error: Redis client not configured.")
-            
-            # Создаем задачу с ДВУМЯ промптами
-            job_data = {
-                "prediction_id": new_prediction.id,
-                "original_s3_url": s3_url,
-                "intent": intent, # <--- ДОБАВЛЕНО
-                "generation_prompt": generation_prompt,
-                "mask_prompt": mask_prompt,
-                "token_cost": token_cost,
-                "user_id": current_user.id
-            }
-            redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
-            print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
-            
-            return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+        job_data = {
+            "prediction_id": new_prediction.id,
+            "original_s3_url": s3_url,
+            "generation_prompt": generation_prompt,
+            "mask_prompt": mask_prompt,
+            "token_cost": token_cost,
+            "user_id": current_user.id
+        }
+        redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
+        print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
+        
+        return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
-        except Exception as e:
-            db.session.rollback()
-            print(f"!!! ОБЩАЯ ОШИБКА в process_image (edit): {e}")
-            return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
-    
-    elif mode == 'upscale':
-        # Для чистоты теста, временно заблокируем этот режим
-        return jsonify({'error': 'Upscale mode is temporarily disabled for testing.'}), 400
-    
-    else:
-        return jsonify({'error': 'Invalid processing mode'}), 400
+    except Exception as e:
+        db.session.rollback()
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
+        return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
 
 ### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
