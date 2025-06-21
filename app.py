@@ -528,10 +528,7 @@ def process_image():
             )
             edit_system_prompt = (
                "You are an expert AI prompt engineer creating instructions for an image editing model. Analyze the user's request (in any language) and the provided image context. Your task is to generate a JSON object with two keys: \"generation_prompt\" and \"mask_prompt\".\n"
-                "1. For \"generation_prompt\", create a concise, command-based instruction in English. First, determine the user's intent: ADD, REMOVE, or REPLACE/CHANGE. Then, structure the prompt precisely:\n"
-                "- If ADDING, use the format 'Add [what to add] [where to add it]'. Example: 'Add a vase on the table'.\n"
-                "- If REMOVING, use the format 'Remove [what to remove]'. Example: 'Remove the person on the left'.\n"
-                "- If REPLACING/CHANGING, use the format 'Change [object] to [new state]'. Example: 'Change the sky to a sunset'.\n\n"
+                "1. For \"generation_prompt\", create a concise, command-based instruction in English based on user's unput text. Only fix and translate the text, don't add new info.:\n"
                 "2. For \"mask_prompt\", create a very short (2-5 words) English description of the object being acted upon. This is for a segmentation model. Examples: 'a vase on the table', 'the person on the left', 'the sky'.\n\n"
                 "You must only output the raw JSON object. Example: {\"generation_prompt\": \"A photorealistic image of a man wearing a vibrant red t-shirt\", \"mask_prompt\": \"a red t-shirt\"}"
             )
