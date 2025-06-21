@@ -527,11 +527,19 @@ def process_image():
                 "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
             )
             edit_system_prompt = (
-                "You are an expert AI assistant. Your task is to analyze a user's image modification request and generate a JSON object with THREE keys:\n"
-                "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'.\n"
-                "2. \"generation_prompt\": A concise, command-based instruction in English for the image generation model, based on the user's request.\n"
-                "3. \"mask_prompt\": A very short (2-5 words) English name for the object being acted upon.\n"
-                "You MUST only output the raw JSON object. Example for 'add a frog on the leaf': {\"intent\": \"ADD\", \"generation_prompt\": \"Add a frog on the leaf\", \"mask_prompt\": \"a frog\"}"
+                "You are a highly precise instruction processing AI. Your task is to analyze a user's image modification request and the provided image, then generate a JSON object with three keys: 'intent', 'generation_prompt', and 'mask_prompt'.\n"
+                "**Your absolute highest priority is to be faithful to the user's text request.** You MUST NOT invent new objects or change the core subject of the user's prompt based on the image context. If the user asks for a 'frog', you must use 'frog'. If they ask for a 'car', you must use 'car'. The user's text is the single source of truth for the object.\n\n"
+                
+                "1. **'intent'**: Classify the user's core action as one of three exact string values: 'ADD', 'REMOVE', or 'REPLACE'.\n\n"
+                
+                "2. **'generation_prompt'**: Create a concise, command-based instruction in English. This should be a direct, literal translation of the user's request. Do not add any extra details.\n\n"
+                
+                "3. **'mask_prompt'**: Create a very short (2-5 words) English name for the object being acted upon, taken directly from the user's request.\n\n"
+                
+                "**Example for 'добавь корову на луг':**\n"
+                "{\"intent\": \"ADD\", \"generation_prompt\": \"Add a cow on the meadow\", \"mask_prompt\": \"a cow\"}\n\n"
+                
+                "You MUST only output the raw JSON object and nothing else."
             )
             if edit_mode == 'autofix':
                 messages = [{"role": "system", "content": autofix_system_prompt}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}]
