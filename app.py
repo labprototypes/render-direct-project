@@ -7,6 +7,7 @@ import os
 import uuid
 import time
 import io
+import json 
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -43,6 +44,14 @@ stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+REDIS_URL = os.environ.get('REDIS_URL')
+
+import redis # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
+if REDIS_URL: # <--- ДОБАВЬТЕ ЭТИ 4 СТРОКИ
+    redis_client = redis.from_url(REDIS_URL)
+else:
+    redis_client = None
+    print("!!! ВНИМАНИЕ: REDIS_URL не найден. Отправка задач в воркер не будет работать.")
 
 PLAN_PRICES = {
     'taste': 'price_1RYA1GEAARFPkzEzyWSV75UE',
@@ -454,15 +463,15 @@ def stripe_webhook():
 
 # --- Маршруты API и обработки изображений ---
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
-@login_required
+#@login_required  <-- ИЗМЕНЕНИЕ 1: Отключаем проверку логина
 def get_result(prediction_id):
     prediction = Prediction.query.get(prediction_id)
-    if not prediction or prediction.user_id != current_user.id:
+    if not prediction:
         return jsonify({'error': 'Prediction not found or access denied'}), 404
     if prediction.status == 'completed':
-        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': current_user.token_balance})
+        return jsonify({'status': 'completed', 'output_url': prediction.output_url, 'new_token_balance': 99999})
     if prediction.status == 'failed':
-        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': User.query.get(current_user.id).token_balance})
+        return jsonify({'status': 'failed', 'error': 'Generation failed. Your tokens have been refunded.', 'new_token_balance': 99999})
     if prediction.status == 'pending' and prediction.replicate_id:
         try:
             headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
@@ -482,101 +491,104 @@ def get_result(prediction_id):
             print(f"!!! Error polling Replicate status for {prediction.id}: {e}")
     return jsonify({'status': 'pending'})
 
+### НАЧАЛО БЛОКА ДЛЯ ПОЛНОЙ ЗАМЕНЫ ##
+
+# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
+
+# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
+
+# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
+
 @app.route('/process-image', methods=['POST'])
-@login_required
-@subscription_required
+#@login_required
+#@subscription_required
 def process_image():
-    mode = request.form.get('mode')
-    token_cost = 0
-    if mode == 'edit':
-        token_cost = 65
-    elif mode == 'upscale':
-        scale_factor = int(request.form.get('scale_factor', '2'))
-        if scale_factor <= 2:
-            token_cost = 17
-        elif scale_factor <= 4:
-            token_cost = 65
-        else:
-            token_cost = 150
-    if token_cost == 0:
-        return jsonify({'error': 'Invalid processing mode'}), 400
-    if current_user.token_balance < token_cost:
-        return jsonify({'error': 'Insufficient tokens'}), 403
+    # --- ВРЕМЕННЫЙ КОД ДЛЯ ТЕСТА БЕЗ ЛОГИНА ---
+    test_user_id = "test-debug-user"
+    current_user = db.session.get(User, test_user_id)
+    if not current_user:
+        print("!!! Создание временного тестового пользователя в БД...")
+        current_user = User(id=test_user_id, email="debug@test.com", token_balance=99999)
+        db.session.add(current_user)
+        db.session.commit()
+    # --- КОНЕЦ ВРЕМЕННОГО КОДА ---
+
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
+        
     try:
         s3_url = upload_file_to_s3(request.files['image'])
-        replicate_input = {}
-        model_version_id = ""
-        if mode == 'edit':
-            edit_mode = request.form.get('edit_mode')
-            prompt = request.form.get('prompt', '')
-            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-            if not openai_client:
-                raise Exception("System error, your tokens have been refunded")
-            final_prompt = ""
-            if edit_mode == 'autofix':
-                print("!!! Запрос к OpenAI Vision API для Autofix...")
-                autofix_system_prompt = (
-                    "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
-                )
-                messages = [
-                    {"role": "system", "content": autofix_system_prompt},
-                    {"role": "user", "content": [{"type": "image_url", "image_url": {"url": s3_url}}]}
-                ]
-            else:
-                print("!!! Запрос к OpenAI Vision API для Edit (с картинкой)...")
-                edit_system_prompt = (
-                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
-                )
-                messages = [
-                    {"role": "system", "content": edit_system_prompt},
-                    {"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": s3_url}}
-                    ]}
-                ]
-            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
-            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
-            print(f"!!! Улучшенный промпт ({edit_mode}): {final_prompt}")
-            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
-        elif mode == 'upscale':
-            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            scale_factor = float(request.form.get('scale_factor', '2'))
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
-            dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
-            replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
-        if not model_version_id or not replicate_input:
-            raise Exception(f"Invalid mode or missing inputs. Mode: {mode}. Model ID set: {bool(model_version_id)}. Input set: {bool(replicate_input)}")
-        if not REPLICATE_API_TOKEN:
-            raise Exception("System error, your tokens have been refunded")
-        new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
+        prompt = request.form.get('prompt', '')
+        
+        # --- ЭТАП 1: Создаем описательный промпт для генерации ---
+        # Используем промпт, который вы предоставили.
+        generation_system_prompt = (
+            "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+            "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+            "3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. "
+            "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
+            "The output should be only the refined prompt, no explanations or conversational fluff."
+        )
+        messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
+        
+        generation_response = openai_client.chat.completions.create(
+            model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2
+        )
+        generation_prompt = generation_response.choices[0].message.content.strip()
+        if not generation_prompt:
+            raise Exception("OpenAI failed to generate the descriptive prompt.")
+        print(f"!!! Этап 1: Сгенерирован промпт для генерации: {generation_prompt}")
+        
+        # --- ЭТАП 2: Определяем намерение и объект для маски ---
+        intent_system_prompt = (
+            "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
+            "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
+            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
+            "You MUST only output the raw JSON object."
+        )
+        messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
+        
+        intent_response = openai_client.chat.completions.create(
+            model="gpt-4o", messages=messages_for_intent, max_tokens=100, response_format={"type": "json_object"}, temperature=0.0
+        )
+        intent_content = intent_response.choices[0].message.content
+        if not intent_content:
+            raise Exception("OpenAI failed to determine the intent.")
+        
+        intent_data = json.loads(intent_content)
+        intent = intent_data.get("intent")
+        mask_prompt = intent_data.get("mask_prompt")
+
+        if not intent or not mask_prompt:
+            raise Exception("OpenAI returned JSON without required keys 'intent' or 'mask_prompt'.")
+        print(f"!!! Этап 2: Определен Intent: {intent}, Объект для маски: {mask_prompt}")
+
+        # --- Отправляем все три части в воркер ---
+        token_cost = 65
+        new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
         db.session.add(new_prediction)
         db.session.commit()
-        headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-        post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
-        print(f"!!! Replicate Payload: {post_payload}")
-        start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-        start_response.raise_for_status()
-        prediction_data = start_response.json()
-        replicate_prediction_id = prediction_data.get('id')
-        new_prediction.replicate_id = replicate_prediction_id
-        current_user.token_balance -= token_cost
-        db.session.commit()
+
+        job_data = {
+            "prediction_id": new_prediction.id,
+            "original_s3_url": s3_url,
+            "intent": intent,
+            "generation_prompt": generation_prompt,
+            "mask_prompt": mask_prompt,
+            "token_cost": token_cost,
+            "user_id": current_user.id
+        }
+        redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
+        print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
+        
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
-    except requests.exceptions.HTTPError as e:
-        error_details = "No details in response."
-        if e.response is not None:
-            try:
-                error_details = e.response.text
-            except Exception:
-                pass
-        print(f"!!! ОБЩАЯ ОШИБКА в process_image (HTTPError): {e}\nReplicate Response: {error_details}")
-        return jsonify({'error': 'System error, your tokens have been refunded'}), 500
+
     except Exception as e:
-        print(f"!!! ОБЩАЯ ОШИБКА в process_image (General): {e}")
+        db.session.rollback()
+        print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
+
+### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
@@ -654,8 +666,8 @@ def replicate_webhook():
 
 # --- Главный маршрут и выход ---
 @app.route('/')
-@login_required
-@subscription_required
+#@login_required
+#@subscription_required
 def index():
     return render_template('index.html')
 
