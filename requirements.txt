@@ -18,3 +18,4 @@ stripe
 firebase-admin
 redis
 Pillow
+replicate
