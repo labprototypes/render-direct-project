@@ -535,56 +535,33 @@ def process_image():
         return jsonify({'error': 'Image is missing'}), 400
     
     mode = request.form.get('mode')
-    token_cost = 0
-
+    
     try:
-        # Проверяем баланс и списываем токены
-        edit_mode = request.form.get('edit_mode') # 'edit' или 'autofix' (для Basic)
         if mode == 'edit':
-            if edit_mode == 'autofix': # Это наша новая логика "Basic"
-                token_cost = 100
-            else: # Это старая логика "Edit"
-                token_cost = 65
-        elif mode == 'upscale':
-            scale_factor = int(request.form.get('scale_factor', '2'))
-            if scale_factor <= 2: token_cost = 17
-            elif scale_factor <= 4: token_cost = 65
-            else: token_cost = 150
-
-        if token_cost == 0:
-            return jsonify({'error': 'Invalid processing mode'}), 400
-        if current_user.token_balance < token_cost:
-            return jsonify({'error': f'Insufficient tokens. Need {token_cost}, you have {current_user.token_balance}.'}), 403
-
-        # --- НАЧАЛО ОБРАБОТКИ ---
-        
-        if mode == 'edit':
+            edit_mode = request.form.get('edit_mode')
+            
             if edit_mode == 'autofix':
-                # --- ЛОГИКА ДЛЯ НОВОГО РЕЖИМА "BASIC" ---
+                # --- Логика для режима "Basic" ---
                 print("!!! РЕЖИМ: Basic (через Autofix)")
+                token_cost = 100
+                if current_user.token_balance < token_cost:
+                    return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
                 if not redis_client:
                     raise Exception("Redis is not configured on the server.")
 
+                # ... (вся логика для Basic, которая у вас уже работает) ...
                 uploaded_file = request.files['image']
                 prompt = request.form.get('prompt', '')
-                
-                # Сохраняем файл в памяти для многократного чтения
                 image_data = uploaded_file.read()
                 img_for_size_check = Image.open(io.BytesIO(image_data))
                 original_width, original_height = img_for_size_check.size
-
-                # Загружаем оригинал в S3
                 original_stream = io.BytesIO(image_data)
                 original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
                 original_s3_url = upload_file_to_s3(original_for_upload)
-                
-                # Готовим и загружаем копию для анализа OpenAI
                 analysis_stream = io.BytesIO(image_data)
                 analysis_for_upload = FileStorage(stream=analysis_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
                 image_for_openai = resize_image_for_openai(analysis_for_upload)
                 s3_url_for_openai = upload_file_to_s3(image_for_openai)
-
-                # Этап 1: Создаем описательный промпт для генерации
                 generation_system_prompt = (
                     "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                     "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
@@ -592,11 +569,8 @@ def process_image():
                     "The output should be only the refined prompt, no explanations or conversational fluff."
                 )
                 messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
-                
                 generation_response = openai_client.chat.completions.create(model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2)
                 generation_prompt = generation_response.choices[0].message.content.strip()
-
-                # Этап 2: Определяем намерение и объект для маски
                 intent_system_prompt = (
                     "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
                     "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
@@ -604,18 +578,15 @@ def process_image():
                     "You MUST only output the raw JSON object."
                 )
                 messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
-                
                 intent_response = openai_client.chat.completions.create(model="gpt-4o", messages=messages_for_intent, max_tokens=100, response_format={"type": "json_object"}, temperature=0.0)
                 intent_data = json.loads(intent_response.choices[0].message.content)
                 intent = intent_data.get("intent")
                 mask_prompt = intent_data.get("mask_prompt")
-
-                # Списываем токены и отправляем задачу в воркер
+                
                 current_user.token_balance -= token_cost
                 new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
                 db.session.add(new_prediction)
                 db.session.commit()
-
                 job_data = {
                     "prediction_id": new_prediction.id, "original_s3_url": original_s3_url,
                     "intent": intent, "generation_prompt": generation_prompt,
@@ -625,9 +596,13 @@ def process_image():
                 redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
                 return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
-            else: # Старая логика edit_mode == 'edit'
-                # --- ВАША СТАРАЯ ЛОГИКА "EDIT", ОСТАЛАСЬ БЕЗ ИЗМЕНЕНИЙ ---
+            else:
+                # --- Логика для режима "Edit (старый)" с собственным вызовом Replicate ---
                 print("!!! РЕЖИМ: Edit (старый)")
+                token_cost = 65
+                if current_user.token_balance < token_cost:
+                    return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
+
                 s3_url = upload_file_to_s3(request.files['image'])
                 prompt = request.form.get('prompt', '')
                 if not openai_client: raise Exception("OpenAI client not configured.")
@@ -635,47 +610,66 @@ def process_image():
                 edit_system_prompt = (
                     "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
                 )
-                messages = [
-                    {"role": "system", "content": edit_system_prompt},
-                    {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}
-                ]
+                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
                 response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
                 final_prompt = response.choices[0].message.content.strip().replace('\\n', ' ').replace('\\r', ' ').strip()
                 
                 replicate_input = {
                     "input_image": s3_url,
                     "prompt": final_prompt,
-                    "output_format": "png"  # <-- ВОТ НЕДОСТАЮЩИЙ ПАРАМЕТР
+                    "output_format": "png"
                 }
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-        
+                
+                current_user.token_balance -= token_cost
+                new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
+                db.session.add(new_prediction)
+                db.session.commit()
+
+                headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+                post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
+                
+                start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
+                start_response.raise_for_status()
+                
+                prediction_data = start_response.json()
+                new_prediction.replicate_id = prediction_data.get('id')
+                db.session.commit()
+                return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
         elif mode == 'upscale':
-            # --- ВАША ЛОГИКА "UPSCALE", ОСТАЛАСЬ БЕЗ ИЗМЕНЕНИЙ ---
+            # --- Логика для режима "Upscale" с собственным вызовом Replicate ---
             print("!!! РЕЖИМ: Upscale")
+            scale_factor = int(request.form.get('scale_factor', '2'))
+            if scale_factor <= 2: token_cost = 17
+            elif scale_factor <= 4: token_cost = 65
+            else: token_cost = 150
+            if current_user.token_balance < token_cost:
+                return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
+
             s3_url = upload_file_to_s3(request.files['image'])
-            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            scale_factor = float(request.form.get('scale_factor', '2'))
             creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
             resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
             dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
-            replicate_input = {"image": s3_url, "scale_factor": scale_factor, "creativity": creativity, "resemblance": resemblance, "dynamic": dynamic}
 
-        # Общий код для Replicate (используется для старого "Edit" и "Upscale")
-        if mode != 'edit' or edit_mode != 'autofix':
-            if not REPLICATE_API_TOKEN: raise Exception("Replicate API token is not configured.")
-            
+            replicate_input = {
+                "image": s3_url, "scale_factor": scale_factor, "creativity": creativity, 
+                "resemblance": resemblance, "dynamic": dynamic
+            }
+            model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
+
             current_user.token_balance -= token_cost
             new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
             db.session.add(new_prediction)
             db.session.commit()
-
+            
             headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
             post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
             
             start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
             start_response.raise_for_status()
+            
             prediction_data = start_response.json()
-
             new_prediction.replicate_id = prediction_data.get('id')
             db.session.commit()
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
@@ -684,13 +678,7 @@ def process_image():
         db.session.rollback()
         import traceback
         traceback.print_exc()
-        # Безопасный возврат токенов
-        if token_cost > 0:
-             user_in_db = db.session.get(User, current_user.id)
-             if user_in_db:
-                 user_in_db.token_balance += token_cost
-                 db.session.commit()
-        return jsonify({'error': f'An internal server error occurred. Your tokens have been refunded. Error: {str(e)}'}), 500
+        return jsonify({'error': f'An internal server error occurred. Please try again. Error: {str(e)}'}), 500
 
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
