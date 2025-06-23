@@ -729,26 +729,40 @@ def _generate_tinkoff_token(data):
 @app.route('/create-payment', methods=['POST'])
 @login_required
 def create_payment():
-    """Создает платеж и перенаправляет пользователя на страницу оплаты."""
-    # В будущем здесь будет логика выбора плана и определения суммы
-    amount_kopecks = 999 * 100  # Например, 999 рублей в копейках
-    order_id = str(uuid.uuid4()) # Уникальный ID заказа
+    """Создает платеж для конкретного продукта и перенаправляет на оплату."""
+    product_id = request.form.get('product_id')
+
+    # Словарь с продуктами и их ценами в копейках
+    products = {
+        'starter': {'amount': 95000, 'description': 'Подписка на план Стартер', 'tokens': 1500},
+        'optimal': {'amount': 185000, 'description': 'Подписка на план Оптимальный', 'tokens': 4500},
+        'pro':     {'amount': 349000, 'description': 'Подписка на план Pifly PRO', 'tokens': 15000},
+        'topup':   {'amount': 50000, 'description': 'Покупка 1000 токенов', 'tokens': 1000}
+    }
+
+    product = products.get(product_id)
+    if not product:
+        flash("Выбран неверный продукт.", "danger")
+        return redirect(url_for('billing'))
+
+    amount_kopecks = product['amount']
+    order_id = str(uuid.uuid4())
 
     payload = {
         "TerminalKey": app.config['TINKOFF_TERMINAL_KEY'],
         "Amount": amount_kopecks,
         "OrderId": order_id,
-        "Description": "Покупка кредитов Pifly.io",
+        "Description": product['description'],
         "DATA": {
-            "Email": current_user.email,
-            "UserId": current_user.id
+            "UserId": current_user.id,
+            "ProductId": product_id # Сохраняем ID продукта для начисления токенов
         },
         "Receipt": {
             "Email": current_user.email,
             "Taxation": "usn_income",
             "Items": [
                 {
-                    "Name": "Кредиты Pifly.io",
+                    "Name": product['description'],
                     "Price": amount_kopecks,
                     "Quantity": 1.00,
                     "Amount": amount_kopecks,
@@ -757,8 +771,7 @@ def create_payment():
             ]
         }
     }
-    
-    # Генерируем токен и добавляем его в payload
+
     payload['Token'] = _generate_tinkoff_token(payload)
 
     try:
@@ -767,14 +780,13 @@ def create_payment():
         result = response.json()
 
         if result.get("Success"):
-            # TODO: Сохранить `order_id` и `result.get('PaymentId')` в нашей БД
-            # чтобы связать их с пользователем и проверить при уведомлении.
+            # TODO: Сохранить `order_id` и `result.get('PaymentId')` в БД
             return redirect(result.get('PaymentURL'))
         else:
             error_message = result.get('Message', 'Неизвестная ошибка')
             flash(f"Ошибка при создании платежа: {error_message}", "danger")
             return redirect(url_for('billing'))
-            
+
     except Exception as e:
         flash(f"Не удалось связаться с платежным шлюзом: {e}", "danger")
         return redirect(url_for('billing'))
@@ -782,29 +794,33 @@ def create_payment():
 
 @app.route('/tinkoff-notification', methods=['POST'])
 def tinkoff_notification():
-    """Обрабатывает уведомления о статусе платежа от Т-Банка."""
+    """Обрабатывает уведомления и начисляет правильное количество токенов."""
     data = request.json
-    
-    # Проверяем токен, чтобы убедиться, что это запрос от Т-Банка
+
     received_token = data.pop('Token', None)
     expected_token = _generate_tinkoff_token(data)
 
     if received_token != expected_token:
-        # Если токен не совпадает, игнорируем запрос
         return "error: invalid token", 400
 
-    # Если статус платежа CONFIRMED, начисляем кредиты
     if data.get('Status') == 'CONFIRMED':
         user_id = data.get('DATA', {}).get('UserId')
-        if user_id:
-            user = User.query.get(user_id)
-            if user:
-                # TODO: Определять количество кредитов на основе суммы
-                user.token_balance += 1500 
-                db.session.commit()
-                print(f"Пользователю {user_id} успешно начислено 1500 токенов.")
+        product_id = data.get('DATA', {}).get('ProductId')
 
-    # Отвечаем банку, что все получили
+        if user_id and product_id:
+            products = {
+                'starter': {'tokens': 1500}, 'optimal': {'tokens': 4500},
+                'pro': {'tokens': 15000}, 'topup': {'tokens': 1000}
+            }
+            token_amount = products.get(product_id, {}).get('tokens')
+
+            if token_amount:
+                user = User.query.get(user_id)
+                if user:
+                    user.token_balance += token_amount
+                    db.session.commit()
+                    print(f"Пользователю {user_id} успешно начислено {token_amount} токенов.")
+
     return "OK", 200
 
 @app.route('/delete-account', methods=['POST'])
