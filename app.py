@@ -865,6 +865,14 @@ def delete_account():
         flash('Произошла ошибка при удалении вашего аккаунта.', 'error')
         return redirect(url_for('billing'))
 
+@app.route('/cancel-subscription', methods=['POST'])
+@login_required
+def cancel_subscription():
+    # TODO: Добавить логику отмены рекуррентной подписки в Тинькофф, когда она будет подключена.
+    # На данный момент, так как у нас только разовые платежи, реальной подписки для отмены нет.
+    flash('Функция отмены подписки будет доступна после подключения рекуррентных платежей.', 'info')
+    return redirect(url_for('billing'))
+
 if __name__ == '__main__':
     # Для локального запуска, debug=True. На сервере будет False.
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
