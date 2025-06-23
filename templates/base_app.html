@@ -588,8 +588,7 @@
             content: attr(data-tooltip);
             position: absolute;
             bottom: 140%; 
-            left: 0;  /* ИЗМЕНЕНО */
-            transform: translateX(0); /* ИЗМЕНЕНО */
+            right: 0; /* ИЗМЕНЕНО С LEFT НА RIGHT */
             background-color: var(--toggle-active-bg);
             color: var(--toggle-active-text);
             padding: 10px 15px;
@@ -599,7 +598,7 @@
             line-height: 1.5;
             width: max-content;
             max-width: 280px;
-            text-align: left; /* Улучшает читаемость длинного текста */
+            text-align: left;
             z-index: 10;
             opacity: 0;
             visibility: hidden;
