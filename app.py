@@ -525,7 +525,7 @@ def process_image():
         generation_system_prompt = (
             "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
             "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-            "3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. "
+            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style "
             "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
             "The output should be only the refined prompt, no explanations or conversational fluff."
         )
