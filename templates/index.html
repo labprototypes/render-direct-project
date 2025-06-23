@@ -5,7 +5,7 @@
 {% block mode_selector %}
 <div class="mode-selector">
     <button class="mode-btn active" data-mode="edit">Редактировать</button>
-    <button class="mode-btn" data-mode="upscale">Улучшить качество</button>
+    <button class="mode-btn" data-mode="upscale">Улучшить</button>
 </div>
 {% endblock %}
 
@@ -15,11 +15,11 @@
         <div id="edit-view">
             <div class="control-group">
                 <div class="edit-mode-selector">
-                    <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Добавляйте и удаляйте объекты, изменяйте части изображения, создавайте продуктовые кадры, изменяйте стили и освещение. Результат базового режима будет изображение 720р. Для сохранение исходного размера изображения, воспользуйтесь режимом Про">Базовый</button>
+                    <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Добавляйте и удаляйте объекты, изменяйте части изображения, создавайте продуктовые кадры, изменяйте стили и освещение.<br>Результат базового режима будет изображение 720р.">Базовый</button>
                     {% if current_user.current_plan == 'taste' %}
                         <button class="edit-mode-btn feature-locked" disabled title="Please upgrade your plan to use this feature">Про</button>
                     {% else %}
-                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Добавляйте и удаляйте объекты, изменяйте части изображения, создавайте продуктовые кадры, изменяйте стили и освещение. Результат Про режима будет изображение оригинального качества.">Про</button>
+                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Добавляйте и удаляйте объекты, изменяйте части изображения, создавайте продуктовые кадры, изменяйте стили и освещение.<br>Результат Про режима будет изображение оригинального качества.">Про</button>
                     {% endif %}
                 </div>
             </div>
@@ -287,7 +287,7 @@
             finalSizeDisplay.textContent = `Финальный размер: ${finalWidth} x ${finalHeight}`;
             let cost = (multiplier <= 2) ? 17 : (multiplier <= 4) ? 65 : 150;
             upscaleTokenCostSpan.textContent = `Примерная стоимость: ${cost}`;
-            const limit = 10000; // Изменено на 10к согласно переводу
+            const limit = 10000;
             if (finalWidth > limit || finalHeight > limit) {
                 finalSizeDisplay.style.display = 'none';
                 resolutionLimitWarning.style.display = 'block';
@@ -439,9 +439,7 @@
                 const editMode = e.currentTarget.dataset.editMode;
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
-                editModeDescription.textContent = e.currentTarget.dataset.description;
-                const showControls = (editMode === 'edit');
-                editControlsContainer.style.display = showControls ? 'flex' : 'none';
+                editModeDescription.textContent = e.currentTarget.dataset.description.replace(/<br>/g, '\n');
             });
         });
         
@@ -496,19 +494,16 @@
         // --- НОВЫЙ СКРИПТ ДЛЯ ПОДСКАЗОК ---
         document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
             trigger.addEventListener('click', function(e) {
-                e.stopPropagation(); // Останавливаем всплытие, чтобы не сработал клик по документу
-                // Закрываем все другие активные подсказки
+                e.stopPropagation(); 
                 document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
                     if (activeTrigger !== this) {
                         activeTrigger.classList.remove('active');
                     }
                 });
-                // Переключаем текущую
                 this.classList.toggle('active');
             });
         });
 
-        // Закрываем подсказку при клике в любом другом месте
         document.addEventListener('click', function (e) {
             document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
                 activeTrigger.classList.remove('active');
