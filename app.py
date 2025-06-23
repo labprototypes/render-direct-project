@@ -17,9 +17,10 @@ import openai
 import requests
 import stripe
 from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session, get_flashed_messages
+from werkzeug.datastructures import FileStorage
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user 
 from PIL import Image
 
 # --- Настройки приложения ---
@@ -539,14 +540,6 @@ def get_result(prediction_id):
 
 ### НАЧАЛО БЛОКА ДЛЯ ПОЛНОЙ ЗАМЕНЫ ##
 
-# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
-
-# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
-
-# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
-
-# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
-
 @app.route('/process-image', methods=['POST'])
 #@login_required
 #@subscription_required
@@ -565,12 +558,31 @@ def process_image():
         return jsonify({'error': 'Image is missing'}), 400
         
     try:
-        original_file_storage = request.files['image']
-        original_s3_url = upload_file_to_s3(original_file_storage)
-        print(f"!!! Оригинал загружен в S3: {original_s3_url}")
+        uploaded_file = request.files['image']
         
-        original_file_storage.stream.seek(0)
-        image_for_openai = resize_image_for_openai(original_file_storage)
+        # --- ИСПРАВЛЕНИЕ: Читаем файл в память ОДИН РАЗ ---
+        image_data = uploaded_file.read()
+        
+        # --- Поток 1: Загружаем ОРИГИНАЛ в S3 ---
+        # Создаем "копию" файла в памяти для первой загрузки
+        original_file_stream = io.BytesIO(image_data)
+        original_file_for_upload = FileStorage(
+            stream=original_file_stream, 
+            filename=uploaded_file.filename, 
+            content_type=uploaded_file.content_type
+        )
+        original_s3_url = upload_file_to_s3(original_file_for_upload)
+        print(f"!!! Оригинал загружен в S3: {original_s3_url}")
+
+        # --- Поток 2: Сжимаем и загружаем копию для OpenAI ---
+        # Создаем ВТОРУЮ "копию" в памяти для анализа и сжатия
+        file_for_analysis_stream = io.BytesIO(image_data)
+        file_for_analysis_storage = FileStorage(
+            stream=file_for_analysis_stream, 
+            filename=uploaded_file.filename, 
+            content_type=uploaded_file.content_type
+        )
+        image_for_openai = resize_image_for_openai(file_for_analysis_storage)
         s3_url_for_openai = upload_file_to_s3(image_for_openai)
         print(f"!!! Копия для OpenAI загружена в S3: {s3_url_for_openai}")
 
