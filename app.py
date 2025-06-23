@@ -545,6 +545,8 @@ def get_result(prediction_id):
 #@subscription_required
 def process_image():
     # --- ВРЕМЕННЫЙ КОД ДЛЯ ТЕСТА БЕЗ ЛОГИНА ---
+    # Этот блок позволяет тестировать API без входа в систему.
+    # Для реальной работы закомментируйте или удалите его и раскомментируйте декораторы выше.
     test_user_id = "test-debug-user"
     current_user = db.session.get(User, test_user_id)
     if not current_user:
@@ -557,110 +559,170 @@ def process_image():
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
         
+    edit_mode = request.form.get('edit_mode') # 'basic' или 'pro'
+    token_cost = 0
+
     try:
-        uploaded_file = request.files['image']
-    
-        # Шаг 1: Читаем файл в память ОДИН РАЗ
-        image_data = uploaded_file.read()
-    
-        # Шаг 2: СРАЗУ получаем размеры из данных в памяти
-        img_for_size_check = Image.open(io.BytesIO(image_data))
-        original_width, original_height = img_for_size_check.size
-    
-        # Шаг 3: Поток для загрузки ОРИГИНАЛА в S3 (для воркера)
-        original_stream = io.BytesIO(image_data)
-        original_for_upload = FileStorage(
-            stream=original_stream, 
-            filename=uploaded_file.filename, 
-            content_type=uploaded_file.content_type
-        )
-        original_s3_url = upload_file_to_s3(original_for_upload)
-        print(f"!!! Оригинал ({original_width}x{original_height}) загружен в S3: {original_s3_url}")
-    
-        # Шаг 4: Поток для сжатия и загрузки копии для OpenAI
-        analysis_stream = io.BytesIO(image_data)
-        analysis_for_upload = FileStorage(
-            stream=analysis_stream, 
-            filename=uploaded_file.filename, 
-            content_type=uploaded_file.content_type
-        )
-        image_for_openai = resize_image_for_openai(analysis_for_upload)
-        s3_url_for_openai = upload_file_to_s3(image_for_openai)
-        print(f"!!! Копия для OpenAI загружена в S3: {s3_url_for_openai}")
-    
-        prompt = request.form.get('prompt', '')
-        
-        # --- ЭТАП 1: Создаем описательный промпт для генерации ---
-        # Используем промпт, который ВЫ предоставили.
-        generation_system_prompt = (
-            "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
-            "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
-            "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
-            "The output should be only the refined prompt, no explanations or conversational fluff."
-        )
-        messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
-        
-        generation_response = openai_client.chat.completions.create(
-            model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2
-        )
-        generation_prompt = generation_response.choices[0].message.content.strip()
-        if not generation_prompt:
-            raise Exception("OpenAI failed to generate the descriptive prompt.")
-        print(f"!!! Этап 1: Сгенерирован промпт для генерации: {generation_prompt}")
-        
-        # --- ЭТАП 2: Определяем намерение и объект для маски ---
-        intent_system_prompt = (
-            "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
-            "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
-            "You MUST only output the raw JSON object."
-        )
-        messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
-        
-        intent_response = openai_client.chat.completions.create(
-            model="gpt-4o", messages=messages_for_intent, max_tokens=100, response_format={"type": "json_object"}, temperature=0.0
-        )
-        intent_content = intent_response.choices[0].message.content
-        if not intent_content:
-            raise Exception("OpenAI failed to determine the intent.")
-        
-        intent_data = json.loads(intent_content)
-        intent = intent_data.get("intent")
-        mask_prompt = intent_data.get("mask_prompt")
+        if edit_mode == 'basic':
+            # --- ЛОГИКА ДЛЯ РЕЖИМА "BASIC" (стоимость 100) ---
+            # Использует существующую схему с фоновым воркером
+            print("!!! РЕЖИМ: Basic")
+            token_cost = 100
+            if current_user.token_balance < token_cost:
+                return jsonify({'error': f'Insufficient tokens. Need {token_cost} tokens.'}), 403
 
-        if not intent or not mask_prompt:
-            raise Exception("OpenAI returned JSON without required keys 'intent' or 'mask_prompt'.")
-        print(f"!!! Этап 2: Определен Intent: {intent}, Объект для маски: {mask_prompt}")
+            # Этот код полностью взят из вашей текущей реализации app (33).py
+            uploaded_file = request.files['image']
+            image_data = uploaded_file.read()
+            img_for_size_check = Image.open(io.BytesIO(image_data))
+            original_width, original_height = img_for_size_check.size
 
-        # --- Отправляем все три части в воркер ---
-        token_cost = 65
-        new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
-        db.session.add(new_prediction)
-        db.session.commit()
+            original_stream = io.BytesIO(image_data)
+            original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+            original_s3_url = upload_file_to_s3(original_for_upload)
+            print(f"!!! [Basic] Оригинал ({original_width}x{original_height}) загружен в S3: {original_s3_url}")
 
-        job_data = {
-            "prediction_id": new_prediction.id,
-            "original_s3_url": original_s3_url,
-            "intent": intent,
-            "generation_prompt": generation_prompt,
-            "mask_prompt": mask_prompt,
-            "token_cost": token_cost,
-            "user_id": current_user.id,
-            "original_width": original_width, # <--- ДОБАВЛЕНО
-            "original_height": original_height # <--- ДОБАВЛЕНО
-        }
-        redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
-        print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
-        
-        return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+            analysis_stream = io.BytesIO(image_data)
+            analysis_for_upload = FileStorage(stream=analysis_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+            image_for_openai = resize_image_for_openai(analysis_for_upload)
+            s3_url_for_openai = upload_file_to_s3(image_for_openai)
+            print(f"!!! [Basic] Копия для OpenAI загружена в S3: {s3_url_for_openai}")
+
+            prompt = request.form.get('prompt', '')
+            
+            # Этап 1: Создаем описательный промпт для генерации
+            generation_system_prompt = (
+                "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+                "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
+                "The output should be only the refined prompt, no explanations or conversational fluff."
+            )
+            messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
+            
+            generation_response = openai_client.chat.completions.create(model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2)
+            generation_prompt = generation_response.choices[0].message.content.strip()
+            if not generation_prompt: raise Exception("OpenAI failed to generate the descriptive prompt.")
+            print(f"!!! [Basic] Этап 1: Сгенерирован промпт для генерации: {generation_prompt}")
+            
+            # Этап 2: Определяем намерение и объект для маски
+            intent_system_prompt = (
+                "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
+                "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
+                "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
+                "You MUST only output the raw JSON object."
+            )
+            messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
+            
+            intent_response = openai_client.chat.completions.create(model="gpt-4o", messages=messages_for_intent, max_tokens=100, response_format={"type": "json_object"}, temperature=0.0)
+            intent_data = json.loads(intent_response.choices[0].message.content)
+            intent = intent_data.get("intent")
+            mask_prompt = intent_data.get("mask_prompt")
+            if not intent or not mask_prompt: raise Exception("OpenAI returned JSON without required keys 'intent' or 'mask_prompt'.")
+            print(f"!!! [Basic] Этап 2: Определен Intent: {intent}, Объект для маски: {mask_prompt}")
+
+            # Списываем токены и отправляем задачу в воркер
+            current_user.token_balance -= token_cost
+            new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
+            db.session.add(new_prediction)
+            db.session.commit()
+
+            job_data = {
+                "prediction_id": new_prediction.id,
+                "original_s3_url": original_s3_url,
+                "intent": intent,
+                "generation_prompt": generation_prompt,
+                "mask_prompt": mask_prompt,
+                "token_cost": token_cost,
+                "user_id": current_user.id,
+                "original_width": original_width,
+                "original_height": original_height
+            }
+            redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
+            print(f"!!! [Basic] Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
+            
+            return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
+        elif edit_mode == 'pro':
+            # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (стоимость 200) ---
+            # Использует схему из app (34).py с прямым вызовом Replicate
+            print("!!! РЕЖИМ: Pro")
+            token_cost = 200
+            if current_user.token_balance < token_cost:
+                return jsonify({'error': f'Insufficient tokens. Need {token_cost} tokens.'}), 403
+
+            if not openai_client:
+                raise Exception("OpenAI client is not configured. Your tokens have been refunded.")
+
+            uploaded_file = request.files['image']
+            s3_url = upload_file_to_s3(uploaded_file)
+            prompt = request.form.get('prompt', '')
+
+            # Улучшаем промпт через OpenAI, как в app (34).py
+            print("!!! [Pro] Запрос к OpenAI Vision API для улучшения промпта...")
+            edit_system_prompt = (
+                "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
+            )
+            messages = [
+                {"role": "system", "content": edit_system_prompt},
+                {"role": "user", "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": s3_url}}
+                ]}
+            ]
+            response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=250, temperature=0.2)
+            final_prompt = response.choices[0].message.content.strip().replace('\n', ' ').replace('\r', ' ').strip()
+            print(f"!!! [Pro] Улучшенный промпт: {final_prompt}")
+
+            # Списываем токены и создаем запись в БД ПЕРЕД вызовом Replicate
+            current_user.token_balance -= token_cost
+            new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
+            db.session.add(new_prediction)
+            db.session.commit()
+
+            # Вызываем Replicate API
+            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+            
+            headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
+            post_payload = {
+                "version": model_version_id,
+                "input": replicate_input,
+                "webhook": url_for('replicate_webhook', _external=True),
+                "webhook_events_filter": ["completed", "failed"]
+            }
+            print(f"!!! [Pro] Replicate Payload: {post_payload}")
+            
+            start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
+            start_response.raise_for_status()
+            
+            prediction_data = start_response.json()
+            replicate_prediction_id = prediction_data.get('id')
+
+            # Обновляем запись в БД с ID от Replicate
+            new_prediction.replicate_id = replicate_prediction_id
+            db.session.commit()
+            print(f"!!! [Pro] Задача {new_prediction.id} отправлена в Replicate с ID: {replicate_prediction_id}")
+            
+            return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
+        else:
+            return jsonify({'error': 'Invalid edit mode specified'}), 400
 
     except Exception as e:
         db.session.rollback()
         import traceback
         traceback.print_exc()
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
-        return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
+        # Безопасная попытка вернуть токены, если ошибка произошла после их списания
+        if token_cost > 0 and current_user:
+             user_in_db = db.session.get(User, current_user.id)
+             if user_in_db and (user_in_db.token_balance + token_cost) > 0:
+                 user_in_db.token_balance += token_cost
+                 db.session.commit()
+                 print(f"!!! Токены ({token_cost}) возвращены пользователю {current_user.id} из-за ошибки.")
+        return jsonify({'error': f'An internal server error occurred. Your tokens have been refunded. Details: {str(e)}'}), 500
+
 
 ### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
