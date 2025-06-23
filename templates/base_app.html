@@ -295,9 +295,9 @@
             opacity: 0;
             visibility: hidden;
             transform: scale(0.8);
-            background-color: rgba(26, 26, 26, 0.7); /* Темная полупрозрачная подложка */
-            border-radius: 50%; /* Делаем ее круглой */
-            color: white; /* Делаем иконку внутри белой */
+            background-color: rgba(26, 26, 26, 0.7);
+            border-radius: 50%;
+            color: white;
         }
         .archive-item:hover .download-action-link,
         .history-item:hover .download-action-link { opacity: 1; visibility: visible; transform: scale(1); }
@@ -404,6 +404,7 @@
         .mode-description {
             font-size: 0.85rem; color: var(--secondary-text-color); text-align: center;
             width: 100%; padding: 0 10px; line-height: 1.5; min-height: 2.5em; font-weight: 300;
+            white-space: pre-wrap; /* Для поддержки переносов строк из JS */
         }
         .slider-container {
             width: 100%; padding: 10px; background-color: transparent;
@@ -584,6 +585,7 @@
             width: 16px;
             height: 16px;
         }
+        
         /* НОВЫЙ СТИЛЬ ДЛЯ ДИНАМИЧЕСКИХ ПОДСКАЗОК */
         .dynamic-tooltip {
             position: absolute;
@@ -601,7 +603,7 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             pointer-events: none; /* Чтобы не мешала курсору */
         }
-        /* Добавьте в конец тега <style> в base_app.html */
+
         .checkbox-container {
             margin-bottom: 15px;
             display: flex;
@@ -649,16 +651,16 @@
                              <span class="dropdown-user-email">{{ current_user.email or current_user.username }}</span>
                         </div>
                         <ul>
-                            <li><a href="{{ url_for('index') }}">Generate</a></li>
-                            <li><a href="{{ url_for('archive') }}">Archive</a></li>
-                            <li><a href="{{ url_for('billing') }}">Manage plan</a></li>
-                            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                            <li><a href="{{ url_for('index') }}">Генерации</a></li>
+                            <li><a href="{{ url_for('archive') }}">Архив</a></li>
+                            <li><a href="{{ url_for('billing') }}">Управлять подпиской</a></li>
+                            <li><a href="{{ url_for('logout') }}">Выйти</a></li>
                         </ul>
                     </div>
                 {% else %}
                     <div class="user-controls-loggedout">
-                        <a href="{{ url_for('login') }}" class="auth-button">Login</a>
-                        <a href="{{ url_for('login') }}" class="auth-button">Sign Up</a>
+                        <a href="{{ url_for('login') }}" class="auth-button">Войти</a>
+                        <a href="{{ url_for('login') }}" class="auth-button">Зарегистрироваться</a>
                     </div>
                 {% endif %}
             </div>
@@ -696,7 +698,6 @@
     });
     </script>
     {% block page_scripts %}{% endblock %}
-
     <script>
     // НОВАЯ ЛОГИКА ДЛЯ ПОДСКАЗОК, КОТОРАЯ РЕШАЕТ ПРОБЛЕМУ ОБРЕЗКИ
     document.addEventListener('DOMContentLoaded', () => {
@@ -754,9 +755,9 @@
 
 <footer class="footer-container">
     <div class="footer-links">
-        <a href="{{ url_for('terms') }}">Terms of Service</a>
-        <a href="{{ url_for('privacy') }}">Privacy Policy</a>
-        <a href="{{ url_for('marketing_policy') }}">Marketing Policy</a>
+        <a href="{{ url_for('terms') }}">Правила использования</a>
+        <a href="{{ url_for('privacy') }}">Политика обработки персональных данных</a>
+        <a href="{{ url_for('marketing_policy') }}">Маркетинговая политика</a>
         <a href="mailto:hello@pifly.io">hello@pifly.io</a>
     </div>
 </footer>
