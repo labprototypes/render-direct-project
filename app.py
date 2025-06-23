@@ -713,44 +713,59 @@ with app.app_context():
     db.create_all()
 
 def _generate_tinkoff_token(data):
-    """Генерирует токен подписи для запроса к API Тинькофф."""
+    """ИСПРАВЛЕННАЯ ВЕРСИЯ: Генерирует токен, исключая сложные объекты из подписи."""
     secret_key = app.config['TINKOFF_SECRET_KEY']
-    # Отфильтровываем все None значения и добавляем пароль
-    filtered_data = {k: v for k, v in data.items() if v is not None}
-    filtered_data['Password'] = secret_key
-    
-    # Сортируем по ключу и конкатенируем значения
-    sorted_data = sorted(filtered_data.items())
-    values_str = "".join(str(v) for _, v in sorted_data)
-    
-    # Хэшируем и возвращаем
-    return hashlib.sha256(values_str.encode('utf-8')).hexdigest()
+
+    # Создаем копию словаря для расчета токена
+    data_for_token = data.copy()
+
+    # Исключаем сложные объекты из расчета подписи, как требует API
+    if 'DATA' in data_for_token:
+        del data_for_token['DATA']
+    if 'Receipt' in data_for_token:
+        del data_for_token['Receipt']
+
+    # Добавляем пароль
+    data_for_token['Password'] = secret_key
+
+    # Сортируем по ключу и собираем строку
+    sorted_items = sorted(data_for_token.items())
+    concatenated_values = "".join(str(v) for _, v in sorted_items)
+
+    # Хэшируем
+    return hashlib.sha256(concatenated_values.encode('utf-8')).hexdigest()
 
 @app.route('/create-payment', methods=['POST'])
 @login_required
 def create_payment():
-    """Проверяем работу с добавленным объектом чека (Receipt)."""
+    """ФИНАЛЬНАЯ ВЕРСИЯ: Создает платеж для продукта со всеми полями."""
     product_id = request.form.get('product_id')
 
     products = {
-        'starter': {'amount': 95000, 'description': 'Подписка на план Стартер'},
-        'optimal': {'amount': 185000, 'description': 'Подписка на план Оптимальный'},
-        'pro':     {'amount': 349000, 'description': 'Подписка на план Pifly PRO'},
-        'topup':   {'amount': 50000, 'description': 'Покупка 1000 токенов'}
+        'starter': {'amount': 95000, 'description': 'Подписка на план Стартер', 'tokens': 1500},
+        'optimal': {'amount': 185000, 'description': 'Подписка на план Оптимальный', 'tokens': 4500},
+        'pro':     {'amount': 349000, 'description': 'Подписка на план Pifly PRO', 'tokens': 15000},
+        'topup':   {'amount': 50000, 'description': 'Покупка 1000 токенов', 'tokens': 1000}
     }
+
     product = products.get(product_id)
     if not product:
         flash("Выбран неверный продукт.", "danger")
         return redirect(url_for('billing'))
 
     amount_kopecks = product['amount']
+    order_id = str(uuid.uuid4())
 
-    # Возвращаем в payload объект Receipt
+    # Финальный payload со всеми полями
     payload = {
         "TerminalKey": app.config['TINKOFF_TERMINAL_KEY'],
         "Amount": amount_kopecks,
-        "OrderId": str(uuid.uuid4()),
+        "OrderId": order_id,
         "Description": product['description'],
+        "DATA": {
+            "UserId": current_user.id,
+            "ProductId": product_id
+        },
         "Receipt": {
             "Email": current_user.email,
             "Taxation": "usn_income",
@@ -766,6 +781,7 @@ def create_payment():
         }
     }
 
+    # Генерируем токен с помощью новой, исправленной функции
     payload['Token'] = _generate_tinkoff_token(payload)
 
     try:
