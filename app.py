@@ -561,8 +561,6 @@ def process_image():
 
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
-        
-# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО БЛОКА try...except ВНУТРИ if mode == 'edit': ---
 
     try:
             # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
@@ -580,39 +578,59 @@ def process_image():
 
             # Шаг 3: Отправляем сжатую копию в OpenAI.
         prompt = request.form.get('prompt', '')
-        edit_system_prompt = (
-            "You are an AI assistant... (здесь ваш последний утвержденный промпт)"
+         generation_system_prompt = (
+            "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+            "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+            "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
+            "The output should be only the refined prompt, no explanations or conversational fluff."
         )
         messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
             
-        response = openai_client.chat.completions.create(
-            model="gpt-4o", messages=messages, max_tokens=250, response_format={"type": "json_object"}, temperature=0.1
+        generation_response = openai_client.chat.completions.create(
+            model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.1
         )
-            
-            # ... (остальная часть кода по обработке ответа ChatGPT и отправке в Redis остается такой же)
-        response_content = response.choices[0].message.content
-        if not response_content:
-            raise Exception("OpenAI returned an empty response.")
-            
-        prompt_data = json.loads(response_content)
-        generation_prompt = prompt_data.get("generation_prompt")
-        mask_prompt = prompt_data.get("mask_prompt")
+        generation_prompt = generation_response.choices[0].message.content.strip()
+        if not generation_prompt:
+            raise Exception("OpenAI failed to generate the descriptive prompt.")
+        print(f"!!! Этап 1: Сгенерирован промпт для генерации: {generation_prompt}")
+        
+        # --- ЭТАП 2: Определяем намерение и объект для маски (возвращает JSON) ---
+        intent_system_prompt = (
+            "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
+            "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
+            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
+            "You MUST only output the raw JSON object."
+        )
+        # Для этого вызова картинка не нужна, достаточно текста пользователя
+        messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
+        
+        # ИСПРАВЛЕНИЕ: В этом вызове ДОЛЖЕН быть response_format
+        intent_response = openai_client.chat.completions.create(
+            model="gpt-4o", messages=messages_for_intent, max_tokens=100, response_format={"type": "json_object"}, temperature=0.0
+        )
+        intent_content = intent_response.choices[0].message.content
+        if not intent_content:
+            raise Exception("OpenAI failed to determine the intent.")
+        
+        intent_data = json.loads(intent_content)
+        intent = intent_data.get("intent")
+        mask_prompt = intent_data.get("mask_prompt")
 
-        if not generation_prompt or not mask_prompt:
-            raise Exception("OpenAI returned a JSON but it's missing required keys.")
+        if not intent or not mask_prompt:
+            raise Exception("OpenAI returned JSON without required keys 'intent' or 'mask_prompt'.")
+        print(f"!!! Этап 2: Определен Intent: {intent}, Объект для маски: {mask_prompt}")
 
-        print(f"!!! Финальный промпт для генерации: {generation_prompt}")
-        print(f"!!! Финальный промпт для маски: {mask_prompt}")
-
+        # --- Отправляем все три части в воркер ---
         token_cost = 65
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
         db.session.add(new_prediction)
         db.session.commit()
 
-            # Шаг 4: В воркер отправляем ссылку на ОРИГИНАЛЬНОЕ изображение.
         job_data = {
             "prediction_id": new_prediction.id,
-            "original_s3_url": original_s3_url, # <--- ИСПОЛЬЗУЕМ ССЫЛКУ НА ОРИГИНАЛ
+            "original_s3_url": original_s3_url,
+            "intent": intent,
             "generation_prompt": generation_prompt,
             "mask_prompt": mask_prompt,
             "token_cost": token_cost,
@@ -620,7 +638,7 @@ def process_image():
         }
         redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
         print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
-            
+        
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
     except Exception as e:
