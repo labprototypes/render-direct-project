@@ -439,7 +439,8 @@
                 const editMode = e.currentTarget.dataset.editMode;
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
-                editModeDescription.textContent = e.currentTarget.dataset.description.replace(/<br>/g, '\n');
+                // ИСПРАВЛЕНИЕ: Используем innerHTML вместо textContent для поддержки <br>
+                editModeDescription.innerHTML = e.currentTarget.dataset.description;
             });
         });
         
@@ -491,24 +492,7 @@
         setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
         setupDragAndDrop(document.getElementById('image-drop-area-upscale'), upscaleImageInput);
         
-        // --- НОВЫЙ СКРИПТ ДЛЯ ПОДСКАЗОК ---
-        document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
-            trigger.addEventListener('click', function(e) {
-                e.stopPropagation(); 
-                document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
-                    if (activeTrigger !== this) {
-                        activeTrigger.classList.remove('active');
-                    }
-                });
-                this.classList.toggle('active');
-            });
-        });
-
-        document.addEventListener('click', function (e) {
-            document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
-                activeTrigger.classList.remove('active');
-            });
-        });
+        // --- Старая логика подсказок удалена, новая добавлена в base_app.html ---
 
         // --- ИНИЦИАЛИЗАЦИЯ ---
         appModeButtons[0].click();
