@@ -583,6 +583,10 @@ def process_image():
             content_type=uploaded_file.content_type
         )
         image_for_openai = resize_image_for_openai(file_for_analysis_storage)
+        from PIL import Image
+        original_file_storage.stream.seek(0)
+        with Image.open(original_file_storage.stream) as img:
+            original_width, original_height = img.size
         s3_url_for_openai = upload_file_to_s3(image_for_openai)
         print(f"!!! Копия для OpenAI загружена в S3: {s3_url_for_openai}")
 
@@ -645,6 +649,8 @@ def process_image():
             "mask_prompt": mask_prompt,
             "token_cost": token_cost,
             "user_id": current_user.id
+            "original_width": original_width, # <--- ДОБАВЛЕНО
+            "original_height": original_height # <--- ДОБАВЛЕНО
         }
         redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
         print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
