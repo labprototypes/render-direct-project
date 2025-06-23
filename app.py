@@ -571,6 +571,7 @@ def process_image():
                 messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
                 generation_response = openai_client.chat.completions.create(model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2)
                 generation_prompt = generation_response.choices[0].message.content.strip()
+                print(f"!!! FINAL PROMPT DEBUG: '{final_prompt}'")
                 intent_system_prompt = (
                     "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
                     "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
