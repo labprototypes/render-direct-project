@@ -584,12 +584,9 @@
             width: 16px;
             height: 16px;
         }
-        .tooltip-trigger::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 140%; 
-            left: 0;  /* ИЗМЕНЕНО */
-            transform: translateX(0); /* ИЗМЕНЕНО */
+        /* Новый стиль для Rich-подсказок */
+        .rich-tooltip {
+            position: absolute; /* Позиционирование через JS */
             background-color: var(--toggle-active-bg);
             color: var(--toggle-active-text);
             padding: 10px 15px;
@@ -597,20 +594,23 @@
             font-size: 0.85rem;
             font-weight: 400;
             line-height: 1.5;
-            width: max-content;
             max-width: 280px;
-            text-align: left; /* Улучшает читаемость длинного текста */
-            z-index: 10;
+            text-align: left;
+            z-index: 1001; /* Выше других элементов */
+            pointer-events: none; /* Подсказка не должна быть кликабельной */
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        
+            /* Стили для плавного появления */
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            pointer-events: none;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transform: translateY(-5px);
+            transition: opacity 0.2s, transform 0.2s;
         }
-        .tooltip-trigger:hover::after,
-        .tooltip-trigger.active::after {
+        
+        .rich-tooltip.visible {
             opacity: 1;
             visibility: visible;
+            transform: translateY(0);
         }
         /* Добавьте в конец тега <style> в base_app.html */
         .checkbox-container {
