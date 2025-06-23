@@ -584,11 +584,9 @@
             width: 16px;
             height: 16px;
         }
-        .tooltip-trigger::after {
-            content: attr(data-tooltip);
+        /* НОВЫЙ СТИЛЬ ДЛЯ ДИНАМИЧЕСКИХ ПОДСКАЗОК */
+        .dynamic-tooltip {
             position: absolute;
-            bottom: 140%; 
-            right: 0; /* ИЗМЕНЕНО С LEFT НА RIGHT */
             background-color: var(--toggle-active-bg);
             color: var(--toggle-active-text);
             padding: 10px 15px;
@@ -596,20 +594,12 @@
             font-size: 0.85rem;
             font-weight: 400;
             line-height: 1.5;
-            width: max-content;
+            width: auto;
             max-width: 280px;
             text-align: left;
-            z-index: 10;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            pointer-events: none;
+            z-index: 110; /* Выше чем у хедера */
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-        }
-        .tooltip-trigger:hover::after,
-        .tooltip-trigger.active::after {
-            opacity: 1;
-            visibility: visible;
+            pointer-events: none; /* Чтобы не мешала курсору */
         }
         /* Добавьте в конец тега <style> в base_app.html */
         .checkbox-container {
@@ -706,6 +696,47 @@
     });
     </script>
     {% block page_scripts %}{% endblock %}
+
+    <script>
+    // НОВАЯ ЛОГИКА ДЛЯ ПОДСКАЗОК, КОТОРАЯ РЕШАЕТ ПРОБЛЕМУ ОБРЕЗКИ
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
+            let tooltipElement = null;
+    
+            trigger.addEventListener('mouseenter', function() {
+                if (!this.dataset.tooltip) return;
+    
+                // Создаем элемент подсказки
+                tooltipElement = document.createElement('div');
+                tooltipElement.className = 'dynamic-tooltip';
+                tooltipElement.textContent = this.dataset.tooltip;
+                document.body.appendChild(tooltipElement);
+    
+                // Позиционируем его
+                const triggerRect = this.getBoundingClientRect();
+                const tooltipRect = tooltipElement.getBoundingClientRect();
+                
+                let top = triggerRect.bottom + window.scrollY + 5; // 5px отступ снизу
+                let left = triggerRect.left + window.scrollX;
+    
+                // Проверяем, не выходит ли за правый край экрана
+                if (left + tooltipRect.width > window.innerWidth) {
+                    left = window.innerWidth - tooltipRect.width - 10; // 10px отступ от края
+                }
+    
+                tooltipElement.style.top = `${top}px`;
+                tooltipElement.style.left = `${left}px`;
+            });
+    
+            trigger.addEventListener('mouseleave', function() {
+                if (tooltipElement) {
+                    tooltipElement.remove();
+                    tooltipElement = null;
+                }
+            });
+        });
+    });
+    </script>
 </body>
 <style>
     .footer-container {
