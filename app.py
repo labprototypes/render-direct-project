@@ -729,28 +729,43 @@ def _generate_tinkoff_token(data):
 @app.route('/create-payment', methods=['POST'])
 @login_required
 def create_payment():
-    """ТЕСТОВАЯ ВЕРСИЯ: Создает платеж с минимальным набором параметров."""
+    """Проверяем работу с добавленным объектом чека (Receipt)."""
     product_id = request.form.get('product_id')
 
     products = {
-        'starter': {'amount': 95000}, 'optimal': {'amount': 185000},
-        'pro':     {'amount': 349000}, 'topup':   {'amount': 50000}
+        'starter': {'amount': 95000, 'description': 'Подписка на план Стартер'},
+        'optimal': {'amount': 185000, 'description': 'Подписка на план Оптимальный'},
+        'pro':     {'amount': 349000, 'description': 'Подписка на план Pifly PRO'},
+        'topup':   {'amount': 50000, 'description': 'Покупка 1000 токенов'}
     }
     product = products.get(product_id)
     if not product:
         flash("Выбран неверный продукт.", "danger")
         return redirect(url_for('billing'))
 
-    # --- УПРОЩЕННЫЙ PAYLOAD ---
-    # Временно убираем Receipt и DATA, чтобы проверить основную логику
+    amount_kopecks = product['amount']
+
+    # Возвращаем в payload объект Receipt
     payload = {
         "TerminalKey": app.config['TINKOFF_TERMINAL_KEY'],
-        "Amount": product['amount'],
+        "Amount": amount_kopecks,
         "OrderId": str(uuid.uuid4()),
-        "Description": f"Test payment for {product_id}"
+        "Description": product['description'],
+        "Receipt": {
+            "Email": current_user.email,
+            "Taxation": "usn_income",
+            "Items": [
+                {
+                    "Name": product['description'],
+                    "Price": amount_kopecks,
+                    "Quantity": 1.00,
+                    "Amount": amount_kopecks,
+                    "Tax": "none"
+                }
+            ]
+        }
     }
 
-    # Токен теперь рассчитывается для простого набора полей
     payload['Token'] = _generate_tinkoff_token(payload)
 
     try:
@@ -759,21 +774,17 @@ def create_payment():
         result = response.json()
 
         if result.get("Success"):
-            print("!!! УСПЕХ: Запрос на оплату прошел, перенаправляем на Тинькофф.")
             return redirect(result.get('PaymentURL'))
         else:
-            # Если даже простой запрос не прошел, выводим детали ошибки
-            error_message = result.get('Message')
+            error_message = result.get('Message', 'Неизвестная ошибка')
             error_details = result.get('Details')
             full_error = f"{error_message} (Детали: {error_details})"
             flash(f"Ошибка при создании платежа: {full_error}", "danger")
-            print(f"!!! ОШИБКА от Тинькофф: {full_error}")
             return redirect(url_for('billing'))
 
     except Exception as e:
         flash(f"Не удалось связаться с платежным шлюзом: {e}", "danger")
         return redirect(url_for('billing'))
-
 
 @app.route('/tinkoff-notification', methods=['POST'])
 def tinkoff_notification():
