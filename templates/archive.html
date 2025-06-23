@@ -1,21 +1,19 @@
 {% extends "base_app.html" %}
 
-{% block title %}Archive{% endblock %}
-
-{% block mode_selector %}{% endblock %} 
+{% block title %}Архив{% endblock %}
 
 {% block content %}
-<div class="app-container" style="display: flex; flex-direction: column; align-items: stretch;">
-    {# FIX: Removed text-align: center to align the heading to the left #}
-    <h1 style="font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 40px; flex-shrink: 0;">Generations Archive</h1>
-    
+<div class="app-container" style="display: block; padding-bottom: 40px;">
+
+    <h1 style="text-align: center; margin-bottom: 40px;">Мой Архив</h1>
+
     {% if predictions %}
         <div class="archive-grid">
             {% for prediction in predictions %}
-                <div class="archive-item" title="Created on {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}">
-                    <img src="{{ prediction.output_url }}" alt="Generated image" loading="lazy">
-                    <a href="{{ prediction.output_url }}" class="download-action-link" download target="_blank" rel="noopener noreferrer">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <div class="archive-item">
+                    <img src="{{ prediction.output_url }}" alt="Сгенерированное изображение из архива" loading="lazy">
+                    <a href="{{ prediction.output_url }}" class="download-action-link" download title="Скачать">
+                        <svg class="download-button-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -26,19 +24,15 @@
         </div>
     {% else %}
         <div class="archive-placeholder-wrapper">
-            <div class="archive-placeholder">
-                <p>You don't have any generations yet. Go create something amazing!</p>
+            <div class="archive-placeholder" style="text-align: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 60px; height: 60px; margin-bottom: 20px; color: var(--secondary-text-color);">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                <p style="font-size: 1.1rem; font-weight: 500; margin-bottom: 10px;">У вас пока нет генераций.</p>
+                <p><a href="{{ url_for('index') }}" style="color: var(--primary-text-color); font-weight: 700; text-decoration: underline;">Время создать что-то классное!</a></p>
             </div>
         </div>
     {% endif %}
-</div>
-{% endblock %}
 
-{% block page_scripts %}
-<script>
-// Скрипты с главной страницы здесь не нужны, но блок оставляем на случай будущего расширения.
-document.addEventListener('DOMContentLoaded', () => {
-    // Код для этой страницы, если понадобится
-});
-</script>
+</div>
 {% endblock %}
