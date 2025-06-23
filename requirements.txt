@@ -16,3 +16,5 @@ email-validator
 gevent
 stripe
 firebase-admin
+redis
+Pillow
