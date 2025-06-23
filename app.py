@@ -20,6 +20,7 @@ from flask import Flask, request, jsonify, render_template, url_for, redirect, f
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from PIL import Image
 
 # --- Настройки приложения ---
 app = Flask(__name__)
@@ -217,6 +218,51 @@ def upload_file_to_s3(file_to_upload):
     hosted_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_S3_REGION}.amazonaws.com/{object_name}"
     print(f"!!! Изображение загружено на Amazon S3: {hosted_image_url}")
     return hosted_image_url
+
+def resize_image_for_openai(file_storage):
+    """Сжимает изображение, если оно слишком большое для OpenAI Vision."""
+    MAX_SIZE_MB = 20
+    # OpenAI рекомендует, чтобы длинная сторона была не более 2048px
+    MAX_DIMENSION = 2048 
+
+    img = Image.open(file_storage.stream)
+    
+    # Проверяем размер файла
+    file_storage.stream.seek(0, os.SEEK_END)
+    file_size_mb = file_storage.stream.tell() / (1024 * 1024)
+    file_storage.stream.seek(0)
+
+    if file_size_mb < MAX_SIZE_MB and max(img.size) <= MAX_DIMENSION:
+        print("!!! Изображение уже подходит для OpenAI, сжатие не требуется.")
+        return file_storage # Возвращаем оригинальный файл
+    
+    print(f"!!! Изображение слишком большое ({img.width}x{img.height}, {file_size_mb:.2f}MB). Сжимаем...")
+    
+    # Пропорционально уменьшаем до 2048px по длинной стороне
+    img.thumbnail((MAX_DIMENSION, MAX_DIMENSION))
+    
+    # Сохраняем сжатое изображение в байтовый поток в памяти
+    byte_arr = io.BytesIO()
+    img_format = img.format if img.format in ['JPEG', 'PNG'] else 'JPEG'
+    
+    # Для JPEG можно указать качество, чтобы еще сильнее уменьшить размер
+    if img_format == 'JPEG':
+        img.save(byte_arr, format=img_format, quality=85)
+    else:
+        img.save(byte_arr, format=img_format)
+
+    byte_arr.seek(0)
+    
+    # "Заворачиваем" байтовый поток обратно в объект, похожий на файл
+    from werkzeug.datastructures import FileStorage
+    compressed_file = FileStorage(
+        stream=byte_arr,
+        filename=file_storage.filename,
+        content_type=f'image/{img_format.lower()}'
+    )
+    
+    print("!!! Изображение успешно сжато.")
+    return compressed_file
 
 # В файле app.py
 
@@ -516,63 +562,57 @@ def process_image():
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
         
+# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО БЛОКА try...except ВНУТРИ if mode == 'edit': ---
+
     try:
-        s3_url = upload_file_to_s3(request.files['image'])
+            # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
+            
+            # Шаг 1: Загружаем ОРИГИНАЛЬНЫЙ файл в S3. Эту ссылку получит воркер для работы.
+        original_file_storage = request.files['image']
+        original_s3_url = upload_file_to_s3(original_file_storage)
+        print(f"!!! Оригинал загружен в S3: {original_s3_url}")
+
+            # Шаг 2: Создаем сжатую копию ТОЛЬКО для анализа ChatGPT.
+            # Важно! Мы передаем оригинальный файл, чтобы его можно было прочитать заново.
+        image_for_openai = resize_image_for_openai(request.files['image'])
+        s3_url_for_openai = upload_file_to_s3(image_for_openai)
+        print(f"!!! Копия для OpenAI загружена в S3: {s3_url_for_openai}")
+
+            # Шаг 3: Отправляем сжатую копию в OpenAI.
         prompt = request.form.get('prompt', '')
-        
-        # --- ЭТАП 1: Создаем описательный промпт для генерации ---
-        # Используем промпт, который вы предоставили.
-        generation_system_prompt = (
-            "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
-            "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
-            "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
-            "The output should be only the refined prompt, no explanations or conversational fluff."
+        edit_system_prompt = (
+            "You are an AI assistant... (здесь ваш последний утвержденный промпт)"
         )
-        messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
-        
-        generation_response = openai_client.chat.completions.create(
-            model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2
+        messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
+            
+        response = openai_client.chat.completions.create(
+            model="gpt-4o", messages=messages, max_tokens=250, response_format={"type": "json_object"}, temperature=0.1
         )
-        generation_prompt = generation_response.choices[0].message.content.strip()
-        if not generation_prompt:
-            raise Exception("OpenAI failed to generate the descriptive prompt.")
-        print(f"!!! Этап 1: Сгенерирован промпт для генерации: {generation_prompt}")
-        
-        # --- ЭТАП 2: Определяем намерение и объект для маски ---
-        intent_system_prompt = (
-            "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
-            "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. Example: 'a hat', not 'a hat on a man'. But you can use the position explanation if there is more than one the same type object. Example: 'a frog on the right'. Be specific. "
-            "You MUST only output the raw JSON object."
-        )
-        messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
-        
-        intent_response = openai_client.chat.completions.create(
-            model="gpt-4o", messages=messages_for_intent, max_tokens=100, response_format={"type": "json_object"}, temperature=0.0
-        )
-        intent_content = intent_response.choices[0].message.content
-        if not intent_content:
-            raise Exception("OpenAI failed to determine the intent.")
-        
-        intent_data = json.loads(intent_content)
-        intent = intent_data.get("intent")
-        mask_prompt = intent_data.get("mask_prompt")
+            
+            # ... (остальная часть кода по обработке ответа ChatGPT и отправке в Redis остается такой же)
+        response_content = response.choices[0].message.content
+        if not response_content:
+            raise Exception("OpenAI returned an empty response.")
+            
+        prompt_data = json.loads(response_content)
+        generation_prompt = prompt_data.get("generation_prompt")
+        mask_prompt = prompt_data.get("mask_prompt")
 
-        if not intent or not mask_prompt:
-            raise Exception("OpenAI returned JSON without required keys 'intent' or 'mask_prompt'.")
-        print(f"!!! Этап 2: Определен Intent: {intent}, Объект для маски: {mask_prompt}")
+        if not generation_prompt or not mask_prompt:
+            raise Exception("OpenAI returned a JSON but it's missing required keys.")
 
-        # --- Отправляем все три части в воркер ---
+        print(f"!!! Финальный промпт для генерации: {generation_prompt}")
+        print(f"!!! Финальный промпт для маски: {mask_prompt}")
+
         token_cost = 65
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
         db.session.add(new_prediction)
         db.session.commit()
 
+            # Шаг 4: В воркер отправляем ссылку на ОРИГИНАЛЬНОЕ изображение.
         job_data = {
             "prediction_id": new_prediction.id,
-            "original_s3_url": s3_url,
-            "intent": intent,
+            "original_s3_url": original_s3_url, # <--- ИСПОЛЬЗУЕМ ССЫЛКУ НА ОРИГИНАЛ
             "generation_prompt": generation_prompt,
             "mask_prompt": mask_prompt,
             "token_cost": token_cost,
@@ -580,7 +620,7 @@ def process_image():
         }
         redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
         print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
-        
+            
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
     except Exception as e:
