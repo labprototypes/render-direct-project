@@ -545,6 +545,8 @@ def get_result(prediction_id):
 
 # --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
 
+# --- ВСТАВЬТЕ ЭТОТ КОД НА МЕСТО СТАРОЙ ФУНКЦИИ process_image ---
+
 @app.route('/process-image', methods=['POST'])
 #@login_required
 #@subscription_required
@@ -561,51 +563,47 @@ def process_image():
 
     if 'image' not in request.files:
         return jsonify({'error': 'Image is missing'}), 400
-
+        
     try:
-            # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
-            
-            # Шаг 1: Загружаем ОРИГИНАЛЬНЫЙ файл в S3. Эту ссылку получит воркер для работы.
         original_file_storage = request.files['image']
         original_s3_url = upload_file_to_s3(original_file_storage)
         print(f"!!! Оригинал загружен в S3: {original_s3_url}")
-
-            # Шаг 2: Создаем сжатую копию ТОЛЬКО для анализа ChatGPT.
-            # Важно! Мы передаем оригинальный файл, чтобы его можно было прочитать заново.
-        image_for_openai = resize_image_for_openai(request.files['image'])
+        
+        original_file_storage.stream.seek(0)
+        image_for_openai = resize_image_for_openai(original_file_storage)
         s3_url_for_openai = upload_file_to_s3(image_for_openai)
         print(f"!!! Копия для OpenAI загружена в S3: {s3_url_for_openai}")
 
-            # Шаг 3: Отправляем сжатую копию в OpenAI.
         prompt = request.form.get('prompt', '')
-         generation_system_prompt = (
-            "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
-            "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
-            "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
-            "The output should be only the refined prompt, no explanations or conversational fluff."
-        )
-        messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
-            
+        
+        # --- ЭТАП 1: Создаем описательный промпт для генерации ---
+        # Используем промпт, который ВЫ предоставили.
+        generation_system_prompt = (
+            "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+            "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+            "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
+            "The output should be only the refined prompt, no explanations or conversational fluff."
+        )
+        messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
+        
         generation_response = openai_client.chat.completions.create(
-            model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.1
+            model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2
         )
         generation_prompt = generation_response.choices[0].message.content.strip()
         if not generation_prompt:
             raise Exception("OpenAI failed to generate the descriptive prompt.")
         print(f"!!! Этап 1: Сгенерирован промпт для генерации: {generation_prompt}")
         
-        # --- ЭТАП 2: Определяем намерение и объект для маски (возвращает JSON) ---
+        # --- ЭТАП 2: Определяем намерение и объект для маски ---
         intent_system_prompt = (
             "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
             "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
             "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
             "You MUST only output the raw JSON object."
         )
-        # Для этого вызова картинка не нужна, достаточно текста пользователя
         messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
         
-        # ИСПРАВЛЕНИЕ: В этом вызове ДОЛЖЕН быть response_format
         intent_response = openai_client.chat.completions.create(
             model="gpt-4o", messages=messages_for_intent, max_tokens=100, response_format={"type": "json_object"}, temperature=0.0
         )
