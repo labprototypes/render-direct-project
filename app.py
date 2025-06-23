@@ -525,7 +525,7 @@ def process_image():
         generation_system_prompt = (
             "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
             "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style "
+            "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
             "This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. "
             "The output should be only the refined prompt, no explanations or conversational fluff."
         )
@@ -543,7 +543,7 @@ def process_image():
         intent_system_prompt = (
             "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
             "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
+            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. Example: 'a hat', not 'a hat on a man'. But you can use the position explanation if there is more than one the same type object. Example: 'a frog on the right'. Be specific. "
             "You MUST only output the raw JSON object."
         )
         messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
