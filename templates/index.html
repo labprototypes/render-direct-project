@@ -19,7 +19,7 @@
                     {% if current_user.current_plan == 'taste' %}
                         <button class="edit-mode-btn feature-locked" disabled title="Please upgrade your plan to use this feature">Autofix</button>
                     {% else %}
-                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
+                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Add/remove objects, modify style with higher quality.">Basic</button>
                     {% endif %}
                 </div>
             </div>
@@ -436,12 +436,22 @@
 
         editModeButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const editMode = e.currentTarget.dataset.editMode;
+                if (e.currentTarget.disabled) return;
+                const editMode = e.currentTarget.dataset.editMode; // 'edit' или 'autofix'
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 editModeDescription.textContent = e.currentTarget.dataset.description;
-                const showControls = (editMode === 'edit');
-                editControlsContainer.style.display = showControls ? 'flex' : 'none';
+        
+                // Поле для промпта теперь видно всегда
+                editControlsContainer.style.display = 'flex';
+        
+                // Динамически обновляем стоимость
+                const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
+                if (editMode === 'edit') {
+                    tokenCostSpan.textContent = 'Estimated cost: 65';
+                } else { // Для 'autofix', который теперь наш 'Basic'
+                    tokenCostSpan.textContent = 'Estimated cost: 100';
+                }
             });
         });
         
