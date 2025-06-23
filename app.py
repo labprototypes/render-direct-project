@@ -16,6 +16,7 @@ import boto3
 import openai
 import requests
 import stripe
+import replicate
 from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session, get_flashed_messages
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
