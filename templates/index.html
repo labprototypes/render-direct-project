@@ -15,11 +15,12 @@
         <div id="edit-view">
             <div class="control-group">
                 <div class="edit-mode-selector">
-                    <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Add or remove objects, modify style or lighting.">Edit</button>
+                    <button class="edit-mode-btn active" data-edit-mode="basic" data-description="720p quality output. Add or remove objects, modify style or lighting.">Basic</button>
+                    
                     {% if current_user.current_plan == 'taste' %}
-                        <button class="edit-mode-btn feature-locked" disabled title="Please upgrade your plan to use this feature">Autofix</button>
+                        <button class="edit-mode-btn feature-locked" disabled title="Please upgrade your plan to use this feature">Pro</button>
                     {% else %}
-                        <button class="edit-mode-btn" data-edit-mode="autofix" data-description="Automatic artifact removal and quality enhancement.">Autofix</button>
+                        <button class="edit-mode-btn" data-edit-mode="pro" data-description="Original image quality output. Add or remove objects, modify style or lighting.">Pro</button>
                     {% endif %}
                 </div>
             </div>
