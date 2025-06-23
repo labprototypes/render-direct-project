@@ -642,8 +642,7 @@ def process_image():
                 response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
                 final_prompt = response.choices[0].message.content.strip().replace('\\n', ' ').replace('\\r', ' ').strip()
                 
-                replicate_input = {"image": s3_url, "prompt": final_prompt}
-                print(f"!!! DEBUG: Sending to Replicate: {replicate_input}")
+                replicate_input = {"input_image": s3_url, "prompt": final_prompt}
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
         
         elif mode == 'upscale':
