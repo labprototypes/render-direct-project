@@ -549,7 +549,7 @@ def process_image():
     current_user = db.session.get(User, test_user_id)
     if not current_user:
         print("!!! Создание временного тестового пользователя в БД...")
-        current_user = User(id=test_user_id, email="debug@test.com", token_balance=99999, current_plan='pro')
+        current_user = User(id=test_user_id, email="debug@test.com", token_balance=99999)
         db.session.add(current_user)
         db.session.commit()
     # --- КОНЕЦ ВРЕМЕННОГО КОДА ---
@@ -559,30 +559,39 @@ def process_image():
         
     try:
         uploaded_file = request.files['image']
-        
+    
         # Шаг 1: Читаем файл в память ОДИН РАЗ
         image_data = uploaded_file.read()
-        
+    
         # Шаг 2: СРАЗУ получаем размеры из данных в памяти
         img_for_size_check = Image.open(io.BytesIO(image_data))
         original_width, original_height = img_for_size_check.size
     
         # Шаг 3: Поток для загрузки ОРИГИНАЛА в S3 (для воркера)
         original_stream = io.BytesIO(image_data)
-        original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+        original_for_upload = FileStorage(
+            stream=original_stream, 
+            filename=uploaded_file.filename, 
+            content_type=uploaded_file.content_type
+        )
         original_s3_url = upload_file_to_s3(original_for_upload)
         print(f"!!! Оригинал ({original_width}x{original_height}) загружен в S3: {original_s3_url}")
-
+    
         # Шаг 4: Поток для сжатия и загрузки копии для OpenAI
         analysis_stream = io.BytesIO(image_data)
-        analysis_for_upload = FileStorage(stream=analysis_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+        analysis_for_upload = FileStorage(
+            stream=analysis_stream, 
+            filename=uploaded_file.filename, 
+            content_type=uploaded_file.content_type
+        )
         image_for_openai = resize_image_for_openai(analysis_for_upload)
         s3_url_for_openai = upload_file_to_s3(image_for_openai)
         print(f"!!! Копия для OpenAI загружена в S3: {s3_url_for_openai}")
-        
+    
         prompt = request.form.get('prompt', '')
         
-        # --- ЭТАП 1: Создаем описательный промпт для генерации (ваш промпт) ---
+        # --- ЭТАП 1: Создаем описательный промпт для генерации ---
+        # Используем промпт, который ВЫ предоставили.
         generation_system_prompt = (
             "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
             "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
@@ -604,7 +613,7 @@ def process_image():
         intent_system_prompt = (
             "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
             "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. Example: 'a hat', not 'a hat on a man'. But you can use the position explanation if there is more than one the same type object. Example: 'a frog on the right'. Be specific. "
+            "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
             "You MUST only output the raw JSON object."
         )
         messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
@@ -638,8 +647,8 @@ def process_image():
             "mask_prompt": mask_prompt,
             "token_cost": token_cost,
             "user_id": current_user.id,
-            "original_width": original_width,
-            "original_height": original_height
+            "original_width": original_width, # <--- ДОБАВЛЕНО
+            "original_height": original_height # <--- ДОБАВЛЕНО
         }
         redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
         print(f"!!! Задача {new_prediction.id} отправлена в очередь pifly_edit_jobs")
@@ -652,6 +661,8 @@ def process_image():
         traceback.print_exc()
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
+
+### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
 
 @app.route('/replicate-webhook', methods=['POST'])
 def replicate_webhook():
