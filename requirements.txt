@@ -17,3 +17,4 @@ gevent
 stripe
 firebase-admin
 redis
+Pillow
