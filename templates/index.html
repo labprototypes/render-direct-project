@@ -381,7 +381,7 @@
 
             if (currentMode === 'edit') {
                 const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
-                formData.append('edit_mode', editMode);
+                formData.append('edit_mode', editMode); // 'basic' или 'pro'
                 if (!imageFileInputEdit1.files[0]) {
                     showError("Please select an image to " + editMode + ".");
                     stopLoading(null); return;
@@ -429,7 +429,8 @@
                 upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
                 resetLeftPanel();
                 if(currentMode === 'edit') {
-                    const activeEditMode = document.querySelector('.edit-mode-btn.active');
+                    // ИСПРАВЛЕНИЕ: Кликаем по кнопке Basic при переключении на Edit
+                    const activeEditMode = document.querySelector('.edit-mode-btn[data-edit-mode="basic"]');
                     if (activeEditMode) activeEditMode.click();
                 }
             });
@@ -437,12 +438,22 @@
 
         editModeButtons.forEach(button => {
             button.addEventListener('click', (e) => {
+                if (e.currentTarget.disabled) return;
                 const editMode = e.currentTarget.dataset.editMode;
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 editModeDescription.textContent = e.currentTarget.dataset.description;
-                const showControls = (editMode === 'edit');
-                editControlsContainer.style.display = showControls ? 'flex' : 'none';
+                
+                // *** ИЗМЕНЕНИЕ: Динамическое обновление стоимости ***
+                const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
+                if (editMode === 'basic') {
+                    tokenCostSpan.textContent = 'Estimated cost: 100';
+                } else if (editMode === 'pro') {
+                    tokenCostSpan.textContent = 'Estimated cost: 200';
+                }
+                
+                // *** ИЗМЕНЕНИЕ: Поля ввода видны для всех режимов Edit ***
+                editControlsContainer.style.display = 'flex';
             });
         });
         
@@ -494,22 +505,18 @@
         setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
         setupDragAndDrop(document.getElementById('image-drop-area-upscale'), upscaleImageInput);
         
-        // --- НОВЫЙ СКРИПТ ДЛЯ ПОДСКАЗОК ---
         document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
             trigger.addEventListener('click', function(e) {
-                e.stopPropagation(); // Останавливаем всплытие, чтобы не сработал клик по документу
-                // Закрываем все другие активные подсказки
+                e.stopPropagation();
                 document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
                     if (activeTrigger !== this) {
                         activeTrigger.classList.remove('active');
                     }
                 });
-                // Переключаем текущую
                 this.classList.toggle('active');
             });
         });
 
-        // Закрываем подсказку при клике в любом другом месте
         document.addEventListener('click', function (e) {
             document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
                 activeTrigger.classList.remove('active');
@@ -518,7 +525,8 @@
 
         // --- ИНИЦИАЛИЗАЦИЯ ---
         appModeButtons[0].click();
-        document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
+        // *** ИСПРАВЛЕНИЕ: Кликаем на кнопку 'basic' при первой загрузке ***
+        document.querySelector('.edit-mode-btn[data-edit-mode="basic"]').click();
     });
 </script>
 {% endblock %}
