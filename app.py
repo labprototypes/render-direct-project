@@ -648,7 +648,7 @@ def process_image():
             "generation_prompt": generation_prompt,
             "mask_prompt": mask_prompt,
             "token_cost": token_cost,
-            "user_id": current_user.id
+            "user_id": current_user.id,
             "original_width": original_width, # <--- ДОБАВЛЕНО
             "original_height": original_height # <--- ДОБАВЛЕНО
         }
