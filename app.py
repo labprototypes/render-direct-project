@@ -682,7 +682,10 @@ def process_image():
 
             # Вызываем Replicate API
             model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-            replicate_input = {"input_image": s3_url, "prompt": final_prompt}
+            
+            # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+            # Модель ожидает поле "image", а не "input_image"
+            replicate_input = {"image": s3_url, "prompt": final_prompt}
             
             headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
             post_payload = {
@@ -717,11 +720,13 @@ def process_image():
         # Безопасная попытка вернуть токены, если ошибка произошла после их списания
         if token_cost > 0 and current_user:
              user_in_db = db.session.get(User, current_user.id)
-             if user_in_db and (user_in_db.token_balance + token_cost) > 0:
+             # Проверяем, что пользователь все еще существует в сессии
+             if user_in_db:
                  user_in_db.token_balance += token_cost
                  db.session.commit()
                  print(f"!!! Токены ({token_cost}) возвращены пользователю {current_user.id} из-за ошибки.")
         return jsonify({'error': f'An internal server error occurred. Your tokens have been refunded. Details: {str(e)}'}), 500
+
 
 
 ### КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ ФУНКЦИИ ###
