@@ -599,8 +599,8 @@ def process_image():
                 return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
             else:
-                # --- Логика для режима "Edit (старый)" с собственным вызовом Replicate ---
-                print("!!! РЕЖИМ: Edit (старый)")
+                # --- НОВАЯ ЛОГИКА для "Edit (старый)" через библиотеку REPLICATE ---
+                print("!!! РЕЖИМ: Edit (старый) - ВЫЗОВ ЧЕРЕЗ БИБЛИОТЕКУ REPLICATE")
                 token_cost = 65
                 if current_user.token_balance < token_cost:
                     return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
@@ -624,20 +624,23 @@ def process_image():
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
                 
                 current_user.token_balance -= token_cost
-                new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
-                db.session.add(new_prediction)
+                new_prediction_db = Prediction(user_id=current_user.id, token_cost=token_cost)
+                db.session.add(new_prediction_db)
                 db.session.commit()
 
-                headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-                post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
-                
-                start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-                start_response.raise_for_status()
-                
-                prediction_data = start_response.json()
-                new_prediction.replicate_id = prediction_data.get('id')
+                # Вызов через библиотеку replicate, а не requests
+                prediction_replicate = replicate.predictions.create(
+                    version=model_version_id,
+                    input=replicate_input,
+                    webhook=url_for('replicate_webhook', _external=True),
+                    webhook_events_filter=["completed", "failed"]
+                )
+
+                # Сохраняем ID от Replicate в нашу запись в БД
+                new_prediction_db.replicate_id = prediction_replicate.id
                 db.session.commit()
-                return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
+                return jsonify({'prediction_id': new_prediction_db.id, 'new_token_balance': current_user.token_balance})
 
         elif mode == 'upscale':
             # --- Логика для режима "Upscale" с собственным вызовом Replicate ---
