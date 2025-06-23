@@ -1,56 +1,50 @@
 {% extends "base_app.html" %}
 
-{% block title %}Manage Your Plan{% endblock %}
+{% block title %}Управление подписками{% endblock %}
 
 {% block content %}
-<style>
-    /* Дополнительный стиль для информационного блока */
-    .notice-bar {
-        text-align: center;
-        padding: 15px;
-        background-color: rgba(255, 222, 0, 0.2);
-        border: 1px solid rgba(255, 222, 0, 0.4);
-        border-radius: var(--button-border-radius);
-        margin: 0 auto 40px auto;
-        max-width: 1100px;
-        color: var(--primary-text-color);
-        font-weight: 500;
-    }
-</style>
-
 <div class="app-container" style="display: block; padding-bottom: 40px;">
 
-    <div class="notice-bar">
-        Раздел управления подписками и платежами находится в разработке.
-    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="notice-bar" style="background-color: rgba(229, 62, 62, 0.2); border-color: rgba(229, 62, 62, 0.4);">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-    <div class="billing-header" style="max-width: 1100px; margin: 0 auto 40px auto;">
+    <div class="billing-header" style="max-width: 1100px; margin: 0 auto 40px auto; align-items: stretch;">
         <div class="current-plan-info">
-            <h1>Manage your plan</h1>
+            <h1>Управление подписками</h1>
             
-            <p>Your current plan: 
+            <p>Ваш текущий план: 
                 <strong>
                 {% set plan_display_name = {
-                    'taste': 'A Taste Of It',
-                    'best': 'The Best Pick',
+                    'taste': 'Стартер',
+                    'best': 'Оптимальный',
                     'pro': 'Pifly PRO'
                 } %}
-                {% set display_name = plan_display_name.get(current_user.current_plan, 'Free') %}
+                {% set display_name = plan_display_name.get(current_user.current_plan, 'Бесплатный') %}
                 {{ display_name }}
                 </strong>
             </p>
 
-            <p>You have <strong>{{ current_user.token_balance }}</strong> credits.</p>
-            
+            <p>У вас есть <strong>{{ current_user.token_balance }}</strong> токенов.</p>
         </div>
+        
         <div class="plan-card">
-            <h3 class="plan-name">Top Up Credits</h3>
-            <p class="plan-description">Need more credits before your next renewal?</p>
-            <div class="plan-price">&euro;5</div>
+            <h3 class="plan-name">Пополнить баланс</h3>
+            <p class="plan-description">Нужно больше токенов до старта следующего месяца?</p>
+            <div class="plan-price">500₽</div>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>One-time purchase of 1,000 credits</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Разовая покупка 1000 токенов</li>
             </ul>
-            <button class="btn btn-disabled" disabled>Top up credits</button>
+            <form action="{{ url_for('create_payment') }}" method="POST">
+                <input type="hidden" name="product_id" value="topup">
+                <button type="submit" class="btn">Выбрать</button>
+            </form>
         </div>
     </div>
 
@@ -59,39 +53,63 @@
     <div class="plans-grid" style="max-width: 1100px; margin: 40px auto 0 auto;">
         
         <div class="plan-card">
-            <h3 class="plan-name">A Taste Of It</h3>
-            <p class="plan-description">For those who wants to start</p>
-            <div class="plan-price">&euro;9<span>/mo</span></div>
+            <h3 class="plan-name">Стартер</h3>
+            <p class="plan-description">Для тех, кто хочет начать</p>
+            <div class="plan-price">950₽<span>/мес</span></div>
+            <p>1,500 токенов</p>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>1,500 credits</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 90 images monthly</li>
-                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Credit Top-Up</li>
-                </ul>
-            <button class="btn btn-disabled" disabled>Subscribe</button>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>до 90 генераций</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Режим редактирования</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Улучшения качества (до 1080р)</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Стандартная скорость</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Pro-редактирование</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Пополнение баланса</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Приоритетный доступ к новым функциям</li>
+            </ul>
+            <form action="{{ url_for('create_payment') }}" method="POST">
+                <input type="hidden" name="product_id" value="starter">
+                <button type="submit" class="btn">Выбрать</button>
+            </form>
         </div>
 
         <div class="plan-card highlighted">
-            <h3 class="plan-name">The Best Pick</h3>
-            <p class="plan-description">Best for full-time creators</p>
-            <div class="plan-price">&euro;19<span>/mo</span></div>
+            <h3 class="plan-name">Оптимальный</h3>
+            <p class="plan-description">Для продвинутых креаторов</p>
+            <div class="plan-price">1850₽<span>/мес</span></div>
+            <p>4,500 токенов</p>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>4,500 credits</li>
-                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 270 images monthly</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
-                </ul>
-             <button class="btn">Subscribe</button>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>до 90 генераций</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Режим редактирования</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Улучшения качества (до 1080р)</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Стандартная скорость</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Pro-редактирование</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Пополнение баланса</li>
+                <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Приоритетный доступ к новым функциям</li>
+            </ul>
+             <form action="{{ url_for('create_payment') }}" method="POST">
+                <input type="hidden" name="product_id" value="optimal">
+                <button type="submit" class="btn">Выбрать</button>
+            </form>
         </div>
 
         <div class="plan-card">
             <h3 class="plan-name">Pifly PRO</h3>
-            <p class="plan-description">Teams and advanced creators</p>
-            <div class="plan-price">&euro;35<span>/mo</span></div>
+            <p class="plan-description">Для команд и продакшенов</p>
+            <div class="plan-price">3490₽<span>/мес</span></div>
+            <p>15,000 токенов</p>
             <ul class="plan-includes">
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>15,000 credits</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Up to 900 images monthly</li>
-                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Credit Top-Up</li>
-                </ul>
-            <button class="btn btn-disabled" disabled>Subscribe</button>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>до 90 генераций</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Режим редактирования</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Улучшения качества (до 1080р)</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Стандартная скорость</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Pro-редактирование</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Пополнение баланса</li>
+                <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Приоритетный доступ к новым функциям</li>
+            </ul>
+            <form action="{{ url_for('create_payment') }}" method="POST">
+                <input type="hidden" name="product_id" value="pro">
+                <button type="submit" class="btn">Выбрать</button>
+            </form>
         </div>
     </div>
 
@@ -99,7 +117,7 @@
     <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
             <form action="{{ url_for('delete_account') }}" method="POST">
-                <button type="submit" class="btn btn-danger" onclick="return confirm('WARNING: This will immediately and permanently delete your account and all data. This action cannot be undone. Are you sure?')">Delete Account</button>
+                <button type="submit" class="btn btn-danger" onclick="return confirm('ВНИМАНИЕ: Это действие немедленно и навсегда удалит ваш аккаунт и все данные. Отменить его будет невозможно. Вы уверены?')">Удалить аккаунт</button>
             </form>
         </div>
     </div>
