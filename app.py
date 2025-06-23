@@ -559,37 +559,35 @@ def process_image():
         
     try:
         uploaded_file = request.files['image']
-        
-        # --- ИСПРАВЛЕНИЕ: Читаем файл в память ОДИН РАЗ ---
+    
+        # Шаг 1: Читаем файл в память ОДИН РАЗ
         image_data = uploaded_file.read()
-        
-        # --- Поток 1: Загружаем ОРИГИНАЛ в S3 ---
-        # Создаем "копию" файла в памяти для первой загрузки
-        original_file_stream = io.BytesIO(image_data)
-        original_file_for_upload = FileStorage(
-            stream=original_file_stream, 
+    
+        # Шаг 2: СРАЗУ получаем размеры из данных в памяти
+        img_for_size_check = Image.open(io.BytesIO(image_data))
+        original_width, original_height = img_for_size_check.size
+    
+        # Шаг 3: Поток для загрузки ОРИГИНАЛА в S3 (для воркера)
+        original_stream = io.BytesIO(image_data)
+        original_for_upload = FileStorage(
+            stream=original_stream, 
             filename=uploaded_file.filename, 
             content_type=uploaded_file.content_type
         )
-        original_s3_url = upload_file_to_s3(original_file_for_upload)
-        print(f"!!! Оригинал загружен в S3: {original_s3_url}")
-
-        # --- Поток 2: Сжимаем и загружаем копию для OpenAI ---
-        # Создаем ВТОРУЮ "копию" в памяти для анализа и сжатия
-        file_for_analysis_stream = io.BytesIO(image_data)
-        file_for_analysis_storage = FileStorage(
-            stream=file_for_analysis_stream, 
+        original_s3_url = upload_file_to_s3(original_for_upload)
+        print(f"!!! Оригинал ({original_width}x{original_height}) загружен в S3: {original_s3_url}")
+    
+        # Шаг 4: Поток для сжатия и загрузки копии для OpenAI
+        analysis_stream = io.BytesIO(image_data)
+        analysis_for_upload = FileStorage(
+            stream=analysis_stream, 
             filename=uploaded_file.filename, 
             content_type=uploaded_file.content_type
         )
-        image_for_openai = resize_image_for_openai(file_for_analysis_storage)
-        from PIL import Image
-        original_file_storage.stream.seek(0)
-        with Image.open(original_file_storage.stream) as img:
-            original_width, original_height = img.size
+        image_for_openai = resize_image_for_openai(analysis_for_upload)
         s3_url_for_openai = upload_file_to_s3(image_for_openai)
         print(f"!!! Копия для OpenAI загружена в S3: {s3_url_for_openai}")
-
+    
         prompt = request.form.get('prompt', '')
         
         # --- ЭТАП 1: Создаем описательный промпт для генерации ---
@@ -659,6 +657,8 @@ def process_image():
 
     except Exception as e:
         db.session.rollback()
+        import traceback
+        traceback.print_exc()
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         return jsonify({'error': f'An internal server error occurred: {str(e)}'}), 500
 
