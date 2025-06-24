@@ -13,3 +13,5 @@ email_validator
 gevent
 stripe
 Authlib
+redis
+Pillow
