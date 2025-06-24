@@ -607,9 +607,13 @@ def process_image():
             proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
             proxy_response_intent.raise_for_status()
             # Прямое использование JSON ответа, так как прокси его просто пересылает
-            intent_data = proxy_response_intent.json()
-            intent = intent_data.get("intent")
-            mask_prompt = intent_data.get("mask_prompt")
+            # 1. Получаем весь JSON ответ от OpenAI
+            full_openai_response = proxy_response_intent.json()
+            # 2. Из него достаем текстовое поле 'content', в котором лежит наш JSON в виде строки
+            json_string_content = full_openai_response['choices'][0]['message']['content']
+            # 3. Превращаем эту строку в полноценный JSON-объект
+            intent_data = json.loads(json_string_content)
+            # ######################################################################
             
             # Отправка задачи в Redis
             current_user.token_balance -= token_cost
