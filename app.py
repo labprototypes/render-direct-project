@@ -598,47 +598,60 @@ def process_image():
                 return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
             else:
-                # --- НОВАЯ ЛОГИКА для "Edit (старый)" через библиотеку REPLICATE ---
-                print("!!! РЕЖИМ: Edit (старый) - ВЫЗОВ ЧЕРЕЗ БИБЛИОТЕКУ REPLICATE")
+                # --- Логика для режима "Basic" (старый "Edit") с ИСПРАВЛЕННОЙ логикой сжатия ---
+                print("!!! РЕЖИМ: Basic (старый 'Edit')")
                 token_cost = 65
                 if current_user.token_balance < token_cost:
                     return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
-
-                s3_url = upload_file_to_s3(request.files['image'])
+            
+                uploaded_file = request.files['image']
                 prompt = request.form.get('prompt', '')
                 if not openai_client: raise Exception("OpenAI client not configured.")
-                
+            
+                # Шаг 1: Сжимаем изображение и загружаем его для АНАЛИЗА в OpenAI
+                # Мы используем функцию, которая уже есть в вашем коде
+                image_for_openai = resize_image_for_openai(uploaded_file)
+                s3_url_for_openai = upload_file_to_s3(image_for_openai)
+                print(f"!!! Сжатое изображение для OpenAI загружено: {s3_url_for_openai}")
+            
+                # Шаг 2: Загружаем ОРИГИНАЛЬНОЕ изображение для ОБРАБОТКИ в Replicate
+                # Важно! Возвращаем курсор в начало файла, чтобы прочитать его снова.
+                uploaded_file.stream.seek(0) 
+                s3_url_for_replicate = upload_file_to_s3(uploaded_file)
+                print(f"!!! Оригинальное изображение для Replicate загружено: {s3_url_for_replicate}")
+            
+                # Шаг 3: Генерируем промпт, используя сжатое изображение
                 edit_system_prompt = (
                     "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
                 )
-                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url}}]}]
+                # Отправляем в OpenAI ссылку на СЖАТУЮ версию
+                messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
                 response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
                 final_prompt = response.choices[0].message.content.strip().replace('\\n', ' ').replace('\\r', ' ').strip()
-                
+            
+                # Шаг 4: Отправляем в Replicate ОРИГИНАЛ и сгенерированный промпт
                 replicate_input = {
-                    "input_image": s3_url,
+                    "input_image": s3_url_for_replicate, # Используем ссылку на ОРИГИНАЛ
                     "prompt": final_prompt,
                     "output_format": "png"
                 }
                 model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
-                
+            
                 current_user.token_balance -= token_cost
                 new_prediction_db = Prediction(user_id=current_user.id, token_cost=token_cost)
                 db.session.add(new_prediction_db)
                 db.session.commit()
-
-                # Вызов через библиотеку replicate, а не requests
+            
                 prediction_replicate = replicate.predictions.create(
                     version=model_version_id,
                     input=replicate_input,
                     webhook=url_for('replicate_webhook', _external=True),
                     webhook_events_filter=["completed"]
                 )
-
-                # Сохраняем ID от Replicate в нашу запись в БД
+            
                 new_prediction_db.replicate_id = prediction_replicate.id
                 db.session.commit()
-
+            
                 return jsonify({'prediction_id': new_prediction_db.id, 'new_token_balance': current_user.token_balance})
 
         elif mode == 'upscale':
