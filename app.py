@@ -570,69 +570,80 @@ def process_image():
 
             system_prompt_text = ""
             # --- НАЧАЛО НОВОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
+        # --- НАЧАЛО ИСПРАВЛЕННОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
         if edit_mode == 'pro':
             print("!!! РЕЖИМ: PRO (через воркер)")
-            token_cost = 100 # Стоимость как в основной версии
+            token_cost = 100
             if current_user.token_balance < token_cost:
                 return jsonify({'error': f'Недостаточно токенов. Требуется {token_cost}.'}), 403
             if not redis_client:
                 raise Exception("Redis не настроен на сервере.")
-        
+    
             uploaded_file = request.files['image']
             prompt = request.form.get('prompt', '')
-        
-            # Читаем файл в память для многократного использования
             image_data = uploaded_file.read()
-        
-            # Получаем размеры исходного изображения
             img_for_size_check = Image.open(io.BytesIO(image_data))
             original_width, original_height = img_for_size_check.size
-        
-            # Готовим файл для загрузки в S3 (для Replicate)
+    
             original_stream = io.BytesIO(image_data)
             original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
             original_s3_url = upload_file_to_s3(original_for_upload)
-        
-            # 1. Первый вызов OpenAI: генерируем промпт для редактирования
-            generation_system_prompt = (
-                "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
-                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
-                "The output should be only the refined prompt, no explanations or conversational fluff."
-            )
-            messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": original_s3_url}}]}]
-        
+    
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-        
+    
+            # --- Вызов 1: Генерация промпта ---
+            generation_system_prompt = (
+                "You are an expert prompt engineer for an image editing AI... no explanations or conversational fluff."
+            )
+            messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": original_s3_url}}]}]
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
-            proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
-            proxy_response_gen.raise_for_status()
-            generation_prompt = proxy_response_gen.json()['choices'][0]['message']['content'].strip()
-        
-            # 2. Второй вызов OpenAI: определяем намерение и объект для маски
+            
+            try:
+                proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
+                proxy_response_gen.raise_for_status() # Проверяем на ошибки HTTP (4xx, 5xx)
+                
+                # ДОБАВЛЕНА ПРОВЕРКА НА JSON
+                generation_data = proxy_response_gen.json()
+                generation_prompt = generation_data['choices'][0]['message']['content'].strip()
+    
+            except requests.exceptions.JSONDecodeError:
+                print(f"!!! ОШИБКА JSON (генерация промпта): Прокси вернул не JSON. Статус: {proxy_response_gen.status_code}. Тело: {proxy_response_gen.text}")
+                return jsonify({'error': 'Ошибка ответа от сервиса генерации (1). Ответ не в формате JSON.'}), 502
+            except requests.exceptions.RequestException as e:
+                print(f"!!! ОШИБКА СЕТИ (генерация промпта): Не удалось связаться с прокси: {e}")
+                return jsonify({'error': f'Ошибка сети при обращении к сервису генерации (1): {e}'}), 502
+    
+            # --- Вызов 2: Определение намерения ---
             intent_system_prompt = (
-                "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
-                "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-                "2. \"mask_prompt\": Extract a very short (1-5 words) English name for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
-                "You MUST only output the raw JSON object."
+                "You are a classification AI... You MUST only output the raw JSON object."
             )
             messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
             openai_payload_intent = {"model": "gpt-4o", "messages": messages_for_intent, "max_tokens": 100, "response_format": {"type": "json_object"}, "temperature": 0.0}
-        
-            proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
-            proxy_response_intent.raise_for_status()
-            intent_data = proxy_response_intent.json()
-            intent = intent_data.get("intent")
-            mask_prompt = intent_data.get("mask_prompt")
-        
-            # 3. Отправляем задачу в очередь Redis
+            
+            try:
+                proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
+                proxy_response_intent.raise_for_status()
+                
+                # ДОБАВЛЕНА ПРОВЕРКА НА JSON
+                intent_data = proxy_response_intent.json()
+                intent = intent_data.get("intent")
+                mask_prompt = intent_data.get("mask_prompt")
+    
+            except requests.exceptions.JSONDecodeError:
+                print(f"!!! ОШИБКА JSON (определение намерения): Прокси вернул не JSON. Статус: {proxy_response_intent.status_code}. Тело: {proxy_response_intent.text}")
+                return jsonify({'error': 'Ошибка ответа от сервиса генерации (2). Ответ не в формате JSON.'}), 502
+            except requests.exceptions.RequestException as e:
+                print(f"!!! ОШИБКА СЕТИ (определение намерения): Не удалось связаться с прокси: {e}")
+                return jsonify({'error': f'Ошибка сети при обращении к сервису генерации (2): {e}'}), 502
+            
+            # --- Отправка задачи в очередь Redis ---
             current_user.token_balance -= token_cost
             new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
             db.session.add(new_prediction)
             db.session.commit()
-        
+    
             job_data = {
                 "prediction_id": new_prediction.id, "original_s3_url": original_s3_url,
                 "intent": intent, "generation_prompt": generation_prompt,
@@ -640,8 +651,9 @@ def process_image():
                 "original_width": original_width, "original_height": original_height
             }
             redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
-        
+            
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+        # --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ---
         # --- КОНЕЦ НОВОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
 
         elif mode == 'upscale':
