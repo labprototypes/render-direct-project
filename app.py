@@ -642,40 +642,56 @@ def process_image():
                 return jsonify({'prediction_id': new_prediction_db.id, 'new_token_balance': current_user.token_balance})
 
         elif mode == 'upscale':
-            # --- Логика для режима "Upscale" с собственным вызовом Replicate ---
+            # --- НОВАЯ ЛОГИКА для "Upscale" через библиотеку REPLICATE ---
             print("!!! РЕЖИМ: Upscale")
-            scale_factor = int(request.form.get('scale_factor', '2'))
+        
+            # Получаем все значения с ползунков, включая новый Fractality
+            scale_factor = float(request.form.get('scale_factor', '2'))
+            creativity = round(float(request.form.get('creativity', '35')) / 100.0, 4)
+            resemblance = round(float(request.form.get('resemblance', '60')) / 100.0 * 3.0, 4)
+            dynamic = round(float(request.form.get('dynamic', '6')) , 4)
+            fractality = int(request.form.get('fractality', '18')) # num_inference_steps
+        
+            # Рассчитываем стоимость
             if scale_factor <= 2: token_cost = 17
             elif scale_factor <= 4: token_cost = 65
             else: token_cost = 150
+        
             if current_user.token_balance < token_cost:
                 return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
-
+        
             s3_url = upload_file_to_s3(request.files['image'])
-            creativity = round(float(request.form.get('creativity', '30')) / 100.0, 4)
-            resemblance = round(float(request.form.get('resemblance', '20')) / 100.0 * 3.0, 4)
-            dynamic = round(float(request.form.get('dynamic', '10')) / 100.0 * 50.0, 4)
-
+        
+            # Формируем input согласно вашей новой схеме
             replicate_input = {
-                "image": s3_url, "scale_factor": scale_factor, "creativity": creativity, 
-                "resemblance": resemblance, "dynamic": dynamic
+                "image": s3_url,
+                "scale_factor": scale_factor,
+                "creativity": creativity,
+                "resemblance": resemblance,
+                "dynamic": dynamic,
+                "num_inference_steps": fractality,
+                "output_format": "png"
             }
+        
+            # ВАЖНО: Убедитесь, что этот ID соответствует модели из вашей схемы
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-
+        
             current_user.token_balance -= token_cost
             new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
             db.session.add(new_prediction)
             db.session.commit()
-            
-            headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
-            post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed", "failed"]}
-            
-            start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
-            start_response.raise_for_status()
-            
-            prediction_data = start_response.json()
-            new_prediction.replicate_id = prediction_data.get('id')
+        
+            # Вызов через библиотеку replicate
+            prediction_replicate = replicate.predictions.create(
+                version=model_version_id,
+                input=replicate_input,
+                webhook=url_for('replicate_webhook', _external=True),
+                webhook_events_filter=["completed", "failed"]
+            )
+        
+            new_prediction.replicate_id = prediction_replicate.id
             db.session.commit()
+        
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
     except Exception as e:
