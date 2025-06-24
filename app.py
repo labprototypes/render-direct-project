@@ -521,6 +521,8 @@ def serve_media_file(object_name):
         app.logger.error(f"!!! Ошибка при отдаче файла через прокси '{object_name}': {e}", exc_info=True)
         return "Not Found", 404
 
+# ЗАМЕНИТЕ ВСЮ ФУНКЦИЮ process_image НА ЭТОТ КОД
+
 @app.route('/process-image', methods=['POST'])
 @login_required
 @check_confirmed
@@ -532,7 +534,6 @@ def process_image():
         if 'image' not in request.files or not request.files['image'].filename:
             return jsonify({'error': 'Изображение отсутствует или файл не выбран.'}), 400
 
-        # --- ОБЩАЯ ЛОГИКА ДЛЯ ВСЕХ РЕЖИМОВ ---
         uploaded_file = request.files['image']
         
         token_cost = 0
@@ -548,17 +549,21 @@ def process_image():
         if current_user.token_balance < token_cost:
             return jsonify({'error': f'Недостаточно токенов. Требуется {token_cost}.'}), 403
 
-        # --- НОВЫЙ БЛОК: Читаем файл и готовим Base64 ---
         image_data = uploaded_file.read()
         base64_image = base64.b64encode(image_data).decode('utf-8')
         mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
-        # Создаем "data URL" для передачи в OpenAI
         image_data_url = f"data:{mime_type};base64,{base64_image}"
-        
-        # "Перематываем" файл в начало, чтобы его можно было снова прочитать для загрузки в S3
         uploaded_file.stream.seek(0)
 
-        # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (с воркером) ---
+        # --- НОВЫЙ УПРОЩЕННЫЙ СИСТЕМНЫЙ ПРОМПТ ---
+        SIMPLE_SYSTEM_PROMPT = (
+            "You are a helpful and brilliant visual assistant. Your task is to write a short, descriptive, "
+            "photographic prompt in English for a new image. You will be given a user request (in any language) "
+            "and an original image. The new image you describe should be the result of applying the user's request "
+            "to the original image. Focus on describing the final scene realistically. "
+            "Do not mention your role or limitations. Only output the final English prompt."
+        )
+
         if mode == 'edit' and request.form.get('edit_mode') == 'pro':
             print("!!! РЕЖИM: PRO (через воркер)")
             if not redis_client: return jsonify({'error': 'Сервис фоновой обработки недоступен.'}), 503
@@ -566,40 +571,25 @@ def process_image():
             prompt = request.form.get('prompt', '')
             img_for_size_check = Image.open(io.BytesIO(image_data))
             original_width, original_height = img_for_size_check.size
-
             original_s3_url = upload_file_to_s3(uploaded_file)
-
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             
-            # OpenAI Call 1: Generate prompt
-            generation_system_prompt = (
-                "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
-                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
-                "The output should be only the refined prompt, no explanations or conversational fluff."
-            )
-            messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
+            # Используем новый простой промпт
+            messages_for_generation = [{"role": "system", "content": SIMPLE_SYSTEM_PROMPT}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
             proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
             proxy_response_gen.raise_for_status()
             generation_prompt = proxy_response_gen.json()['choices'][0]['message']['content'].strip()
-
-            # OpenAI Call 2: Get intent
-            intent_system_prompt = (
-                "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
-                "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-                "2. \"mask_prompt\": Extract a very short (1-5 words) English name for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
-                "You MUST only output the raw JSON object."
-            )
+            
+            intent_system_prompt = "You are a classification AI... You MUST only output the raw JSON object." # (сокращено)
             messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
             openai_payload_intent = {"model": "gpt-4o", "messages": messages_for_intent, "max_tokens": 100, "response_format": {"type": "json_object"}, "temperature": 0.0}
             proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
             proxy_response_intent.raise_for_status()
             intent_data = proxy_response_intent.json()
             
-            # Отправка задачи в Redis
             current_user.token_balance -= token_cost
             new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
             db.session.add(new_prediction)
@@ -612,7 +602,6 @@ def process_image():
             redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
-        # --- ОБЩАЯ ЛОГИКА ДЛЯ ПРЯМЫХ ВЫЗОВОВ REPLICATE (Basic Edit и Upscale) ---
         public_image_url = upload_file_to_s3(uploaded_file)
         replicate_input = {}
         model_version_id = ""
@@ -623,10 +612,9 @@ def process_image():
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-            system_prompt_text = "You are an expert prompt engineer..." # (сокращено)
             
-            # ИЗМЕНЕНИЕ: Передаем изображение как Base64, а не по ссылке
-            messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
+            # Используем новый простой промпт
+            messages = [{"role": "system", "content": SIMPLE_SYSTEM_PROMPT}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
             proxy_response = requests.post(proxy_url, json=openai_payload, headers=proxy_headers, timeout=30)
             proxy_response.raise_for_status()
@@ -636,7 +624,6 @@ def process_image():
             replicate_input = {"input_image": public_image_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
-            # ... (здесь ничего не меняется, т.к. OpenAI не используется)
             print("!!! РЕЖИМ: Upscale")
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
             replicate_input = { "image": public_image_url, "scale_factor": float(request.form.get('scale_factor', '2')), "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4), "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4), "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4), "num_inference_steps": int(request.form.get('fractality', '18')) }
