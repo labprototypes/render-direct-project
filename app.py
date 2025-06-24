@@ -261,19 +261,6 @@ def handle_checkout_session(session_data):
     customer_id = session_data.get('customer')
     user_id_from_metadata = session_data.get('metadata', {}).get('user_id')
 
-    @app.route('/grant-pro-access-temp')
-    def grant_pro_access():
-        # Находим пользователя по email
-        user = User.query.filter_by(email="hello@prototypes.agency").first()
-        if user:
-            # Устанавливаем план 'pro' и статус 'active'
-            user.current_plan = 'pro'
-            user.subscription_status = 'active'
-            db.session.commit()
-            return "<h1>Success!</h1><p>User hello@prototypes.agency now has Pro plan access.</p>"
-        else:
-            return "<h1>Error!</h1><p>User hello@prototypes.agency not found. Please create the user first.</p>", 404
-
     with app.app_context():
         user = User.query.get(user_id_from_metadata) if user_id_from_metadata else None
         if not user and customer_id:
@@ -812,7 +799,16 @@ def make_unlimited_user():
     else:
         return "<h1>Error!</h1><p>User hello@prototypes.agency not found. Please create the user first.</p>", 404
 
-# --- Конец блока для вставки ---
+@app.route('/grant-pro-access-temp')
+def grant_pro_access():
+    user = User.query.filter_by(email="hello@prototypes.agency").first()
+    if user:
+        user.current_plan = 'pro'
+        user.subscription_status = 'active'
+        db.session.commit()
+        return "<h1>Success!</h1><p>User hello@prototypes.agency now has Pro plan access.</p>"
+    else:
+        return "<h1>Error!</h1><p>User hello@prototypes.agency not found. Please create the user first.</p>", 404
 
 # --- Final app setup ---
 with app.app_context():
