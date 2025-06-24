@@ -560,7 +560,7 @@ def process_image():
             headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
 
             system_prompt_text = ""
-            if edit_mode == 'autofix':
+            if edit_mode == 'pro':
                 system_prompt_text = "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
                 messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": public_image_url}}]}] # Используем public_image_url
             else:
@@ -577,12 +577,14 @@ def process_image():
 
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
+            fractality = int(request.form.get('fractality', '18'))
             replicate_input = {
                 "image": public_image_url,
                 "scale_factor": float(request.form.get('scale_factor', '2')),
                 "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4),
                 "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4),
-                "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4)
+                "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4),
+                "num_inference_steps": fractality
             }
 
         if not model_version_id or not replicate_input:
