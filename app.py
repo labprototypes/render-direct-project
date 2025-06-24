@@ -139,7 +139,7 @@ def subscription_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for('login'))
-        if current_user.subscription_status not in ['active', 'trial', 'canceled']:
+        if current_user.subscription_status not in ['active', 'trial', 'canceled', 'free']:
             flash('Your plan does not allow access to this feature. Please subscribe.', 'warning')
             return redirect(url_for('billing'))
         return f(*args, **kwargs)
@@ -171,7 +171,7 @@ def session_login():
                 return jsonify({"status": "error", "message": "You must accept the Terms of Service and Privacy Policy."}), 400
             get_flashed_messages()
             trial_used_record = UsedTrialEmail.query.filter_by(email=email).first()
-            initial_tokens = 0
+            initial_tokens = 300
             marketing_consent = data.get('marketingConsent', True)
 
             user = User(
