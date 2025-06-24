@@ -598,7 +598,7 @@ def process_image():
                 return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
             else:
-                # --- Логика для режима "Basic" (старый "Edit") с ИСПРАВЛЕННОЙ логикой сжатия ---
+                # --- Логика для режима "Basic" (старый "Edit") с ИСПРАВЛЕННЫМ чтением файла ---
                 print("!!! РЕЖИМ: Basic (старый 'Edit')")
                 token_cost = 65
                 if current_user.token_balance < token_cost:
@@ -608,30 +608,34 @@ def process_image():
                 prompt = request.form.get('prompt', '')
                 if not openai_client: raise Exception("OpenAI client not configured.")
             
+                # --- НОВЫЙ БЛОК: Читаем файл в память ОДИН РАЗ ---
+                image_data = uploaded_file.read()
+                # --- КОНЕЦ НОВОГО БЛОКА ---
+            
                 # Шаг 1: Сжимаем изображение и загружаем его для АНАЛИЗА в OpenAI
-                # Мы используем функцию, которая уже есть в вашем коде
-                image_for_openai = resize_image_for_openai(uploaded_file)
+                # Создаем "виртуальный" файл из данных в памяти
+                file_for_resize = FileStorage(stream=io.BytesIO(image_data), filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+                image_for_openai = resize_image_for_openai(file_for_resize)
                 s3_url_for_openai = upload_file_to_s3(image_for_openai)
                 print(f"!!! Сжатое изображение для OpenAI загружено: {s3_url_for_openai}")
             
                 # Шаг 2: Загружаем ОРИГИНАЛЬНОЕ изображение для ОБРАБОТКИ в Replicate
-                # Важно! Возвращаем курсор в начало файла, чтобы прочитать его снова.
-                uploaded_file.stream.seek(0) 
-                s3_url_for_replicate = upload_file_to_s3(uploaded_file)
+                # Создаем еще один "виртуальный" файл из тех же данных в памяти
+                file_for_replicate = FileStorage(stream=io.BytesIO(image_data), filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+                s3_url_for_replicate = upload_file_to_s3(file_for_replicate)
                 print(f"!!! Оригинальное изображение для Replicate загружено: {s3_url_for_replicate}")
             
-                # Шаг 3: Генерируем промпт, используя сжатое изображение
+                # Шаг 3: Генерируем промпт, используя ссылку на сжатое изображение
                 edit_system_prompt = (
                     "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
                 )
-                # Отправляем в OpenAI ссылку на СЖАТУЮ версию
                 messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
                 response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
                 final_prompt = response.choices[0].message.content.strip().replace('\\n', ' ').replace('\\r', ' ').strip()
             
                 # Шаг 4: Отправляем в Replicate ОРИГИНАЛ и сгенерированный промпт
                 replicate_input = {
-                    "input_image": s3_url_for_replicate, # Используем ссылку на ОРИГИНАЛ
+                    "input_image": s3_url_for_replicate,
                     "prompt": final_prompt,
                     "output_format": "png"
                 }
