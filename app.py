@@ -541,6 +541,9 @@ def process_image():
             return jsonify({'error': 'Изображение отсутствует или файл не выбран.'}), 400
 
         uploaded_file = request.files['image']
+        image_data = uploaded_file.read()
+        original_filename = uploaded_file.filename
+        original_content_type = uploaded_file.content_type
         
         token_cost = 0
         if mode == 'edit':
@@ -564,17 +567,16 @@ def process_image():
             if not redis_client: 
                 return jsonify({'error': 'Сервис фоновой обработки недоступен.'}), 503
             
-            image_data = uploaded_file.read()
+            # Используем уже прочитанные данные
             img_for_size_check = Image.open(io.BytesIO(image_data))
             original_width, original_height = img_for_size_check.size
-
-            original_stream = io.BytesIO(image_data)
-            original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
-            original_s3_url = upload_file_to_s3(original_for_upload)
-
+            
+            # Для загрузки в S3 создаем новый файловый объект из данных в памяти
+            file_for_s3 = FileStorage(stream=io.BytesIO(image_data), filename=original_filename, content_type=original_content_type)
+            original_s3_url = upload_file_to_s3(file_for_s3)
+            
             base64_image = base64.b64encode(image_data).decode('utf-8')
-            mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
-            image_data_url = f"data:{mime_type};base64,{base64_image}"
+            image_data_url = f"data:{original_content_type};base64,{base64_image}"
 
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
@@ -632,17 +634,16 @@ def process_image():
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
         # --- ОБЩАЯ ЛОГИКА ДЛЯ ПРЯМЫХ ВЫЗОВОВ REPLICATE ---
-        public_image_url = upload_file_to_s3(uploaded_file)
+        file_for_s3 = FileStorage(stream=io.BytesIO(image_data), filename=original_filename, content_type=original_content_type)
+        public_image_url = upload_file_to_s3(file_for_s3)
         replicate_input = {}
         model_version_id = ""
 
         if mode == 'edit': # Basic Edit Mode
             # Эта логика остается для базового режима, который не использует воркер
             prompt = request.form.get('prompt', '')
-            image_data = uploaded_file.read() # Перечитываем файл, так как он мог быть прочитан ранее
             base64_image = base64.b64encode(image_data).decode('utf-8')
-            mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
-            image_data_url = f"data:{mime_type};base64,{base64_image}"
+            image_data_url = f"data:{original_content_type};base64,{base64_image}"
 
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
