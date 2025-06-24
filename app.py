@@ -525,173 +525,137 @@ def serve_media_file(object_name):
 @login_required
 @check_confirmed
 def process_image():
-    print(f"!!! DEBUG: Использую REPLICATE_API_TOKEN: {os.environ.get('REPLICATE_API_TOKEN')}")
-    mode = request.form.get('mode')
-    token_cost = 0
-    if mode == 'edit':
-        token_cost = 65
-    elif mode == 'upscale':
-        scale_factor = int(request.form.get('scale_factor', '2'))
-        if scale_factor <= 2: token_cost = 17
-        elif scale_factor <= 4: token_cost = 65
-        else: token_cost = 150
-
-    if current_user.token_balance < token_cost:
-        return jsonify({'error': 'Недостаточно токенов'}), 403
-    if 'image' not in request.files or not request.files['image'].filename:
-        return jsonify({'error': 'Изображение отсутствует или файл не выбран'}), 400
-
-    uploaded_file = request.files['image']
-
     try:
-        # Сначала читаем файл и готовим base64 для OpenAI
-        image_bytes = uploaded_file.read()
-        base64_image_str = base64.b64encode(image_bytes).decode('utf-8')
-        image_mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
-        base64_data_url = f"data:{image_mime_type};base64,{base64_image_str}"
+        mode = request.form.get('mode')
+        if not mode:
+            return jsonify({'error': 'Режим работы (mode) не указан.'}), 400
+        if 'image' not in request.files or not request.files['image'].filename:
+            return jsonify({'error': 'Изображение отсутствует или файл не выбран.'}), 400
 
-        # "Отматываем" файл в начало для загрузки в S3
-        uploaded_file.seek(0) 
-
-        # Загружаем в S3, чтобы получить ссылку для Replicate
-        public_image_url = upload_file_to_s3(uploaded_file)
-
-        replicate_input = {}
-        model_version_id = ""
-
+        # --- ОБЩАЯ ЛОГИКА ДЛЯ ВСЕХ РЕЖИМОВ ---
+        uploaded_file = request.files['image']
+        
+        # Определяем стоимость заранее
+        token_cost = 0
         if mode == 'edit':
-            prompt = request.form.get('prompt', '')
-            edit_mode = request.form.get('edit_mode')
-            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            edit_mode = request.form.get('edit_mode', 'edit')
+            token_cost = 100 if edit_mode == 'pro' else 65
+        elif mode == 'upscale':
+            scale_factor = int(request.form.get('scale_factor', '2'))
+            if scale_factor <= 2: token_cost = 17
+            elif scale_factor <= 4: token_cost = 65
+            else: token_cost = 150
+        
+        if current_user.token_balance < token_cost:
+            return jsonify({'error': f'Недостаточно токенов. Требуется {token_cost}.'}), 403
 
-            proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
-            proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
-            headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
+        # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (с воркером) ---
+        if mode == 'edit' and request.form.get('edit_mode') == 'pro':
+            print("!!! РЕЖИM: PRO (через воркер)")
+            if not redis_client: return jsonify({'error': 'Сервис фоновой обработки недоступен.'}), 503
 
-            system_prompt_text = ""
-            # --- НАЧАЛО НОВОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
-        # --- НАЧАЛО ИСПРАВЛЕННОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
-        if edit_mode == 'pro':
-            print("!!! РЕЖИМ: PRO (через воркер)")
-            token_cost = 100
-            if current_user.token_balance < token_cost:
-                return jsonify({'error': f'Недостаточно токенов. Требуется {token_cost}.'}), 403
-            if not redis_client:
-                raise Exception("Redis не настроен на сервере.")
-    
-            uploaded_file = request.files['image']
             prompt = request.form.get('prompt', '')
             image_data = uploaded_file.read()
             img_for_size_check = Image.open(io.BytesIO(image_data))
             original_width, original_height = img_for_size_check.size
-    
+
             original_stream = io.BytesIO(image_data)
             original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
             original_s3_url = upload_file_to_s3(original_for_upload)
-    
+
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-    
-            # --- Вызов 1: Генерация промпта ---
-            generation_system_prompt = (
-                "You are an expert prompt engineer for an image editing AI... no explanations or conversational fluff."
-            )
+            
+            # OpenAI Call 1: Generate prompt
+            generation_system_prompt = "You are an expert prompt engineer... no explanations or conversational fluff." # (сокращено для ясности)
             messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": original_s3_url}}]}]
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
-            
-            try:
-                proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
-                proxy_response_gen.raise_for_status() # Проверяем на ошибки HTTP (4xx, 5xx)
-                
-                # ДОБАВЛЕНА ПРОВЕРКА НА JSON
-                generation_data = proxy_response_gen.json()
-                generation_prompt = generation_data['choices'][0]['message']['content'].strip()
-    
-            except requests.exceptions.JSONDecodeError:
-                print(f"!!! ОШИБКА JSON (генерация промпта): Прокси вернул не JSON. Статус: {proxy_response_gen.status_code}. Тело: {proxy_response_gen.text}")
-                return jsonify({'error': 'Ошибка ответа от сервиса генерации (1). Ответ не в формате JSON.'}), 502
-            except requests.exceptions.RequestException as e:
-                print(f"!!! ОШИБКА СЕТИ (генерация промпта): Не удалось связаться с прокси: {e}")
-                return jsonify({'error': f'Ошибка сети при обращении к сервису генерации (1): {e}'}), 502
-    
-            # --- Вызов 2: Определение намерения ---
-            intent_system_prompt = (
-                "You are a classification AI... You MUST only output the raw JSON object."
-            )
+            proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
+            proxy_response_gen.raise_for_status()
+            generation_prompt = proxy_response_gen.json()['choices'][0]['message']['content'].strip()
+
+            # OpenAI Call 2: Get intent
+            intent_system_prompt = "You are a classification AI... You MUST only output the raw JSON object." # (сокращено для ясности)
             messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
             openai_payload_intent = {"model": "gpt-4o", "messages": messages_for_intent, "max_tokens": 100, "response_format": {"type": "json_object"}, "temperature": 0.0}
+            proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
+            proxy_response_intent.raise_for_status()
+            intent_data = proxy_response_intent.json()
             
-            try:
-                proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
-                proxy_response_intent.raise_for_status()
-                
-                # ДОБАВЛЕНА ПРОВЕРКА НА JSON
-                intent_data = proxy_response_intent.json()
-                intent = intent_data.get("intent")
-                mask_prompt = intent_data.get("mask_prompt")
-    
-            except requests.exceptions.JSONDecodeError:
-                print(f"!!! ОШИБКА JSON (определение намерения): Прокси вернул не JSON. Статус: {proxy_response_intent.status_code}. Тело: {proxy_response_intent.text}")
-                return jsonify({'error': 'Ошибка ответа от сервиса генерации (2). Ответ не в формате JSON.'}), 502
-            except requests.exceptions.RequestException as e:
-                print(f"!!! ОШИБКА СЕТИ (определение намерения): Не удалось связаться с прокси: {e}")
-                return jsonify({'error': f'Ошибка сети при обращении к сервису генерации (2): {e}'}), 502
-            
-            # --- Отправка задачи в очередь Redis ---
+            # Отправка задачи в Redis
             current_user.token_balance -= token_cost
             new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
             db.session.add(new_prediction)
             db.session.commit()
-    
             job_data = {
                 "prediction_id": new_prediction.id, "original_s3_url": original_s3_url,
-                "intent": intent, "generation_prompt": generation_prompt,
-                "mask_prompt": mask_prompt, "token_cost": token_cost, "user_id": current_user.id,
-                "original_width": original_width, "original_height": original_height
+                "intent": intent_data.get("intent"), "generation_prompt": generation_prompt, "mask_prompt": intent_data.get("mask_prompt"),
+                "token_cost": token_cost, "user_id": current_user.id, "original_width": original_width, "original_height": original_height
             }
             redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
-            
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
-        # --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ---
-        # --- КОНЕЦ НОВОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
+
+        # --- ОБЩАЯ ЛОГИКА ДЛЯ ПРЯМЫХ ВЫЗОВОВ REPLICATE (Basic Edit и Upscale) ---
+        public_image_url = upload_file_to_s3(uploaded_file)
+        replicate_input = {}
+        model_version_id = ""
+
+        if mode == 'edit': # Basic Edit Mode
+            print("!!! РЕЖИМ: Basic Edit")
+            prompt = request.form.get('prompt', '')
+            proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
+            proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
+            proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
+            system_prompt_text = "You are an expert prompt engineer... no explanations or conversational fluff." # (сокращено для ясности)
+            messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": public_image_url}}]}]
+            openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
+            proxy_response = requests.post(proxy_url, json=openai_payload, headers=proxy_headers, timeout=30)
+            proxy_response.raise_for_status()
+            final_prompt = proxy_response.json()['choices'][0]['message']['content'].strip()
+            
+            model_version_id = "black-forest-labs/flux-kontext-max:0b9c317b23e79a9a0d8b9602ff4d04030d433055927fb7c4b91c44234a6818c4"
+            replicate_input = {"input_image": public_image_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
+            print("!!! РЕЖИМ: Upscale")
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            fractality = int(request.form.get('fractality', '18'))
             replicate_input = {
                 "image": public_image_url,
                 "scale_factor": float(request.form.get('scale_factor', '2')),
                 "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4),
                 "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4),
                 "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4),
-                "num_inference_steps": fractality
+                "num_inference_steps": int(request.form.get('fractality', '18'))
             }
 
-        if not model_version_id or not replicate_input:
-            raise Exception("Неверный режим или отсутствуют входные данные.")
-
+        # Вызов Replicate для Basic Edit и Upscale
         current_user.token_balance -= token_cost
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
         db.session.commit()
 
-        headers = {"Authorization": f"Bearer {os.environ.get('REPLICATE_API_TOKEN')}", "Content-Type": "application/json"}
-        # ИСПРАВЛЕНИЕ: Убираем "failed" из фильтра вебхуков, как в рабочем файле
+        headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json"}
         post_payload = {"version": model_version_id, "input": replicate_input, "webhook": url_for('replicate_webhook', _external=True), "webhook_events_filter": ["completed"]}
-
         start_response = requests.post("https://api.replicate.com/v1/predictions", json=post_payload, headers=headers)
         start_response.raise_for_status()
-        prediction_data = start_response.json()
-
-        new_prediction.replicate_id = prediction_data.get('id')
+        
+        new_prediction.replicate_id = start_response.json().get('id')
         db.session.commit()
         return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
+    except requests.exceptions.RequestException as e:
+        print(f"!!! ОШИБКА СВЯЗИ в process_image: {e}")
+        db.session.rollback()
+        # Попытка извлечь более детальное сообщение об ошибке, если оно есть
+        error_details = str(e)
+        if e.response is not None:
+            error_details = e.response.text
+        return jsonify({'error': f'Ошибка при обращении к внешнему сервису: {error_details}'}), 502
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
         db.session.rollback()
-        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {e}'}), 500
+        return jsonify({'error': f'Произошла внутренняя ошибка сервера: {str(e)}'}), 500
 
 
 @app.route('/get-result/<string:prediction_id>', methods=['GET'])
