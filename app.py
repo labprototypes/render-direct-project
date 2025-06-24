@@ -14,11 +14,14 @@ import mimetypes
 from datetime import datetime, timezone
 from functools import wraps
 from urllib.parse import urlparse, urljoin
+from PIL import Image
+from werkzeug.datastructures import FileStorage
 
 # Third-party imports
 import boto3
 import openai
 import requests
+import redis
 # import stripe # TODO: Закомментировано до интеграции с российским провайдером
 from flask import Flask, request, jsonify, render_template, url_for, redirect, flash, session, g, Response
 from flask_sqlalchemy import SQLAlchemy
@@ -66,6 +69,12 @@ app.config['AWS_S3_ENDPOINT_URL'] = os.environ.get('AWS_S3_ENDPOINT_URL')
 # --- Конфигурация внешних сервисов (без изменений) ---
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+REDIS_URL = os.environ.get('REDIS_URL')
+if REDIS_URL:
+    redis_client = redis.from_url(REDIS_URL)
+else:
+    redis_client = None
+    print("!!! ВНИМАНИЕ: REDIS_URL не найден. Отправка задач в воркер не будет работать.")
 
 # --- Инициализация расширений ---
 db = SQLAlchemy(app)
@@ -560,20 +569,80 @@ def process_image():
             headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
 
             system_prompt_text = ""
-            if edit_mode == 'pro':
-                system_prompt_text = "You are an expert prompt engineer for an image editing AI model called Flux. You will be given an image that may have visual flaws. Your task is to generate a highly descriptive and artistic prompt that, when given to the Flux model along with the original image, will result in a corrected, aesthetically pleasing image. Focus on describing the final look and feel. Instead of 'fix the hand', write 'a photorealistic hand with five fingers, perfect anatomy, soft lighting'. Instead of 'remove artifact', describe the clean area, like 'a clear blue sky'. The prompt must be in English. Output only the prompt itself."
-                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "image_url", "image_url": {"url": public_image_url}}]}] # Используем public_image_url
-            else:
-                system_prompt_text = "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
-                messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": public_image_url}}]}] # Используем public_image_url
-
-            openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
-            proxy_response = requests.post(proxy_url, json=openai_payload, headers=headers, timeout=30)
-            proxy_response.raise_for_status()
-            openai_response_data = proxy_response.json()
-            final_prompt = openai_response_data['choices'][0]['message']['content'].strip()
-
-            replicate_input = {"input_image": public_image_url, "prompt": final_prompt}
+            # --- НАЧАЛО НОВОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
+        if edit_mode == 'pro':
+            print("!!! РЕЖИМ: PRO (через воркер)")
+            token_cost = 100 # Стоимость как в основной версии
+            if current_user.token_balance < token_cost:
+                return jsonify({'error': f'Недостаточно токенов. Требуется {token_cost}.'}), 403
+            if not redis_client:
+                raise Exception("Redis не настроен на сервере.")
+        
+            uploaded_file = request.files['image']
+            prompt = request.form.get('prompt', '')
+        
+            # Читаем файл в память для многократного использования
+            image_data = uploaded_file.read()
+        
+            # Получаем размеры исходного изображения
+            img_for_size_check = Image.open(io.BytesIO(image_data))
+            original_width, original_height = img_for_size_check.size
+        
+            # Готовим файл для загрузки в S3 (для Replicate)
+            original_stream = io.BytesIO(image_data)
+            original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+            original_s3_url = upload_file_to_s3(original_for_upload)
+        
+            # 1. Первый вызов OpenAI: генерируем промпт для редактирования
+            generation_system_prompt = (
+                "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+                "The output should be only the refined prompt, no explanations or conversational fluff."
+            )
+            messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": original_s3_url}}]}]
+        
+            proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
+            proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
+            proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
+        
+            openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
+            proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
+            proxy_response_gen.raise_for_status()
+            generation_prompt = proxy_response_gen.json()['choices'][0]['message']['content'].strip()
+        
+            # 2. Второй вызов OpenAI: определяем намерение и объект для маски
+            intent_system_prompt = (
+                "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
+                "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
+                "2. \"mask_prompt\": Extract a very short (1-5 words) English name for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
+                "You MUST only output the raw JSON object."
+            )
+            messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
+            openai_payload_intent = {"model": "gpt-4o", "messages": messages_for_intent, "max_tokens": 100, "response_format": {"type": "json_object"}, "temperature": 0.0}
+        
+            proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
+            proxy_response_intent.raise_for_status()
+            intent_data = proxy_response_intent.json()
+            intent = intent_data.get("intent")
+            mask_prompt = intent_data.get("mask_prompt")
+        
+            # 3. Отправляем задачу в очередь Redis
+            current_user.token_balance -= token_cost
+            new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
+            db.session.add(new_prediction)
+            db.session.commit()
+        
+            job_data = {
+                "prediction_id": new_prediction.id, "original_s3_url": original_s3_url,
+                "intent": intent, "generation_prompt": generation_prompt,
+                "mask_prompt": mask_prompt, "token_cost": token_cost, "user_id": current_user.id,
+                "original_width": original_width, "original_height": original_height
+            }
+            redis_client.lpush('pifly_edit_jobs', json.dumps(job_data))
+        
+            return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+        # --- КОНЕЦ НОВОГО БЛОКА ДЛЯ РЕЖИМА PRO ---
 
         elif mode == 'upscale':
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
