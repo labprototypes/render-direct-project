@@ -529,6 +529,7 @@ def serve_media_file(object_name):
 @login_required
 @check_confirmed
 def process_image():
+    print(f"--- ДАННЫЕ ИЗ ФОРМЫ: {request.form.to_dict()} ---")
     try:
         mode = request.form.get('mode')
         if not mode:
