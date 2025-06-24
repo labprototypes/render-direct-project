@@ -535,7 +535,6 @@ def process_image():
         # --- ОБЩАЯ ЛОГИКА ДЛЯ ВСЕХ РЕЖИМОВ ---
         uploaded_file = request.files['image']
         
-        # Определяем стоимость заранее
         token_cost = 0
         if mode == 'edit':
             edit_mode = request.form.get('edit_mode', 'edit')
@@ -549,19 +548,26 @@ def process_image():
         if current_user.token_balance < token_cost:
             return jsonify({'error': f'Недостаточно токенов. Требуется {token_cost}.'}), 403
 
+        # --- НОВЫЙ БЛОК: Читаем файл и готовим Base64 ---
+        image_data = uploaded_file.read()
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+        mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.filename)[0] or 'image/png'
+        # Создаем "data URL" для передачи в OpenAI
+        image_data_url = f"data:{mime_type};base64,{base64_image}"
+        
+        # "Перематываем" файл в начало, чтобы его можно было снова прочитать для загрузки в S3
+        uploaded_file.stream.seek(0)
+
         # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (с воркером) ---
         if mode == 'edit' and request.form.get('edit_mode') == 'pro':
             print("!!! РЕЖИM: PRO (через воркер)")
             if not redis_client: return jsonify({'error': 'Сервис фоновой обработки недоступен.'}), 503
 
             prompt = request.form.get('prompt', '')
-            image_data = uploaded_file.read()
             img_for_size_check = Image.open(io.BytesIO(image_data))
             original_width, original_height = img_for_size_check.size
 
-            original_stream = io.BytesIO(image_data)
-            original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
-            original_s3_url = upload_file_to_s3(original_for_upload)
+            original_s3_url = upload_file_to_s3(uploaded_file)
 
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
@@ -574,7 +580,7 @@ def process_image():
                 "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
                 "The output should be only the refined prompt, no explanations or conversational fluff."
             )
-            messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": original_s3_url}}]}]
+            messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
             proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
             proxy_response_gen.raise_for_status()
@@ -617,8 +623,10 @@ def process_image():
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-            system_prompt_text = "You are an expert prompt engineer... no explanations or conversational fluff." # (сокращено для ясности)
-            messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": public_image_url}}]}]
+            system_prompt_text = "You are an expert prompt engineer..." # (сокращено)
+            
+            # ИЗМЕНЕНИЕ: Передаем изображение как Base64, а не по ссылке
+            messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
             proxy_response = requests.post(proxy_url, json=openai_payload, headers=proxy_headers, timeout=30)
             proxy_response.raise_for_status()
@@ -628,18 +636,11 @@ def process_image():
             replicate_input = {"input_image": public_image_url, "prompt": final_prompt}
 
         elif mode == 'upscale':
+            # ... (здесь ничего не меняется, т.к. OpenAI не используется)
             print("!!! РЕЖИМ: Upscale")
             model_version_id = "dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e"
-            replicate_input = {
-                "image": public_image_url,
-                "scale_factor": float(request.form.get('scale_factor', '2')),
-                "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4),
-                "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4),
-                "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4),
-                "num_inference_steps": int(request.form.get('fractality', '18'))
-            }
+            replicate_input = { "image": public_image_url, "scale_factor": float(request.form.get('scale_factor', '2')), "creativity": round(float(request.form.get('creativity', '30'))/100.0, 4), "resemblance": round(float(request.form.get('resemblance', '20'))/100.0*3.0, 4), "dynamic": round(float(request.form.get('dynamic', '10'))/100.0*50.0, 4), "num_inference_steps": int(request.form.get('fractality', '18')) }
 
-        # Вызов Replicate для Basic Edit и Upscale
         current_user.token_balance -= token_cost
         new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
         db.session.add(new_prediction)
@@ -657,10 +658,8 @@ def process_image():
     except requests.exceptions.RequestException as e:
         print(f"!!! ОШИБКА СВЯЗИ в process_image: {e}")
         db.session.rollback()
-        # Попытка извлечь более детальное сообщение об ошибке, если оно есть
         error_details = str(e)
-        if e.response is not None:
-            error_details = e.response.text
+        if e.response is not None: error_details = e.response.text
         return jsonify({'error': f'Ошибка при обращении к внешнему сервису: {error_details}'}), 502
     except Exception as e:
         print(f"!!! ОБЩАЯ ОШИБКА в process_image: {e}")
