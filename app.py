@@ -920,6 +920,22 @@ def cancel_subscription():
     flash('Функция отмены подписки будет доступна после подключения рекуррентных платежей.', 'info')
     return redirect(url_for('billing'))
 
+@app.route('/add-tokens-temp')
+def add_tokens_to_user():
+    user_email = "grankinvo1@gmail.com"
+    tokens_to_add = 90000
+    
+    # Находим пользователя по email
+    user = User.query.filter_by(email=user_email).first()
+    
+    if user:
+        # Добавляем токены к текущему балансу
+        user.token_balance += tokens_to_add
+        db.session.commit()
+        return f"<h1>Успех!</h1><p>Пользователю {user_email} добавлено {tokens_to_add} токенов. Текущий баланс: {user.token_balance}.</p>"
+    else:
+        return f"<h1>Ошибка!</h1><p>Пользователь с email {user_email} не найден.</p>", 404
+
 if __name__ == '__main__':
     # Для локального запуска, debug=True. На сервере будет False.
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
