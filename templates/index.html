@@ -52,7 +52,7 @@
             </div>
             <div class="submit-action-group">
                 <button type="submit" id="submit-button-edit" class="submit-button-element">Генерация</button>
-                <div class="token-cost"><span>Примерная стоимость: 65</span><span class="token-coin"></span></div>
+                <div class="token-cost"><span id="token-cost-edit">Примерная стоимость: 65</span><span class="token-coin"></span></div>
             </div>
         </div>
         <div id="upscale-view" style="display: none;">
@@ -396,7 +396,7 @@
                 const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
                 formData.append('edit_mode', editMode);
                 if (!imageFileInputEdit1.files[0]) {
-                    showError("Please select an image to " + editMode + ".");
+                    showError("Пожалуйста, выберите изображение для режима \"" + editMode + "\".");
                     stopLoading(null); return;
                 }
                 formData.append('image', imageFileInputEdit1.files[0]);
@@ -451,11 +451,22 @@
 
         editModeButtons.forEach(button => {
             button.addEventListener('click', (e) => {
+                if (e.currentTarget.disabled) return; // Не обрабатывать клики по заблокированным кнопкам
+        
                 const editMode = e.currentTarget.dataset.editMode;
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
-                // ИСПРАВЛЕНИЕ: Используем innerHTML вместо textContent для поддержки <br>
                 editModeDescription.innerHTML = e.currentTarget.dataset.description;
+        
+                // --- ДОБАВЛЕНА ЛОГИКА ОБНОВЛЕНИЯ СТОИМОСТИ ---
+                const tokenCostSpan = document.getElementById('token-cost-edit');
+                if (tokenCostSpan) {
+                    if (editMode === 'pro') {
+                        tokenCostSpan.textContent = 'Примерная стоимость: 100';
+                    } else {
+                        tokenCostSpan.textContent = 'Примерная стоимость: 65';
+                    }
+                }
             });
         });
         
