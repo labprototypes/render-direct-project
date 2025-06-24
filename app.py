@@ -686,7 +686,7 @@ def process_image():
                 version=model_version_id,
                 input=replicate_input,
                 webhook=url_for('replicate_webhook', _external=True),
-                webhook_events_filter=["completed", "failed"]
+                webhook_events_filter=["completed"]
             )
         
             new_prediction.replicate_id = prediction_replicate.id
