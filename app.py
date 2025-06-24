@@ -568,7 +568,12 @@ def process_image():
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             
             # OpenAI Call 1: Generate prompt
-            generation_system_prompt = "You are an expert prompt engineer... no explanations or conversational fluff." # (сокращено для ясности)
+            generation_system_prompt = (
+                "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+                "The output should be only the refined prompt, no explanations or conversational fluff."
+            )
             messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": original_s3_url}}]}]
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
             proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
@@ -576,7 +581,12 @@ def process_image():
             generation_prompt = proxy_response_gen.json()['choices'][0]['message']['content'].strip()
 
             # OpenAI Call 2: Get intent
-            intent_system_prompt = "You are a classification AI... You MUST only output the raw JSON object." # (сокращено для ясности)
+            intent_system_prompt = (
+                "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
+                "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
+                "2. \"mask_prompt\": Extract a very short (1-5 words) English name for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
+                "You MUST only output the raw JSON object."
+            )
             messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
             openai_payload_intent = {"model": "gpt-4o", "messages": messages_for_intent, "max_tokens": 100, "response_format": {"type": "json_object"}, "temperature": 0.0}
             proxy_response_intent = requests.post(proxy_url, json=openai_payload_intent, headers=proxy_headers, timeout=30)
