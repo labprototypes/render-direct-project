@@ -575,7 +575,7 @@ def process_image():
                 intent_system_prompt = (
                     "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
                     "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-                    "2. \"mask_prompt\": Extract a very short (2-5 words) English name for the object being acted upon. "
+                    "2. \"mask_prompt\": Extract a very short (1-5 words) English name for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
                     "You MUST only output the raw JSON object."
                 )
                 messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
