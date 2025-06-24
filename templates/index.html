@@ -412,6 +412,7 @@
                 formData.append('creativity', document.getElementById('creativity-slider').value);
                 formData.append('resemblance', document.getElementById('resemblance-slider').value);
                 formData.append('dynamic', document.getElementById('hdr-slider').value);
+                formData.append('fractality', document.getElementById('fractality-slider-upscale').value);
             }
 
             try {
@@ -510,6 +511,7 @@
         setupSlider('creativity-slider', 'creativity-value');
         setupSlider('resemblance-slider', 'resemblance-value');
         setupSlider('hdr-slider', 'hdr-value');
+        setupSlider('fractality-slider-upscale', 'fractality-value-upscale');
 
         document.getElementById('submit-button-edit').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
         document.getElementById('submit-button-upscale').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
