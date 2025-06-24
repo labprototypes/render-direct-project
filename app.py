@@ -788,28 +788,6 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
-@app.route('/make-unlimited-user-temp')
-def make_unlimited_user():
-    # Убедитесь, что пользователь с таким email уже создан через обычную регистрацию
-    user = User.query.filter_by(email="hello@prototypes.agency").first()
-    if user:
-        user.token_balance = 999999999
-        db.session.commit()
-        return "<h1>Success!</h1><p>User hello@prototypes.agency now has 999,999,999 tokens.</p>"
-    else:
-        return "<h1>Error!</h1><p>User hello@prototypes.agency not found. Please create the user first.</p>", 404
-
-@app.route('/grant-pro-access-temp')
-def grant_pro_access():
-    user = User.query.filter_by(email="hello@prototypes.agency").first()
-    if user:
-        user.current_plan = 'pro'
-        user.subscription_status = 'active'
-        db.session.commit()
-        return "<h1>Success!</h1><p>User hello@prototypes.agency now has Pro plan access.</p>"
-    else:
-        return "<h1>Error!</h1><p>User hello@prototypes.agency not found. Please create the user first.</p>", 404
-
 # --- Final app setup ---
 with app.app_context():
     db.create_all()
