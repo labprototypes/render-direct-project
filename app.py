@@ -68,6 +68,7 @@ app.config['AWS_S3_ENDPOINT_URL'] = os.environ.get('AWS_S3_ENDPOINT_URL')
 
 # --- Конфигурация внешних сервисов (без изменений) ---
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
+WORKER_SECRET_KEY = os.environ.get('WORKER_SECRET_KEY', 'a-very-secret-key-for-local-dev')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 REDIS_URL = os.environ.get('REDIS_URL')
 if REDIS_URL:
@@ -966,6 +967,55 @@ def add_tokens_to_user():
         return f"<h1>Успех!</h1><p>Пользователю {user_email} добавлено {tokens_to_add} токенов. Текущий баланс: {user.token_balance}.</p>"
     else:
         return f"<h1>Ошибка!</h1><p>Пользователь с email {user_email} не найден.</p>", 404
+
+@app.route('/worker-webhook', methods=['POST'])
+def worker_webhook():
+    """
+    Этот вебхук принимает результат от фонового воркера (worker.py)
+    и сохраняет его в базу данных.
+    """
+    # 1. Проверка безопасности
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or auth_header != f"Bearer {WORKER_SECRET_KEY}":
+        print(f"!!! Неавторизованный доступ к worker-webhook!")
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    # 2. Получение данных от воркера
+    data = request.json
+    prediction_id = data.get('prediction_id')
+    status = data.get('status') # 'completed' или 'failed'
+
+    if not prediction_id or not status:
+        return jsonify({'error': 'Отсутствует prediction_id или status'}), 400
+
+    # 3. Работа с базой данных внутри контекста основного приложения
+    with app.app_context():
+        prediction = Prediction.query.get(prediction_id)
+        if not prediction:
+            print(f"!!! Воркер-вебхук получен для неизвестного Prediction ID: {prediction_id}")
+            return 'Prediction not found', 404
+
+        if status == 'completed':
+            final_url = data.get('final_url')
+            if not final_url:
+                return jsonify({'error': 'Отсутствует final_url для успешного статуса'}), 400
+            
+            prediction.output_url = final_url
+            prediction.status = 'completed'
+            print(f">>> РЕЗУЛЬТАТ PRO-ЗАДАЧИ {prediction_id} УСПЕШНО СОХРАНЕН ЧЕРЕЗ ВЕБХУК.")
+        
+        elif status == 'failed':
+            prediction.status = 'failed'
+            # Возвращаем токены пользователю
+            user = User.query.get(prediction.user_id)
+            if user:
+                user.token_balance += prediction.token_cost
+                db.session.commit() # Сохраняем возврат токенов немедленно
+                print(f">>> ТОКЕНЫ ДЛЯ PRO-ЗАДАЧИ {prediction_id} ВОЗВРАЩЕНЫ ЧЕРЕЗ ВЕБХУК.")
+
+        db.session.commit()
+        
+    return jsonify({'status': 'success'}), 200
 
 if __name__ == '__main__':
     # Для локального запуска, debug=True. На сервере будет False.
