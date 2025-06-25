@@ -356,6 +356,25 @@ def handle_successful_payment(invoice=None, subscription=None):
         db.session.commit()
 
 # --- Маршруты для биллинга и Stripe Webhook ---
+@app.before_request
+def auto_login_for_staging():
+    # Проверяем, что приложение запущено в режиме 'staging'
+    if os.environ.get('FLASK_ENV') == 'staging':
+        # Если пользователь еще не вошел в систему
+        if not current_user.is_authenticated:
+            # Ищем тестового пользователя по email. Если его нет - создаем.
+            test_email = 'test@example.com'
+            user = User.query.filter_by(email=test_email).first()
+            if not user:
+                print("Создание тестового пользователя для staging-режима...")
+                user = User(id='test-user-id', email=test_email, username='Test User', token_balance=99999)
+                db.session.add(user)
+                db.session.commit()
+            
+            # "Логиним" тестового пользователя для этого запроса
+            login_user(user)
+            print(f"Авто-логин для staging: Пользователь {user.email} вошел в систему.")
+
 @app.route('/choose-plan')
 @login_required
 def choose_plan():
@@ -378,11 +397,25 @@ def archive():
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
-    price_id = request.form.get('price_id')
-    is_trial = request.form.get('trial') == 'true'
+    # --- НОВЫЙ БЛОК ДЛЯ ИМИТАЦИИ ПЛАТЕЖА В STAGING ---
+    if os.environ.get('FLASK_ENV') == 'staging':
+        price_id = request.form.get('price_id')
 
-    if is_trial and (current_user.trial_used or current_user.subscription_status == 'active'):
-        flash('Free trial can only be used once.', 'warning')
+        # Имитируем пополнение токенов
+        if price_id == TOKEN_PRICE_ID:
+            current_user.token_balance += 1000
+            flash('Тестовое пополнение: +1000 токенов добавлено.', 'success')
+        else: # Имитируем подписку
+            plan_name = next((name for name, id in PLAN_PRICES.items() if id == price_id), 'unknown')
+            token_map = {'taste': 1500, 'best': 4500, 'pro': 15000}
+            if plan_name in token_map:
+                current_user.token_balance += token_map[plan_name]
+
+            current_user.subscription_status = 'active'
+            current_user.current_plan = plan_name
+            flash(f'Тестовая подписка на план "{plan_name}" успешно оформлена.', 'success')
+
+        db.session.commit()
         return redirect(url_for('billing'))
 
     mode = 'subscription' if price_id in PLAN_PRICES.values() else 'payment'
