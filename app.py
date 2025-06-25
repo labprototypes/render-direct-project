@@ -589,7 +589,7 @@ def process_image():
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             
             # --- ВАШ РАБОЧИЙ ПРОМПТ #1 ДЛЯ ГЕНЕРАЦИИ ---
-            generation_system_ = (
+            generation_system_prompt= (
                 "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                 "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
                 "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
