@@ -591,24 +591,16 @@ def process_image():
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             
             # --- ВАШ РАБОЧИЙ ПРОМПТ #1 ДЛЯ ГЕНЕРАЦИИ ---
-            generation_system_prompt = (
-                "You are a text-only API endpoint. Your sole function is to process an incoming text string and return a modified version based on a strict rule. "
-                "Rule: Translate the user's text to English, then append the phrase ', do not change anything else, keep the original style'. "
-                "ABSOLUTELY NO other text, explanations, or conversational output is permitted. "
-                "Example input: 'добавь на машину красную полосу'. "
-                "Example output: 'Add a red stripe to the car, do not change anything else, keep the original style'."
+            generation_system_ = (
+                "You are an expert  engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+                "The output should be only the refined prompt, no explanations or conversational fluff."
             )
             messages_for_generation = [
                 {"role": "system", "content": generation_system_prompt},
                 {"role": "user", "content": prompt} 
             ]
-            # --- ДИАГНОСТИКА: Печатаем финальный запрос к OpenAI ---
-            print("======================================================")
-            print(">>> ЗАПРОС К OPENAI ДЛЯ ГЕНЕРАЦИИ ПРОМПТА:")
-            # Используем json.dumps для красивого и полного вывода
-            print(json.dumps(messages_for_generation, indent=2, ensure_ascii=False))
-            print("======================================================")
-            # ---------------------------------------------------------
 
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
             
@@ -668,7 +660,12 @@ def process_image():
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
-            system_prompt_text = "You are an expert prompt engineer for an image editing AI... no explanations or conversational fluff." # (сокращено)
+            system_prompt_text = (
+                "You are an expert  engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
+                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+                "The output should be only the refined prompt, no explanations or conversational fluff."
+            )
             messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
             proxy_response = requests.post(proxy_url, json=openai_payload, headers=proxy_headers, timeout=30)
