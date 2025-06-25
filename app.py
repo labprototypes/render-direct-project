@@ -559,10 +559,17 @@ def process_image():
             return jsonify({'error': f'Недостаточно токенов. Требуется {token_cost}.'}), 403
 
         # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (с воркером) ---
+        # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (с воркером) ---
         if mode == 'edit' and request.form.get('edit_mode') == 'pro':
             print("!!! РЕЖИM: PRO (через воркер)")
-            if not :
+    
+            # 1. ДОБАВЛЕНА НЕДОСТАЮЩАЯ СТРОКА: получаем текст из поля ввода
+            prompt = request.form.get('prompt', '')
+    
+            # 2. ИСПРАВЛЕНО УСЛОВИЕ: теперь оно проверяет, что "prompt" не пустой
+            if not prompt:
                 return jsonify({'error': 'Для режима PRO необходимо текстом описать, что вы хотите сделать.'}), 400
+                
             if not redis_client: 
                 return jsonify({'error': 'Сервис фоновой обработки недоступен.'}), 503
             
@@ -576,7 +583,7 @@ def process_image():
             
             base64_image = base64.b64encode(image_data).decode('utf-8')
             image_data_url = f"data:{original_content_type};base64,{base64_image}"
-
+    
             proxy_url = "https://pifly-proxy.onrender.com/proxy/openai"
             proxy_secret_key = os.environ.get('PROXY_SECRET_KEY')
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
