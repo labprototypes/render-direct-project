@@ -479,20 +479,31 @@
                 if (e.currentTarget.disabled) return;
         
                 const editMode = e.currentTarget.dataset.editMode;
+                // Для отладки: можно добавить эту строку, чтобы видеть в консоли (F12) какой режим выбран
+                // console.log("Выбран режим:", editMode); 
+        
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 editModeDescription.innerHTML = e.currentTarget.dataset.description;
         
-                const tokenCostSpan = document.getElementById('token-cost-edit').querySelector('span');
+                const tokenCostSpan = document.getElementById('token-cost-edit');
+                const templatesForBasic = document.getElementById('templates-for-basic');
+                const templatesForPro = document.getElementById('templates-for-pro');
         
-                // --- НОВАЯ ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ПОДСКАЗОК ---
                 if (editMode === 'pro') {
+                    // Переключаем подсказки
                     if(templatesForBasic) templatesForBasic.style.display = 'none';
                     if(templatesForPro) templatesForPro.style.display = 'flex';
+                    
+                    // УСТАНАВЛИВАЕМ СТОИМОСТЬ ДЛЯ PRO = 100
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Примерная стоимость: 100';
+        
                 } else { // Для 'edit' (Базовый режим)
+                    // Переключаем подсказки
                     if(templatesForBasic) templatesForBasic.style.display = 'block';
                     if(templatesForPro) templatesForPro.style.display = 'none';
+        
+                    // УСТАНАВЛИВАЕМ СТОИМОСТЬ ДЛЯ БАЗОВОГО = 65
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Примерная стоимость: 65';
                 }
             });
