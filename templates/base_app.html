@@ -118,9 +118,31 @@
             border-bottom: 1px solid var(--border-color);
             box-shadow: none;
         }
+        /* Замените старое правило .page-header-inner на это: */
         .page-header-inner {
-            width: 100%; max-width: 1200px; padding: 0 25px;
-            display: flex; justify-content: space-between; align-items: center;
+            width: 100%;
+            padding: 0 25px; /* Сохраняем боковые отступы внутри шапки */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-left: auto; /* Центрируем */
+            margin-right: auto; /* Центрируем */
+            box-sizing: border-box; /* Важно для правильного расчета ширины */
+            transition: max-width 0.3s ease-in-out; /* Плавный переход */
+        }
+        /* Добавьте этот код сразу после правила .page-header-inner */
+
+        @media (min-width: 1201px) {
+            .page-header-inner {
+                max-width: 1440px;
+            }
+        }
+        
+        /* Для очень больших десктопных мониторов */
+        @media (min-width: 1600px) {
+            .page-header-inner {
+                max-width: 1600px;
+            }
         }
         .header-left-group { display: flex; align-items: center; gap: 25px; }
         .app-logo-link { display: inline-block; transition: transform var(--transition-speed) ease; }
