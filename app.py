@@ -69,6 +69,7 @@ app.config['AWS_S3_ENDPOINT_URL'] = os.environ.get('AWS_S3_ENDPOINT_URL')
 # --- Конфигурация внешних сервисов (без изменений) ---
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 WORKER_SECRET_KEY = os.environ.get('WORKER_SECRET_KEY', 'a-very-secret-key-for-local-dev')
+APP_BASE_URL = os.environ.get('APP_BASE_URL')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 REDIS_URL = os.environ.get('REDIS_URL')
 if REDIS_URL:
@@ -633,7 +634,7 @@ def process_image():
             db.session.add(new_prediction)
             db.session.commit()
             job_data = {
-                "prediction_id": new_prediction.id, "original_s3_url": original_s3_url,
+                "prediction_id": new_prediction.id, "original_s3_url": original_s3_url, "app_base_url": APP_BASE_URL,
                 "intent": intent, "generation_prompt": generation_prompt, "mask_prompt": mask_prompt,
                 "token_cost": token_cost, "user_id": current_user.id, "original_width": original_width, "original_height": original_height
             }
@@ -970,25 +971,16 @@ def add_tokens_to_user():
 
 @app.route('/worker-webhook', methods=['POST'])
 def worker_webhook():
-    """
-    Этот вебхук принимает результат от фонового воркера (worker.py)
-    и сохраняет его в базу данных.
-    """
-    # 1. Проверка безопасности
     auth_header = request.headers.get('Authorization')
     if not auth_header or auth_header != f"Bearer {WORKER_SECRET_KEY}":
-        print(f"!!! Неавторизованный доступ к worker-webhook!")
         return jsonify({'error': 'Unauthorized'}), 403
 
-    # 2. Получение данных от воркера
     data = request.json
     prediction_id = data.get('prediction_id')
-    status = data.get('status') # 'completed' или 'failed'
-
+    status = data.get('status')
     if not prediction_id or not status:
-        return jsonify({'error': 'Отсутствует prediction_id или status'}), 400
+        return jsonify({'error': 'Missing prediction_id or status'}), 400
 
-    # 3. Работа с базой данных внутри контекста основного приложения
     with app.app_context():
         prediction = Prediction.query.get(prediction_id)
         if not prediction:
@@ -997,24 +989,18 @@ def worker_webhook():
 
         if status == 'completed':
             final_url = data.get('final_url')
-            if not final_url:
-                return jsonify({'error': 'Отсутствует final_url для успешного статуса'}), 400
-            
+            if not final_url: return jsonify({'error': 'Missing final_url'}), 400
             prediction.output_url = final_url
             prediction.status = 'completed'
             print(f">>> РЕЗУЛЬТАТ PRO-ЗАДАЧИ {prediction_id} УСПЕШНО СОХРАНЕН ЧЕРЕЗ ВЕБХУК.")
-        
         elif status == 'failed':
             prediction.status = 'failed'
-            # Возвращаем токены пользователю
             user = User.query.get(prediction.user_id)
             if user:
                 user.token_balance += prediction.token_cost
-                db.session.commit() # Сохраняем возврат токенов немедленно
                 print(f">>> ТОКЕНЫ ДЛЯ PRO-ЗАДАЧИ {prediction_id} ВОЗВРАЩЕНЫ ЧЕРЕЗ ВЕБХУК.")
-
         db.session.commit()
-        
+
     return jsonify({'status': 'success'}), 200
 
 if __name__ == '__main__':
