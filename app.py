@@ -8,6 +8,7 @@ import uuid
 import time
 import io
 import json 
+import base64
 from datetime import datetime, timezone
 from functools import wraps
 
