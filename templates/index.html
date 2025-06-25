@@ -46,9 +46,9 @@
                         </div>
                     </div>
                     <div id="templates-for-pro" class="template-selector" style="display: none; justify-content: center; gap: 10px;">
-                        <button type="button" class="template-btn" data-prompt="Заменить: Замени [опишите, что вы хотите изменить]. Ничего больше не меняй.">Изменить</button>
-                        <button type="button" class="template-btn" data-prompt="Добавь: Добавь [опишите, что вы хотите добавить]. Ничего больше не меняй.">Добавить</button>
-                        <button type="button" class="template-btn" data-prompt="Удали: Удали [опишите, что вы хотите удалить]. Ничего больше не меняй.">Удалить</button>
+                        <button type="button" class="template-btn" data-prompt="Change: Change the [опишите, что вы хотите изменить]. Don’t change anything else.">Изменить</button>
+                        <button type="button" class="template-btn" data-prompt="Add: Add the [опишите, что вы хотите добавить]. Don’t change anything else.">Добавить</button>
+                        <button type="button" class="template-btn" data-prompt="Remove: Remove the [опишите, что вы хотите удалить]. Don’t change anything else.">Удалить</button>
                     </div>
                 </div>
                 <form id="edit-form" class="input-area">
@@ -177,6 +177,8 @@
         const editModeButtons = document.querySelectorAll('.edit-mode-btn');
         const editModeDescription = document.getElementById('edit-mode-description');
         const editControlsContainer = document.getElementById('edit-controls-container');
+        const templatesForBasic = document.getElementById('templates-for-basic');
+        const templatesForPro = document.getElementById('templates-for-pro');
         const allTemplateButtons = document.querySelectorAll('.template-btn');
         const promptInput = document.getElementById('prompt');
         const editForm = document.getElementById('edit-form'); 
