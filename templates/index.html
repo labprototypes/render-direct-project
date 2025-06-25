@@ -6,6 +6,7 @@
 <div class="mode-selector">
     <button class="mode-btn active" data-mode="edit">Edit</button>
     <button class="mode-btn" data-mode="upscale">Upscale</button>
+    <button class="mode-btn" data-mode="video">Video</button>
 </div>
 {% endblock %}
 
@@ -457,10 +458,21 @@
                 const currentMode = button.dataset.mode;
                 appModeButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
+        
+                // --- ИЗМЕНЕННАЯ ЛОГИКА ---
+                // Показываем панель редактирования, если выбран режим 'edit' ИЛИ 'video'
+                editView.style.display = (currentMode === 'edit' || current_mode === 'video') ? 'flex' : 'none';
+        
+                // Показываем панель улучшения только для режима 'upscale'
                 upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
+                
+                // В будущем здесь можно будет добавить логику для #video-view
+                if (currentMode === 'video') {
+                    console.log("Выбран режим 'Video'. Временно показана панель 'Edit'.");
+                }
+        
                 resetLeftPanel();
-                if(currentMode === 'edit') {
+                if(currentMode === 'edit' || current_mode === 'video') {
                     const activeEditMode = document.querySelector('.edit-mode-btn.active');
                     if (activeEditMode) activeEditMode.click();
                 }
