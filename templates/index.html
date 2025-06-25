@@ -458,14 +458,35 @@
             }
 
             } else if (currentMode === 'video') {
-                // TODO: Добавить логику сбора данных для видео
-                // Определяем активный Kling-режим
                 const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
                 formData.append('kling_mode', activeKlingMode);
-                alert(`Submitting Video Generation for Kling Mode: ${activeKlingMode}`);
-                stopLoading(null); // Временно, пока нет реальной логики
-                return;
+        
+                // Собираем данные в зависимости от активного под-режима Kling
+                if (activeKlingMode === '2.0') {
+                    const startFrameFile = document.getElementById('image-file-kling-2-0').files[0];
+                    if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-0').value);
+                    formData.append('creativity', document.getElementById('creativity-slider-kling').value);
+                    formData.append('aspect_ratio', document.querySelector('#kling-2-0-controls .resolution-selector .resolution-btn.active').dataset.value);
+                    formData.append('duration', document.querySelector('#kling-2-0-controls .resolution-selector:last-child .resolution-btn.active').dataset.value);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-0').value);
+                } else if (activeKlingMode === '2.1') {
+                    const startFrameFile = document.getElementById('image-file-kling-2-1').files[0];
+                    if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-1').value);
+                    formData.append('resolution', document.querySelector('#kling-2-1-controls .resolution-selector .resolution-btn.active').dataset.value);
+                    formData.append('duration', document.querySelector('#kling-2-1-controls .resolution-selector:last-child .resolution-btn.active').dataset.value);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-1').value);
+                } else if (activeKlingMode === '2.1-pro') {
+                    const startFrameFile = document.getElementById('image-file-kling-2-1-pro').files[0];
+                    if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-1-pro').value);
+                    formData.append('aspect_ratio', document.querySelector('#kling-2-1-pro-controls .resolution-selector .resolution-btn.active').dataset.value);
+                    formData.append('duration', document.querySelector('#kling-2-1-pro-controls .resolution-selector:last-child .resolution-btn.active').dataset.value);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-1-pro').value);
+                }
             }
+
 
             try {
                 const response = await fetch("{{ url_for('process_image') }}", {
