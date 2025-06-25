@@ -151,11 +151,15 @@
             <div class="legal-checkboxes">
                 <div class="checkbox-group">
                     <input type="checkbox" id="terms-check" name="terms_check" required>
-                    <label for="terms-check">Я согласен с <a href="{{ url_for('terms') }}" target="_blank">Условиями обслуживания</a> и <a href="{{ url_for('privacy') }}" target="_blank">Политикой конфиденциальности</a>.</label>
+                    <label for="terms-check">Я ознакомлен(а) и принимаю <a href="{{ url_for('terms') }}" target="_blank">условиями использования</a> и <a href="{{ url_for('privacy') }}" target="_blank">Политикой конфиденциальности</a>.</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="oferta-check" name="oferta_check" required>
+                    <label for="oferta-check">Я ознакомлен(а) и принимаю условия <a href="{{ url_for('oferta') }}" target="_blank">публичной оферты</a>.</label>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="marketing-check" name="marketing_check" checked>
-                    <label for="marketing-check">Я согласен с <a href="{{ url_for('marketing_policy') }}" target="_blank">Маркетинговой политикой</a>.</label>
+                    <label for="marketing-check">Я ознакомлен(а) и принимаю условия <a href="{{ url_for('marketing_policy') }}" target="_blank">маркетинговой политики</a>.</label>
                 </div>
             </div>
             
@@ -170,17 +174,20 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const termsCheck = document.getElementById('terms-check');
+            const ofertaCheck = document.getElementById('oferta-check'); // Наш новый чекбокс
             const submitBtn = document.getElementById('submit-btn');
-
-            // Проверяем состояние при загрузке страницы
-            if (termsCheck.checked) {
-                submitBtn.disabled = false;
+    
+            function validateCheckboxes() {
+                // Кнопка активна, только если ОБА чекбокса отмечены
+                submitBtn.disabled = !(termsCheck.checked && ofertaCheck.checked);
             }
-
-            // Добавляем слушатель событий
-            termsCheck.addEventListener('change', () => {
-                submitBtn.disabled = !termsCheck.checked;
-            });
+    
+            // Проверяем состояние при загрузке страницы
+            validateCheckboxes();
+    
+            // Добавляем слушатели на ИЗМЕНЕНИЕ состояния обоих чекбоксов
+            termsCheck.addEventListener('change', validateCheckboxes);
+            ofertaCheck.addEventListener('change', validateCheckboxes);
         });
     </script>
 </body>
