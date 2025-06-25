@@ -793,7 +793,6 @@ def archive():
 @login_required
 @check_confirmed
 def billing():
-    flash("Страница биллинга находится в разработке.", "info")
     return render_template('billing.html')
 
 
