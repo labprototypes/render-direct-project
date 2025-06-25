@@ -1012,6 +1012,10 @@ def worker_webhook():
 
     return jsonify({'status': 'success'}), 200
 
+@app.route('/oferta')
+def oferta():
+    return render_template('oferta.html')
+
 if __name__ == '__main__':
     # Для локального запуска, debug=True. На сервере будет False.
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5001)))
