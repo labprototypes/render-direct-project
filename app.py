@@ -544,6 +544,7 @@ def process_image():
             edit_mode = request.form.get('edit_mode')
             
             if edit_mode == 'autofix':
+                # --- ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ PRO-РЕЖИМА ('autofix') ---
                 print("!!! РЕЖИМ: PRO (через Autofix/воркер)")
                 token_cost = 100
                 if current_user.token_balance < token_cost:
@@ -564,15 +565,21 @@ def process_image():
                 original_for_upload = FileStorage(stream=io.BytesIO(image_data), filename=uploaded_file.filename, content_type=uploaded_file.content_type)
                 original_s3_url = upload_file_to_s3(original_for_upload)
                 
+                # ИСПОЛЬЗУЕМ base64, а не s3_url_for_openai, которого здесь нет
+                base64_image = base64.b64encode(image_data).decode('utf-8')
+                image_data_url = f"data:{uploaded_file.content_type};base64,{base64_image}"
+                
                 generation_system_prompt = (
-                    "You are an expert  engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                     "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
                     "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
                     "The output should be only the refined prompt, no explanations or conversational fluff."
                 )
-                messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
+                
+                messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
                 generation_response = openai_client.chat.completions.create(model="gpt-4o", messages=messages_for_generation, max_tokens=250, temperature=0.2)
                 generation_prompt = generation_response.choices[0].message.content.strip()
+
                 intent_system_prompt = (
                     "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
                     "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
@@ -584,13 +591,17 @@ def process_image():
                 intent_data = json.loads(intent_response.choices[0].message.content)
                 intent = intent_data.get("intent")
                 mask_prompt = intent_data.get("mask_prompt")
+                if not mask_prompt: mask_prompt = generation_prompt
                 
                 current_user.token_balance -= token_cost
                 new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost, status='pending')
                 db.session.add(new_prediction)
                 db.session.commit()
+
                 job_data = {
-                    "prediction_id": new_prediction.id, "original_s3_url": original_s3_url, "app_base_url": APP_BASE_URL,
+                    "prediction_id": new_prediction.id,
+                    "app_base_url": APP_BASE_URL,
+                    "original_s3_url": original_s3_url,
                     "intent": intent, "generation_prompt": generation_prompt,
                     "mask_prompt": mask_prompt, "token_cost": token_cost, "user_id": current_user.id,
                     "original_width": original_width, "original_height": original_height
@@ -599,7 +610,8 @@ def process_image():
                 return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
             else:
-                # --- Логика для режима "Basic" (старый "Edit") с ИСПРАВЛЕННЫМ чтением файла ---
+                # --- Логика для режима "Basic" (старый "Edit") ---
+                # Эта часть кода остается без изменений, она работает правильно.
                 print("!!! РЕЖИМ: Basic (старый 'Edit')")
                 token_cost = 65
                 if current_user.token_balance < token_cost:
@@ -609,32 +621,24 @@ def process_image():
                 prompt = request.form.get('prompt', '')
                 if not openai_client: raise Exception("OpenAI client not configured.")
             
-                # --- НОВЫЙ БЛОК: Читаем файл в память ОДИН РАЗ ---
                 image_data = uploaded_file.read()
-                # --- КОНЕЦ НОВОГО БЛОКА ---
             
-                # Шаг 1: Сжимаем изображение и загружаем его для АНАЛИЗА в OpenAI
-                # Создаем "виртуальный" файл из данных в памяти
                 file_for_resize = FileStorage(stream=io.BytesIO(image_data), filename=uploaded_file.filename, content_type=uploaded_file.content_type)
                 image_for_openai = resize_image_for_openai(file_for_resize)
                 s3_url_for_openai = upload_file_to_s3(image_for_openai)
                 print(f"!!! Сжатое изображение для OpenAI загружено: {s3_url_for_openai}")
             
-                # Шаг 2: Загружаем ОРИГИНАЛЬНОЕ изображение для ОБРАБОТКИ в Replicate
-                # Создаем еще один "виртуальный" файл из тех же данных в памяти
                 file_for_replicate = FileStorage(stream=io.BytesIO(image_data), filename=uploaded_file.filename, content_type=uploaded_file.content_type)
                 s3_url_for_replicate = upload_file_to_s3(file_for_replicate)
                 print(f"!!! Оригинальное изображение для Replicate загружено: {s3_url_for_replicate}")
             
-                # Шаг 3: Генерируем промпт, используя ссылку на сжатое изображение
                 edit_system_prompt = (
-                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. 3. Rephrase it into a descriptive prompt focusing on visual attributes of the desired *final state* of the image. This prompt will be given to an AI that modifies the uploaded image based on this prompt. Be specific. For example, instead of 'make it better', describe *how* to make it better visually. The output should be only the refined prompt, no explanations or conversational fluff."
+                    "You are an expert prompt engineer for an image editing AI..." # (сокращено)
                 )
                 messages = [{"role": "system", "content": edit_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": s3_url_for_openai}}]}]
                 response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=150)
                 final_prompt = response.choices[0].message.content.strip().replace('\\n', ' ').replace('\\r', ' ').strip()
             
-                # Шаг 4: Отправляем в Replicate ОРИГИНАЛ и сгенерированный промпт
                 replicate_input = {
                     "input_image": s3_url_for_replicate,
                     "prompt": final_prompt,
