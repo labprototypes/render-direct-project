@@ -73,14 +73,38 @@
         
         body.no-scroll { overflow: hidden; }
 
+        /* Вставьте этот код вместо вашего существующего правила для .app-container */
         .app-container {
-            width: 100%; max-width: 1200px; margin: 0 auto;
-            padding: 100px 25px 40px;
-            display: flex; flex-direction: row; align-items: flex-start;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 100px 25px 40px; /* Сохраняем ваши вертикальные отступы */
+            display: flex; 
+            flex-direction: row; 
+            align-items: flex-start;
             gap: 25px; 
             position: relative;
             z-index: 2;
             height: auto; 
+            
+            /* Новое свойство для плавности */
+            transition: max-width 0.3s ease-in-out; 
+        }
+        
+        /* Для экранов побольше, как ваш MacBook */
+        @media (min-width: 1201px) {
+            .app-container {
+                /* Увеличиваем максимальную ширину для средних экранов */
+                max-width: 1440px;
+            }
+        }
+        
+        /* Для очень больших десктопных мониторов */
+        @media (min-width: 1600px) {
+            .app-container {
+                /* Устанавливаем еще больший предел */
+                max-width: 1600px;
+            }
         }
         
         body.no-scroll .app-container { height: 100vh; }
