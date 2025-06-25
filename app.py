@@ -69,7 +69,6 @@ app.config['AWS_S3_ENDPOINT_URL'] = os.environ.get('AWS_S3_ENDPOINT_URL')
 # --- Конфигурация внешних сервисов (без изменений) ---
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
 WORKER_SECRET_KEY = os.environ.get('WORKER_SECRET_KEY', 'a-very-secret-key-for-local-dev')
-APP_BASE_URL = os.environ.get('APP_BASE_URL') 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 REDIS_URL = os.environ.get('REDIS_URL')
 if REDIS_URL:
