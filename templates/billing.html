@@ -68,7 +68,7 @@
             </ul>
             <form action="{{ url_for('create_payment') }}" method="POST">
                 <input type="hidden" name="product_id" value="starter">
-                <button type="submit" class="btn">Выбрать</button>
+                <button type="submit" class="btn select-plan-btn">Выбрать</button>
             </form>
         </div>
 
@@ -88,7 +88,7 @@
             </ul>
              <form action="{{ url_for('create_payment') }}" method="POST">
                 <input type="hidden" name="product_id" value="optimal">
-                <button type="submit" class="btn">Выбрать</button>
+                <button type="submit" class="btn select-plan-btn">Выбрать</button>
             </form>
         </div>
 
@@ -108,11 +108,19 @@
             </ul>
             <form action="{{ url_for('create_payment') }}" method="POST">
                 <input type="hidden" name="product_id" value="pro">
-                <button type="submit" class="btn">Выбрать</button>
+                <button type="submit" class="btn select-plan-btn">Выбрать</button>
             </form>
         </div>
     </div>
-
+    
+    <div class="oferta-acceptance-container" style="max-width: 1100px; margin: 30px auto 0 auto; text-align: center;">
+        <div class="checkbox-container" style="justify-content: center; padding: 15px; background-color: var(--surface-color); border-radius: 16px; border: 1px solid var(--border-color);">
+            <input type="checkbox" id="billing-oferta-check" name="billing_oferta_check">
+            <label for="billing-oferta-check" style="font-size: 0.9rem;">
+                Я ознакомлен(а) и принимаю условия <a href="{{ url_for('oferta') }}" target="_blank" style="font-weight: 700;">публичной оферты</a>, включая рекуррентные платежи.
+            </label>
+        </div>
+    </div>
     {% if current_user.is_authenticated %}
     <div style="max-width: 1100px; margin: 60px auto 0 auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 40px;">
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
@@ -132,4 +140,22 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ofertaCheck = document.getElementById('billing-oferta-check');
+    const selectPlanButtons = document.querySelectorAll('.select-plan-btn');
+
+    function togglePlanButtons() {
+        selectPlanButtons.forEach(button => {
+            button.disabled = !ofertaCheck.checked;
+        });
+    }
+
+    togglePlanButtons();
+    ofertaCheck.addEventListener('change', togglePlanButtons);
+});
+</script>
 {% endblock %}
