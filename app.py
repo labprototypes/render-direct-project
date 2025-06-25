@@ -108,7 +108,7 @@ class User(db.Model, UserMixin):
     email_confirmed = db.Column(db.Boolean, nullable=False, default=False)
     email_confirmed_at = db.Column(db.DateTime, nullable=True)
     yandex_id = db.Column(db.String(255), unique=True, nullable=True)
-    token_balance = db.Column(db.Integer, default=100, nullable=False)
+    token_balance = db.Column(db.Integer, default=300, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
 
     # Поля для подписок и биллинга (оставлены для будущей интеграции)
