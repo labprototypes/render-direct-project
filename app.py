@@ -552,7 +552,7 @@ def process_image():
 
                 # ... (вся логика для Basic, которая у вас уже работает) ...
                 uploaded_file = request.files['image']
-                prompt = request.form.get('prompt', '')
+                 = request.form.get('', '')
                 image_data = uploaded_file.read()
                 img_for_size_check = Image.open(io.BytesIO(image_data))
                 original_width, original_height = img_for_size_check.size
@@ -563,8 +563,8 @@ def process_image():
                 analysis_for_upload = FileStorage(stream=analysis_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
                 image_for_openai = resize_image_for_openai(analysis_for_upload)
                 s3_url_for_openai = upload_file_to_s3(image_for_openai)
-                generation_system_prompt = (
-                    "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
+                generation_system_ = (
+                    "You are an expert  engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                     "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
                     "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
                     "The output should be only the refined prompt, no explanations or conversational fluff."
@@ -575,7 +575,7 @@ def process_image():
                 intent_system_prompt = (
                     "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
                     "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-                    "2. \"mask_prompt\": Extract a very short (1-5 words) English name for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
+                    "2. \"mask_prompt\": Extract a very short (1-5 words) name in english language for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
                     "You MUST only output the raw JSON object."
                 )
                 messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
