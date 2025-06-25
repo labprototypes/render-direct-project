@@ -561,7 +561,7 @@ def process_image():
         # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (с воркером) ---
         if mode == 'edit' and request.form.get('edit_mode') == 'pro':
             print("!!! РЕЖИM: PRO (через воркер)")
-             = request.form.get('', '')
+            = request.form.get('', '')
             if not :
                 return jsonify({'error': 'Для режима PRO необходимо текстом описать, что вы хотите сделать.'}), 400
             if not redis_client: 
