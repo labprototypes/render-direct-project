@@ -15,11 +15,11 @@
         <div id="edit-view">
             <div class="control-group">
                 <div class="edit-mode-selector">
-                    <button class="edit-mode-btn active" data-edit-mode="edit" data-description="Добавляйте и удаляйте объекты, изменяйте части изображения, создавайте продуктовые кадры, изменяйте стили и освещение.<br>Результат базового режима будет изображение 720р.">Базовый</button>
+                    <button class="edit-mode-btn active" data-edit-mode="edit" data-description="<strong>Изменяйте изображение по частям или полностью</strong><br>Качество генерации 720р"">Базовый</button>
                     {% if current_user.current_plan == 'taste' %}
-                        <button class="edit-mode-btn feature-locked" disabled title="Please upgrade your plan to use this feature">Про</button>
+                        <button class="edit-mode-btn feature-locked" disabled title="Для доступа к функции вам нужен план "Оптимум" и выше">Про</button>
                     {% else %}
-                        <button class="edit-mode-btn" data-edit-mode="pro" data-description="Добавляйте и удаляйте объекты, изменяйте части изображения, создавайте продуктовые кадры, изменяйте стили и освещение.<br>Результат Про режима будет изображение оригинального качества.">Про</button>
+                        <button class="edit-mode-btn" data-edit-mode="pro" data-description="<strong>Изменяйте части изображения сохраняя</strong><br><strong>оригинальное качество</strong>">Про</button>
                     {% endif %}
                 </div>
             </div>
