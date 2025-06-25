@@ -561,8 +561,8 @@ def process_image():
         # --- ЛОГИКА ДЛЯ РЕЖИМА "PRO" (с воркером) ---
         if mode == 'edit' and request.form.get('edit_mode') == 'pro':
             print("!!! РЕЖИM: PRO (через воркер)")
-            prompt = request.form.get('prompt', '')
-            if not prompt:
+             = request.form.get('', '')
+            if not :
                 return jsonify({'error': 'Для режима PRO необходимо текстом описать, что вы хотите сделать.'}), 400
             if not redis_client: 
                 return jsonify({'error': 'Сервис фоновой обработки недоступен.'}), 503
@@ -583,7 +583,7 @@ def process_image():
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             
             # --- ВАШ РАБОЧИЙ ПРОМПТ #1 ДЛЯ ГЕНЕРАЦИИ ---
-            generation_system_prompt = (
+            generation_system_ = (
                 "You are an expert prompt engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                 "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
                 "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
@@ -600,7 +600,7 @@ def process_image():
             intent_system_prompt = (
                 "You are a classification AI. Analyze the user's original request. Your task is to generate a JSON object with two keys: "
                 "1. \"intent\": Classify the user's intent as one of three possible string values: 'ADD', 'REMOVE', or 'REPLACE'. "
-                "2. \"mask_prompt\": Extract a very short (1-5 words) English name for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
+                "2. \"mask_prompt\": Extract a very short (1-5 words) name in english language for the object being acted upon. Example: 't-shirt' not a 'woman's t-shirt'. Be specific with the object. You can use an object's position. Example: 'person on the right'."
                 "You MUST only output the raw JSON object."
             )
             messages_for_intent = [{"role": "system", "content": intent_system_prompt}, {"role": "user", "content": prompt}]
