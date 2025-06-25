@@ -6,12 +6,14 @@
 <div class="mode-selector">
     <button class="mode-btn active" data-mode="edit">Edit</button>
     <button class="mode-btn" data-mode="upscale">Upscale</button>
+    <button class="mode-btn" data-mode="video">Video</button>
 </div>
 {% endblock %}
 
 {% block content %}
 <div class="app-container">
     <div class="content-wrapper" id="main-content-wrapper">
+        
         <div id="edit-view">
             <div class="control-group">
                 <div class="edit-mode-selector">
@@ -47,7 +49,7 @@
                     </div>
                     <div id="templates-for-pro" class="template-selector" style="display: none; justify-content: center; gap: 10px;">
                         <button type="button" class="template-btn" data-prompt="Change: Change the [describe what you want to change]. Don’t change anything else.">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.48.398.668 1.03.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.075.124a6.57 6.57 0 0 1-.22.127c-.332.183-.582.495-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313.686-.645.87-.074.04-.147.083-.22.127-.324.196-.72.257-1.075.124l-1.217-.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.003-.827c.293-.24.438-.613.438-.995s-.145-.755-.438-.995l-1.003-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.075.124.074-.044.146-.087.22-.127.332-.183.582-.495.645-.87l.213-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.48.398.668 1.03.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.075.124a6.57 6.57 0 0 1-.22.127c-.332.183-.582.495-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313.686-.645.87-.074.04-.147.083-.22.127-.324.196-.72.257-1.075.124l-1.217-.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.003-.827c.293-.24.438-.613-.438-.995s-.145-.755-.438-.995l-1.003-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.075.124.074-.044.146-.087.22-.127.332-.183.582-.495.645-.87l.213-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                             Change
                         </button>
                     
@@ -63,7 +65,7 @@
                     </div>
                 </div>
                 <form id="edit-form" class="input-area">
-                     <input type="text" id="prompt" name="prompt" placeholder="Describe your changes in any language">
+                     <input type="text" id="prompt-edit" name="prompt" placeholder="Describe your changes in any language">
                 </form>
             </div>
             <div class="submit-action-group">
@@ -71,6 +73,7 @@
                 <div class="token-cost"><span>Estimated cost: 65</span><span class="token-coin"></span></div>
             </div>
         </div>
+
         <div id="upscale-view" style="display: none;">
             <label for="image-file-upscale" id="image-drop-area-upscale" class="image-drop-area">
                 <div class="drop-placeholder">
@@ -85,85 +88,102 @@
                     <label>Resolution</label>
                     <div class="resolution-selector">
                         <button class="resolution-btn active" data-value="2">x2</button>
-                        
-                        {% if current_user.current_plan in ['free', 'taste', 'trial'] %}
-                            <button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x4</button>
-                        {% else %}
-                            <button class="resolution-btn" data-value="4">x4</button>
-                        {% endif %}
-
-                        {% if current_user.current_plan not in ['pro'] %}
-                            <button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x8</button>
-                        {% else %}
-                            <button class="resolution-btn" data-value="8">x8</button>
-                        {% endif %}
+                        {% if current_user.current_plan in ['free', 'taste', 'trial'] %}<button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x4</button>{% else %}<button class="resolution-btn" data-value="4">x4</button>{% endif %}
+                        {% if current_user.current_plan not in ['pro'] %}<button class="resolution-btn feature-locked" disabled title="Please upgrade your plan to use this feature">x8</button>{% else %}<button class="resolution-btn" data-value="8">x8</button>{% endif %}
                     </div>
                 </div>
-                <div class="control-group">
-                    <div class="slider-container">
-                        <div class="slider-header">
-                            <label for="creativity-slider">
-                                Creativity
-                                <span class="tooltip-trigger" data-tooltip="How strong Pifly enhance the image. Higher values may cause strange results. We suggest to try 20/30/50">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
-                                </span>
-                            </label>
-                            <span class="slider-value" id="creativity-value">30</span>
-                        </div>
-                        <input type="range" id="creativity-slider" min="0" max="100" value="30" class="custom-slider">
-                    </div>
                 </div>
-                <div class="control-group">
-                    <div class="slider-container">
-                        <div class="slider-header">
-                            <label for="resemblance-slider">
-                                Resemblance
-                                <span class="tooltip-trigger" data-tooltip="Higher value will make the generation more closely to the original image, but may cause dirty look. We suggest to try 10/20/40">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
-                                </span>
-                            </label>
-                            <span class="slider-value" id="resemblance-value">20</span>
-                        </div>
-                        <input type="range" id="resemblance-slider" min="0" max="100" value="20" class="custom-slider">
-                    </div>
-                </div>
-                <div class="control-group">
-                    <div class="slider-container">
-                        <div class="slider-header">
-                            <label for="hdr-slider">
-                                HDR
-                                <span class="tooltip-trigger" data-tooltip="Increases definition and detail. High values can result in images with an artificial appearance. We suggest to try 10/20/30">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
-                                </span>
-                            </label>
-                            <span class="slider-value" id="hdr-value">10</span>
-                        </div>
-                        <input type="range" id="hdr-slider" min="0" max="100" value="10" class="custom-slider">
-                    </div>
-                </div>
-                <div class="control-group">
-                    <div class="slider-container">
-                        <div class="slider-header">
-                            <label for="fractality-slider-upscale">
-                                Fractality
-                                <span class="tooltip-trigger" data-tooltip="Number of denoising steps. Default: 18">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg>
-                                </span>
-                            </label>
-                            <span class="slider-value" id="fractality-value-upscale">18</span>
-                        </div>
-                        <input type="range" id="fractality-slider-upscale" min="1" max="100" value="18" class="custom-slider">
-                    </div>
-                </div>
-            </div>
             <div class="submit-action-group">
                 <button type="submit" id="submit-button-upscale" class="submit-button-element">Upscale</button>
-                <div id="final-size-display" class="mode-description" style="min-height: 1.5em; font-weight: 500;"></div>
-                <div id="token-cost-upscale" class="token-cost"><span>Estimated cost: 5</span><span class="token-coin"></span></div>
-                <div id="resolution-limit-warning" class="mode-description" style="color: #E53E3E; font-weight: 500; display: none;">The resulting image size exceeds the 9k resolution limit, please change your settings.</div>
+                <div id="token-cost-upscale" class="token-cost"><span>Estimated cost: 17</span><span class="token-coin"></span></div>
             </div>
         </div>
-    </div>
+        
+        <div id="video-view" style="display: none;">
+            <div class="control-group">
+                <div class="edit-mode-selector">
+                    <button class="kling-mode-btn active" data-kling-mode="2.0">Kling 2.0</button>
+                    <button class="kling-mode-btn" data-kling-mode="2.1">Kling 2.1</button>
+                    <button class="kling-mode-btn" data-kling-mode="2.1-pro">Kling 2.1 Pro</button>
+                </div>
+            </div>
+
+            <div id="kling-2-0-controls" class="kling-controls">
+                <div class="control-group">
+                    <label>Start frame (optional)</label>
+                    <label for="image-file-kling-2-0" class="image-drop-area">
+                         <div class="drop-placeholder"><svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span class="drop-placeholder-text">Drop Start Frame or Click</span></div>
+                         <img id="image-preview-kling-2-0" src="#" alt="Preview" class="image-preview-img">
+                    </label>
+                    <input type="file" id="image-file-kling-2-0" accept="image/*" style="display: none;">
+                </div>
+                <div class="control-group">
+                    <label>Negative prompt</label>
+                    <div class="input-area"><input type="text" id="negative-prompt-2-0" placeholder="e.g. blurry, low quality"></div>
+                </div>
+                <div class="control-group">
+                    <div class="slider-container">
+                         <div class="slider-header"><label for="creativity-slider-kling">Creativity</label><span class="slider-value" id="creativity-value-kling">30</span></div>
+                         <input type="range" id="creativity-slider-kling" min="0" max="100" value="30" class="custom-slider">
+                    </div>
+                </div>
+                <div class="control-group"><label>Aspect Ratio</label><div class="resolution-selector"><button class="resolution-btn active" data-value="16:9">16:9</button><button class="resolution-btn" data-value="9:16">9:16</button><button class="resolution-btn" data-value="1:1">1:1</button></div></div>
+                <div class="control-group"><label>Duration</label><div class="resolution-selector"><button class="resolution-btn active" data-value="5">5 sec</button><button class="resolution-btn" data-value="10">10 sec</button></div></div>
+                <div class="control-group">
+                    <label>Prompt</label>
+                    <div class="input-area"><input type="text" id="prompt-kling-2-0" placeholder="Describe your video"></div>
+                </div>
+            </div>
+
+            <div id="kling-2-1-controls" class="kling-controls" style="display: none;">
+                <div class="control-group">
+                    <label>Start frame (optional)</label>
+                    <label for="image-file-kling-2-1" class="image-drop-area">
+                         <div class="drop-placeholder"><svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span class="drop-placeholder-text">Drop Start Frame or Click</span></div>
+                         <img id="image-preview-kling-2-1" src="#" alt="Preview" class="image-preview-img">
+                    </label>
+                    <input type="file" id="image-file-kling-2-1" accept="image/*" style="display: none;">
+                </div>
+                <div class="control-group">
+                    <label>Negative prompt</label>
+                    <div class="input-area"><input type="text" id="negative-prompt-2-1" placeholder="e.g. text, watermark"></div>
+                </div>
+                <div class="control-group"><label>Resolution</label><div class="resolution-selector"><button class="resolution-btn active" data-value="720p">720p</button><button class="resolution-btn" data-value="1080p">1080p</button></div></div>
+                <div class="control-group"><label>Duration</label><div class="resolution-selector"><button class="resolution-btn active" data-value="5">5 sec</button><button class="resolution-btn" data-value="10">10 sec</button></div></div>
+                <div class="control-group">
+                    <label>Prompt</label>
+                    <div class="input-area"><input type="text" id="prompt-kling-2-1" placeholder="Describe your video"></div>
+                </div>
+            </div>
+
+            <div id="kling-2-1-pro-controls" class="kling-controls" style="display: none;">
+                <div class="control-group">
+                    <label>Start frame (optional)</label>
+                    <label for="image-file-kling-2-1-pro" class="image-drop-area">
+                         <div class="drop-placeholder"><svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span class="drop-placeholder-text">Drop Start Frame or Click</span></div>
+                         <img id="image-preview-kling-2-1-pro" src="#" alt="Preview" class="image-preview-img">
+                    </label>
+                    <input type="file" id="image-file-kling-2-1-pro" accept="image/*" style="display: none;">
+                </div>
+                 <div class="control-group">
+                    <label>Negative prompt</label>
+                    <div class="input-area"><input type="text" id="negative-prompt-2-1-pro" placeholder="e.g. low resolution"></div>
+                </div>
+                <div class="control-group"><label>Aspect Ratio</label><div class="resolution-selector"><button class="resolution-btn active" data-value="16:9">16:9</button><button class="resolution-btn" data-value="9:16">9:16</button><button class="resolution-btn" data-value="1:1">1:1</button></div></div>
+                <div class="control-group"><label>Duration</label><div class="resolution-selector"><button class="resolution-btn active" data-value="5">5 sec</button><button class="resolution-btn" data-value="10">10 sec</button></div></div>
+                 <div class="control-group">
+                    <label>Prompt</label>
+                    <div class="input-area"><input type="text" id="prompt-kling-2-1-pro" placeholder="Describe your video"></div>
+                </div>
+            </div>
+
+            <div class="submit-action-group">
+                <button type="submit" id="submit-button-video" class="submit-button-element">Generate Video</button>
+                <div class="token-cost"><span>Estimated cost: 150</span><span class="token-coin"></span></div>
+            </div>
+        </div>
+        
+        </div>
     <div id="result-area-right">
          <div id="history-placeholder">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
@@ -183,6 +203,7 @@
         const appModeButtons = document.querySelectorAll('.mode-btn');
         const editView = document.getElementById('edit-view');
         const upscaleView = document.getElementById('upscale-view');
+        const videoView = document.getElementById('video-view');
 
         // Элементы для режима Edit
         const editModeButtons = document.querySelectorAll('.edit-mode-btn');
@@ -194,6 +215,9 @@
         const promptInput = document.getElementById('prompt');
         const editForm = document.getElementById('edit-form'); 
         const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
+
+        const klingModeButtons = document.querySelectorAll('.kling-mode-btn');
+        const klingControls = document.querySelectorAll('.kling-controls');
         
         // Элементы для режима Upscale
         const upscaleImageInput = document.getElementById('image-file-upscale');
@@ -433,6 +457,16 @@
                 formData.append('fractality', document.getElementById('fractality-slider-upscale').value);
             }
 
+            } else if (currentMode === 'video') {
+                // TODO: Добавить логику сбора данных для видео
+                // Определяем активный Kling-режим
+                const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
+                formData.append('kling_mode', activeKlingMode);
+                alert(`Submitting Video Generation for Kling Mode: ${activeKlingMode}`);
+                stopLoading(null); // Временно, пока нет реальной логики
+                return;
+            }
+
             try {
                 const response = await fetch("{{ url_for('process_image') }}", {
                     method: 'POST',
@@ -452,17 +486,23 @@
 
         // --- НАВЕШИВАНИЕ ОБРАБОТЧИКОВ ---
 
-        appModeButtons.forEach(button => {
+       appModeButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const currentMode = button.dataset.mode;
                 appModeButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
+                
                 editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
                 upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
+                videoView.style.display = (currentMode === 'video') ? 'flex' : 'none'; // <-- НОВАЯ ЛОГИКА
+                
                 resetLeftPanel();
                 if(currentMode === 'edit') {
                     const activeEditMode = document.querySelector('.edit-mode-btn.active');
                     if (activeEditMode) activeEditMode.click();
+                } else if (currentMode === 'video') {
+                    const activeKlingMode = document.querySelector('.kling-mode-btn.active');
+                    if (activeKlingMode) activeKlingMode.click();
                 }
             });
         });
@@ -476,17 +516,38 @@
                 e.currentTarget.classList.add('active');
                 editModeDescription.textContent = e.currentTarget.dataset.description;
         
-                // Используем переменные, объявленные в самом начале скрипта
                 const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
         
-                if (editMode === 'autofix') { // Это PRO режим для основной версии
+                if (editMode === 'autofix') {
                     if(templatesForBasic) templatesForBasic.style.display = 'none';
                     if(templatesForPro) templatesForPro.style.display = 'flex';
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 100';
-                } else { // Это Basic режим ('edit')
+                } else {
                     if(templatesForBasic) templatesForBasic.style.display = 'block';
                     if(templatesForPro) templatesForPro.style.display = 'none';
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 65';
+                }
+            });
+        });
+
+        klingModeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const klingMode = button.dataset.klingMode;
+                klingModeButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Прячем все контейнеры с настройками
+                klingControls.forEach(controlDiv => {
+                    controlDiv.style.display = 'none';
+                });
+
+                // Показываем нужный контейнер
+                const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
+                if (activeControlDiv) {
+                    activeControlDiv.style.display = 'flex';
+                    activeControlDiv.style.flexDirection = 'column';
+                    activeControlDiv.style.gap = '20px';
+                    activeControlDiv.style.width = '100%';
                 }
             });
         });
@@ -529,6 +590,7 @@
                 });
             }
         };
+        setupSlider('creativity-slider-kling', 'creativity-value-kling');
         setupSlider('creativity-slider', 'creativity-value');
         setupSlider('resemblance-slider', 'resemblance-value');
         setupSlider('hdr-slider', 'hdr-value');
@@ -536,9 +598,13 @@
 
         document.getElementById('submit-button-edit').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
         document.getElementById('submit-button-upscale').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
+        document.getElementById('submit-button-video').addEventListener('click', handleImageProcessing);
 
         setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
         setupDragAndDrop(document.getElementById('image-drop-area-upscale'), upscaleImageInput);
+        setupDragAndDrop(document.getElementById('image-drop-area-kling-2-0'), document.getElementById('image-file-kling-2-0'));
+        setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1'), document.getElementById('image-file-kling-2-1'));
+        setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1-pro'), document.getElementById('image-file-kling-2-1-pro'));
         
         // --- НОВЫЙ СКРИПТ ДЛЯ ПОДСКАЗОК ---
         document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
