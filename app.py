@@ -104,7 +104,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.String(128), primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(255), nullable=True)
-    token_balance = db.Column(db.Integer, default=100, nullable=False)
+    token_balance = db.Column(db.Integer, default=300, nullable=False)
     marketing_consent = db.Column(db.Boolean, nullable=False, default=True)
     subscription_status = db.Column(db.String(50), default='free', nullable=False)
     stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
