@@ -46,6 +46,8 @@ AWS_S3_REGION = os.environ.get('AWS_S3_REGION')
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 REPLICATE_API_TOKEN = os.environ.get('REPLICATE_API_TOKEN')
+APP_BASE_URL = os.environ.get('APP_BASE_URL')
+WORKER_SECRET_KEY = os.environ.get('WORKER_SECRET_KEY')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 REDIS_URL = os.environ.get('REDIS_URL')
 
@@ -542,27 +544,26 @@ def process_image():
             edit_mode = request.form.get('edit_mode')
             
             if edit_mode == 'autofix':
-                # --- Логика для режима "Basic" ---
-                print("!!! РЕЖИМ: Basic (через Autofix)")
+                print("!!! РЕЖИМ: PRO (через Autofix/воркер)")
                 token_cost = 100
                 if current_user.token_balance < token_cost:
                     return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
                 if not redis_client:
                     raise Exception("Redis is not configured on the server.")
 
-                # ... (вся логика для Basic, которая у вас уже работает) ...
+                prompt = request.form.get('prompt', '')
+                if not prompt:
+                    return jsonify({'error': 'A text description is required for PRO mode.'}), 400
+
                 uploaded_file = request.files['image']
-                 = request.form.get('', '')
                 image_data = uploaded_file.read()
+
                 img_for_size_check = Image.open(io.BytesIO(image_data))
                 original_width, original_height = img_for_size_check.size
-                original_stream = io.BytesIO(image_data)
-                original_for_upload = FileStorage(stream=original_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
+
+                original_for_upload = FileStorage(stream=io.BytesIO(image_data), filename=uploaded_file.filename, content_type=uploaded_file.content_type)
                 original_s3_url = upload_file_to_s3(original_for_upload)
-                analysis_stream = io.BytesIO(image_data)
-                analysis_for_upload = FileStorage(stream=analysis_stream, filename=uploaded_file.filename, content_type=uploaded_file.content_type)
-                image_for_openai = resize_image_for_openai(analysis_for_upload)
-                s3_url_for_openai = upload_file_to_s3(image_for_openai)
+                
                 generation_system_ = (
                     "You are an expert  engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                     "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
@@ -589,7 +590,7 @@ def process_image():
                 db.session.add(new_prediction)
                 db.session.commit()
                 job_data = {
-                    "prediction_id": new_prediction.id, "original_s3_url": original_s3_url,
+                    "prediction_id": new_prediction.id, "original_s3_url": original_s3_url, "app_base_url": APP_BASE_URL,
                     "intent": intent, "generation_prompt": generation_prompt,
                     "mask_prompt": mask_prompt, "token_cost": token_cost, "user_id": current_user.id,
                     "original_width": original_width, "original_height": original_height
@@ -787,6 +788,40 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
+
+@app.route('/worker-webhook', methods=['POST'])
+def worker_webhook():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or auth_header != f"Bearer {WORKER_SECRET_KEY}":
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.json
+    prediction_id = data.get('prediction_id')
+    status = data.get('status')
+    if not prediction_id or not status:
+        return jsonify({'error': 'Missing prediction_id or status'}), 400
+
+    with app.app_context():
+        prediction = Prediction.query.get(prediction_id)
+        if not prediction:
+            print(f"!!! Воркер-вебхук получен для неизвестного Prediction ID: {prediction_id}")
+            return 'Prediction not found', 404
+
+        if status == 'completed':
+            final_url = data.get('final_url')
+            if not final_url: return jsonify({'error': 'Missing final_url'}), 400
+            prediction.output_url = final_url
+            prediction.status = 'completed'
+            print(f">>> РЕЗУЛЬТАТ PRO-ЗАДАЧИ {prediction_id} УСПЕШНО СОХРАНЕН ЧЕРЕЗ ВЕБХУК.")
+        elif status == 'failed':
+            prediction.status = 'failed'
+            user = User.query.get(prediction.user_id)
+            if user:
+                user.token_balance += prediction.token_cost
+                print(f">>> ТОКЕНЫ ДЛЯ PRO-ЗАДАЧИ {prediction_id} ВОЗВРАЩЕНЫ ЧЕРЕЗ ВЕБХУК.")
+        db.session.commit()
+
+    return jsonify({'status': 'success'}), 200
 
 # --- Final app setup ---
 with app.app_context():
