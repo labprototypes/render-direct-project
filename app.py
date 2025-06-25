@@ -753,6 +753,69 @@ def process_image():
         
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
+        elif mode == 'video':
+            print("!!! РЕЖИМ: Video")
+            
+            # Определяем, какой под-режим Kling был выбран
+            kling_mode = request.form.get('kling_mode')
+            model_version_id = ""
+            replicate_input = {}
+            
+            # Общие поля для всех видео
+            prompt = request.form.get('prompt', '')
+            negative_prompt = request.form.get('negative_prompt', '')
+            duration = int(request.form.get('duration', 5))
+            token_cost = 150 # Placeholder, можете настроить разную стоимость
+
+            if current_user.token_balance < token_cost:
+                return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
+
+            # Загружаем стартовый кадр, если он есть
+            if 'image' in request.files:
+                start_frame_url = upload_file_to_s3(request.files['image'])
+                replicate_input['start_frame'] = start_frame_url
+
+            replicate_input.update({
+                "prompt": prompt,
+                "negative_prompt": negative_prompt,
+                "duration_s": duration
+            })
+
+            # Настраиваем параметры в зависимости от под-режима
+            if kling_mode == '2.0':
+                model_version_id = "kwaivgi/kling-v2.0:def3f5383a15291726a7932630536125a331168519448332463e258607144d2d"
+                replicate_input['aspect_ratio'] = request.form.get('aspect_ratio', '16:9')
+                replicate_input['creativity'] = float(request.form.get('creativity', '30')) / 100.0
+            
+            elif kling_mode == '2.1':
+                model_version_id = "kwaivgi/kling-v2.1:18508f7255474347710def65b06d0ba4e4a05a81225575b61b4a3c332c040dff"
+                replicate_input['resolution'] = request.form.get('resolution', '720p')
+
+            elif kling_mode == '2.1-pro':
+                model_version_id = "kwaivgi/kling-v2.1-master:3a827085375525501b0e599147178d7a1c86304b9015949c8695034346859344"
+                replicate_input['aspect_ratio'] = request.form.get('aspect_ratio', '16:9')
+
+            else:
+                return jsonify({'error': 'Unknown Kling mode selected'}), 400
+
+            # Стандартный процесс отправки в Replicate
+            current_user.token_balance -= token_cost
+            new_prediction = Prediction(user_id=current_user.id, token_cost=token_cost)
+            db.session.add(new_prediction)
+            db.session.commit()
+        
+            prediction_replicate = replicate.predictions.create(
+                version=model_version_id,
+                input=replicate_input,
+                webhook=url_for('replicate_webhook', _external=True),
+                webhook_events_filter=["completed"]
+            )
+        
+            new_prediction.replicate_id = prediction_replicate.id
+            db.session.commit()
+        
+            return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
+
     except Exception as e:
         db.session.rollback()
         import traceback
