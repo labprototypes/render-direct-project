@@ -591,11 +591,14 @@ def process_image():
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             
             # --- ВАШ РАБОЧИЙ ПРОМПТ #1 ДЛЯ ГЕНЕРАЦИИ ---
-            generation_system_prompt= (
-                "You are an assistant. A user will provide a request, possibly in any language. "
-                "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST add the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style'."
-                "The output should be only the refined text prompt, no explanations or conversational fluff."
+            generation_system_prompt = (
+                "You are a highly specialized prompt re-engineering API. Your function is to convert a user's natural language request into a precise, machine-readable instruction for a downstream image editing AI. "
+                "Your response MUST contain ONLY the final, re-engineered prompt string. Do not include any other text, greetings, apologies, or explanations. Your role is to act as a silent processor."
+                "RULES:"
+                "1. Translate the user's request to concise and clear English if necessary."
+                "2. After the core command, you MUST append the exact phrase: ', do not change anything else, keep the original style'."
+                "Example User Request: 'убери рампу'"
+                "Example Your Output: 'Remove the ramp, do not change anything else, keep the original style'"
             )
             messages_for_generation = [{"role": "system", "content": generation_system_prompt}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
