@@ -66,7 +66,7 @@
                 <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Пополнение баланса</li>
                 <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Приоритетный доступ к новым функциям</li>
             </ul>
-            <form action="{{ url_for('create_payment') }}" method="POST">
+            <form action="{{ url_for('create_payment') }}" method="POST" class="plan-form">
                 <input type="hidden" name="product_id" value="starter">
                 <button type="submit" class="btn select-plan-btn">Выбрать</button>
             </form>
@@ -86,7 +86,7 @@
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Пополнение баланса</li>
                 <li class="unavailable"><svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>Приоритетный доступ к новым функциям</li>
             </ul>
-             <form action="{{ url_for('create_payment') }}" method="POST">
+             <form action="{{ url_for('create_payment') }}" method="POST" class="plan-form">
                 <input type="hidden" name="product_id" value="optimal">
                 <button type="submit" class="btn select-plan-btn">Выбрать</button>
             </form>
@@ -106,7 +106,7 @@
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Пополнение баланса</li>
                 <li class="available"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Приоритетный доступ к новым функциям</li>
             </ul>
-            <form action="{{ url_for('create_payment') }}" method="POST">
+            <form action="{{ url_for('create_payment') }}" method="POST" class="plan-form">
                 <input type="hidden" name="product_id" value="pro">
                 <button type="submit" class="btn select-plan-btn">Выбрать</button>
             </form>
@@ -146,16 +146,42 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const ofertaCheck = document.getElementById('billing-oferta-check');
-    const selectPlanButtons = document.querySelectorAll('.select-plan-btn');
+    const planForms = document.querySelectorAll('.plan-form');
+    const errorMessage = "Пожалуйста, ознакомьтесь и примите условия публичной оферты, включая рекуррентные платежи.";
 
-    function togglePlanButtons() {
-        selectPlanButtons.forEach(button => {
-            button.disabled = !ofertaCheck.checked;
-        });
+    // Функция для отображения красивых уведомлений (взята из вашего base_app.html)
+    function showError(message) {
+        const errorBox = document.getElementById('error-box');
+        if (errorBox) {
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+            errorBox.style.transition = 'opacity 0.5s ease-out';
+            errorBox.style.opacity = 1;
+            setTimeout(() => {
+                errorBox.style.opacity = 0;
+                setTimeout(() => {
+                    errorBox.style.display = 'none';
+                }, 500);
+            }, 4000);
+        } else {
+            // Если вдруг основной блок для ошибок не найден, покажем стандартное уведомление
+            alert(message);
+        }
     }
 
-    togglePlanButtons();
-    ofertaCheck.addEventListener('change', togglePlanButtons);
+    // Добавляем слушатель отправки для каждой формы подписки
+    planForms.forEach(form => {
+        form.addEventListener('submit', (event) => {
+            // Если чекбокс НЕ отмечен...
+            if (!ofertaCheck.checked) {
+                // ...отменяем стандартное действие (отправку формы)
+                event.preventDefault();
+                
+                // ...и показываем наше предупреждение
+                showError(errorMessage);
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
