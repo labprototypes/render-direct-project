@@ -471,22 +471,19 @@
             button.addEventListener('click', (e) => {
                 if (e.currentTarget.disabled) return;
                 
-                const editMode = e.currentTarget.dataset.editMode; // 'edit' или 'autofix'
+                const editMode = e.currentTarget.dataset.editMode;
                 editModeButtons.forEach(btn => btn.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 editModeDescription.textContent = e.currentTarget.dataset.description;
         
+                // Используем переменные, объявленные в самом начале скрипта
                 const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
-                const templatesForBasic = document.getElementById('templates-for-basic');
-                const templatesForPro = document.getElementById('templates-for-pro');
         
-                // --- Logic for toggling prompts and cost ---
-                if (editMode === 'autofix') { // This is PRO mode
+                if (editMode === 'autofix') { // Это PRO режим для основной версии
                     if(templatesForBasic) templatesForBasic.style.display = 'none';
                     if(templatesForPro) templatesForPro.style.display = 'flex';
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 100';
-        
-                } else { // This is Basic mode ('edit')
+                } else { // Это Basic режим ('edit')
                     if(templatesForBasic) templatesForBasic.style.display = 'block';
                     if(templatesForPro) templatesForPro.style.display = 'none';
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 65';
