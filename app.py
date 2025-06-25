@@ -591,7 +591,7 @@ def process_image():
             proxy_headers = {"Authorization": f"Bearer {proxy_secret_key}", "Content-Type": "application/json"}
             
             # --- ВАШ РАБОЧИЙ ПРОМПТ #1 ДЛЯ ГЕНЕРАЦИИ ---
-           generation_system_prompt = (
+            generation_system_prompt = (
                 "You are a text-only API endpoint. Your sole function is to process an incoming text string and return a modified version based on a strict rule. "
                 "Rule: Translate the user's text to English, then append the phrase ', do not change anything else, keep the original style'. "
                 "ABSOLUTELY NO other text, explanations, or conversational output is permitted. "
