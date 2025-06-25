@@ -602,6 +602,14 @@ def process_image():
                 {"role": "system", "content": generation_system_prompt},
                 {"role": "user", "content": prompt} 
             ]
+            # --- ДИАГНОСТИКА: Печатаем финальный запрос к OpenAI ---
+            print("======================================================")
+            print(">>> ЗАПРОС К OPENAI ДЛЯ ГЕНЕРАЦИИ ПРОМПТА:")
+            # Используем json.dumps для красивого и полного вывода
+            print(json.dumps(messages_for_generation, indent=2, ensure_ascii=False))
+            print("======================================================")
+            # ---------------------------------------------------------
+
             openai_payload_gen = {"model": "gpt-4o", "messages": messages_for_generation, "max_tokens": 250, "temperature": 0.2}
             
             proxy_response_gen = requests.post(proxy_url, json=openai_payload_gen, headers=proxy_headers, timeout=30)
