@@ -14,6 +14,25 @@
         gap: 20px;
         width: 100%;
     }
+    
+    /* Копируем стиль для кнопок-переключателей, чтобы Kling выглядел как Basic/Pro */
+    .kling-mode-btn {
+        flex: 1; padding: 8px 20px; border-radius: 12px;
+        border: none; background-color: transparent;
+        color: var(--primary-text-color); cursor: pointer;
+        font-family: 'Norms', sans-serif; font-size: 0.85rem; font-weight: 500;
+        transition: all var(--transition-speed) ease; text-align: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .kling-mode-btn:not(.active):hover {
+        color: var(--primary-text-color); background-color: rgba(0,0,0,0.05);
+    }
+    .kling-mode-btn.active {
+        background-color: var(--accent-color);
+        color: var(--accent-text-color);
+        box-shadow: 0 4px 15px var(--accent-glow);
+        font-weight: 700;
+    }
 </style>
 {% endblock %}
 
@@ -552,6 +571,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
             if (activeControlDiv) {
                 activeControlDiv.style.display = 'flex';
+                // Этот блок больше не нужен, стили вынесены в <head>
+                // activeControlDiv.style.flexDirection = 'column';
+                // activeControlDiv.style.gap = '20px';
+                // activeControlDiv.style.width = '100%';
             }
         });
     });
