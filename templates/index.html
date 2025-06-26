@@ -438,48 +438,61 @@
             if (currentMode === 'edit') {
                 const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
                 formData.append('edit_mode', editMode);
-                if (!document.getElementById('image-file-edit-1').files[0]) {
-                    showError("Please select an image to " + editMode + ".");
-                    stopLoading(null); return;
+                const imageFile = document.getElementById('image-file-edit-1').files[0];
+                if (!imageFile) {
+                    showError("Please select an image to edit.");
+                    stopLoading(null);
+                    return;
                 }
-                formData.append('image', document.getElementById('image-file-edit-1').files[0]);
+                formData.append('image', imageFile);
                 formData.append('prompt', document.getElementById('prompt-edit').value);
-            
+        
             } else if (currentMode === 'upscale') {
-                if (!document.getElementById('image-file-upscale').files[0]) {
+                const imageFile = document.getElementById('image-file-upscale').files[0];
+                if (!imageFile) {
                     showError("Please select an image to upscale.");
-                    stopLoading(null); return;
+                    stopLoading(null);
+                    return;
                 }
-                formData.append('image', document.getElementById('image-file-upscale').files[0]);
+                formData.append('image', imageFile);
                 formData.append('scale_factor', document.querySelector('#upscale-view .resolution-btn.active').dataset.value);
-                // Добавьте сюда другие параметры для upscale, если они есть
-            
-            } else if (currentMode === 'video')
+                
+                // ПРИМЕЧАНИЕ: В app.py для upscale ожидаются доп. параметры (creativity, resemblance и т.д.)
+                // Но в HTML их нет. Этот код закомментирован, чтобы избежать ошибок.
+                // Если вы добавите слайдеры на фронтенд, раскомментируйте и настройте их.
+                // formData.append('creativity', document.getElementById('creativity-slider').value);
+                // formData.append('resemblance', document.getElementById('resemblance-slider').value);
+                // formData.append('dynamic', document.getElementById('hdr-slider').value);
+                // formData.append('fractality', document.getElementById('fractality-slider-upscale').value);
+        
+            } else if (currentMode === 'video') {
                 const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
                 formData.append('kling_mode', activeKlingMode);
         
                 if (activeKlingMode === '2.0') {
                     const startFrameFile = document.getElementById('image-file-kling-2-0').files[0];
                     if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-0').value);
                     formData.append('negative_prompt', document.getElementById('negative-prompt-2-0').value);
                     formData.append('creativity', document.getElementById('creativity-slider-kling').value);
                     formData.append('aspect_ratio', document.querySelector('#kling-2-0-controls .resolution-selector button.active').dataset.value);
                     formData.append('duration', document.querySelector('#kling-2-0-controls .resolution-selector:last-of-type button.active').dataset.value);
-                    formData.append('prompt', document.getElementById('prompt-kling-2-0').value);
+        
                 } else if (activeKlingMode === '2.1') {
                     const startFrameFile = document.getElementById('image-file-kling-2-1').files[0];
                     if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-1').value);
                     formData.append('negative_prompt', document.getElementById('negative-prompt-2-1').value);
                     formData.append('resolution', document.querySelector('#kling-2-1-controls .resolution-selector button.active').dataset.value);
                     formData.append('duration', document.querySelector('#kling-2-1-controls .resolution-selector:last-of-type button.active').dataset.value);
-                    formData.append('prompt', document.getElementById('prompt-kling-2-1').value);
+                
                 } else if (activeKlingMode === '2.1-pro') {
                     const startFrameFile = document.getElementById('image-file-kling-2-1-pro').files[0];
                     if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-1-pro').value);
                     formData.append('negative_prompt', document.getElementById('negative-prompt-2-1-pro').value);
                     formData.append('aspect_ratio', document.querySelector('#kling-2-1-pro-controls .resolution-selector button.active').dataset.value);
                     formData.append('duration', document.querySelector('#kling-2-1-pro-controls .resolution-selector:last-of-type button.active').dataset.value);
-                    formData.append('prompt', document.getElementById('prompt-kling-2-1-pro').value);
                 }
             }
         
@@ -489,9 +502,11 @@
                     body: formData
                 });
                 const data = await response.json();
-                if (!response.ok) { throw new Error(data.error || 'Unknown server error'); }
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unknown server error');
+                }
                 if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
-                     tokenBalanceDisplaySpan.textContent = data.new_token_balance;
+                    tokenBalanceDisplaySpan.textContent = data.new_token_balance;
                 }
                 pollForResult(data.prediction_id);
             } catch (error) {
