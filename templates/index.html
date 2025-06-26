@@ -2,6 +2,22 @@
 
 {% block title %}Changer AI - Generate{% endblock %}
 
+{% block head_extra %}
+<style>
+    /* Этот стиль заставляет все дочерние элементы .control-group выстраиваться в столбик, как в других разделах */
+    #video-view .kling-controls,
+    #edit-view,
+    #upscale-view,
+    #video-view {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+
 {% block mode_selector %}
 <div class="mode-selector">
     <button class="mode-btn active" data-mode="edit">Edit</button>
@@ -291,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function createHistoryItem(url) {
         const item = document.createElement('div');
         item.className = 'history-item';
-        const fileExtension = url.split('.').pop().toLowerCase();
+        const fileExtension = url.split('?')[0].split('.').pop().toLowerCase();
         if (['mp4', 'webm', 'mov'].includes(fileExtension)) {
             item.innerHTML = `<video src="${url}" class="history-item-image" controls autoplay loop muted></video>`;
         } else {
@@ -536,9 +552,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
             if (activeControlDiv) {
                 activeControlDiv.style.display = 'flex';
-                activeControlDiv.style.flexDirection = 'column';
-                activeControlDiv.style.gap = '20px';
-                activeControlDiv.style.width = '100%';
             }
         });
     });
