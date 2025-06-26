@@ -594,8 +594,8 @@ def process_image():
             generation_system_prompt = (
                 "You are an expert  engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                 "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
-                "The output should be only the refined prompt, no explanations or conversational fluff."
+                "3. Rephrase any unput text it into a concise, command-based instruction in English, don't try to analyze the image or try to understand the needs. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+                "The output should be only the refined prompt in English language, no explanations or conversational fluff."
             )
             messages_for_generation = [
                 {"role": "system", "content": generation_system_prompt},
@@ -663,8 +663,8 @@ def process_image():
             system_prompt_text = (
                 "You are an expert  engineer for an image editing AI. A user will provide a request, possibly in any language, to modify an existing uploaded image. "
                 "Your tasks are: 1. Understand the user's core intent for image modification. 2. Translate the request to concise and clear English if it's not already. "
-                "3. Rephrase it into a concise, command-based instruction in English. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
-                "The output should be only the refined prompt, no explanations or conversational fluff."
+                "3. Rephrase any unput text it into a concise, command-based instruction in English, don't try to analyze the image or try to understand the needs. After the command, you MUST append the exact phrase: ', do not change anything else, keep the original style'. Example: 'Add a frog on the leaf, do not change anything else, keep the original style' "
+                "The output should be only the refined prompt in English language, no explanations or conversational fluff."
             )
             messages = [{"role": "system", "content": system_prompt_text}, {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
             openai_payload = {"model": "gpt-4o", "messages": messages, "max_tokens": 150}
