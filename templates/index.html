@@ -456,14 +456,6 @@
                 }
                 formData.append('image', imageFile);
                 formData.append('scale_factor', document.querySelector('#upscale-view .resolution-btn.active').dataset.value);
-                
-                // ПРИМЕЧАНИЕ: В app.py для upscale ожидаются доп. параметры (creativity, resemblance и т.д.)
-                // Но в HTML их нет. Этот код закомментирован, чтобы избежать ошибок.
-                // Если вы добавите слайдеры на фронтенд, раскомментируйте и настройте их.
-                // formData.append('creativity', document.getElementById('creativity-slider').value);
-                // formData.append('resemblance', document.getElementById('resemblance-slider').value);
-                // formData.append('dynamic', document.getElementById('hdr-slider').value);
-                // formData.append('fractality', document.getElementById('fractality-slider-upscale').value);
         
             } else if (currentMode === 'video') {
                 const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
