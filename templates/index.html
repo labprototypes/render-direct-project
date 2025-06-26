@@ -4,18 +4,17 @@
 
 {% block head_extra %}
 <style>
-    /* Эти стили обеспечивают правильное отображение всех секций */
-    #edit-view, #upscale-view, #video-view {
-        display: none; /* Изначально все скрыты */
-        flex-direction: column;
-        gap: 20px;
+    /* Эти стили обеспечивают правильное отображение всех дочерних элементов */
+    #edit-view .control-group,
+    #upscale-view .control-group,
+    #video-view .control-group {
         width: 100%;
     }
-    #video-view .kling-controls {
-        display: none; /* Изначально все наборы контролов для Kling скрыты */
+    .kling-controls {
+        display: none; /* Все панели Kling по умолчанию скрыты */
+        width: 100%;
         flex-direction: column;
         gap: 20px;
-        width: 100%;
     }
     .kling-mode-btn {
         flex: 1; padding: 8px 20px; border-radius: 12px;
@@ -36,7 +35,6 @@
     }
 </style>
 {% endblock %}
-
 
 {% block mode_selector %}
 <div class="mode-selector">
@@ -61,7 +59,7 @@
                     {% endif %}
                 </div>
             </div>
-             <p id="edit-mode-description" class="mode-description"></p>
+            <p id="edit-mode-description" class="mode-description"></p>
             <div class="image-inputs-container">
                 <label for="image-file-edit-1" id="image-drop-area-edit-1" class="image-drop-area">
                     <div class="drop-placeholder">
@@ -82,10 +80,12 @@
                             <button class="template-btn" data-prompt="Put [describe the character on your photo] from the photo into the [describe the scene]"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Consistent character</button>
                         </div>
                     </div>
-                    <div id="templates-for-pro" class="template-selector" style="display: none; justify-content: center; gap: 10px;">
-                        <button type="button" class="template-btn" data-prompt="Change: Change the [describe what you want to change]. Don’t change anything else.">Change</button>
-                        <button type="button" class="template-btn" data-prompt="Add: Add the [describe what you want to change]. Don’t change anything else.">Add</button>
-                        <button type="button" class="template-btn" data-prompt="Remove: Remove the [describe what you want to change]. Don’t change anything else.">Remove</button>
+                    <div id="templates-for-pro" style="display: none;">
+                        <div class="template-selector" style="justify-content: center; gap: 10px;">
+                            <button type="button" class="template-btn" data-prompt="Change: Change the [describe what you want to change]. Don’t change anything else.">Change</button>
+                            <button type="button" class="template-btn" data-prompt="Add: Add the [describe what you want to change]. Don’t change anything else.">Add</button>
+                            <button type="button" class="template-btn" data-prompt="Remove: Remove the [describe what you want to change]. Don’t change anything else.">Remove</button>
+                        </div>
                     </div>
                 </div>
                 <form id="edit-form" class="input-area">
@@ -171,11 +171,11 @@
                          <div class="drop-placeholder"><svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span class="drop-placeholder-text">Drop Start Frame</span></div>
                          <img id="image-preview-kling-2-0" src="#" alt="Preview" class="image-preview-img">
                     </label>
-                    <input type="file" id="image-file-kling-2-0" accept="image/*" style="display: none;">
+                    <input type="file" id="image-file-kling-2-0" name="image" accept="image/*" style="display: none;">
                 </div>
                 <div class="control-group">
                     <label>Negative prompt</label>
-                    <div class="input-area"><input type="text" id="negative-prompt-2-0" placeholder="e.g. blurry, low quality"></div>
+                    <div class="input-area"><input type="text" id="negative-prompt-kling-2-0" placeholder="e.g. blurry, low quality"></div>
                 </div>
                 <div class="control-group">
                     <div class="slider-container">
@@ -187,7 +187,7 @@
                 <div class="control-group"><label>Duration</label><div class="resolution-selector"><button class="resolution-btn active" data-value="5">5 sec</button><button class="resolution-btn" data-value="10">10 sec</button></div></div>
                 <div class="control-group">
                     <label>Prompt</label>
-                    <div class="input-area"><input type="text" id="prompt-kling-2-0" placeholder="Describe your video"></div>
+                    <div class="input-area"><input type="text" id="prompt-kling-2-0" name="prompt" placeholder="Describe your video"></div>
                 </div>
             </div>
 
@@ -198,17 +198,17 @@
                          <div class="drop-placeholder"><svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span class="drop-placeholder-text">Drop Start Frame</span></div>
                          <img id="image-preview-kling-2-1" src="#" alt="Preview" class="image-preview-img">
                     </label>
-                    <input type="file" id="image-file-kling-2-1" accept="image/*" style="display: none;">
+                    <input type="file" id="image-file-kling-2-1" name="image" accept="image/*" style="display: none;">
                 </div>
                 <div class="control-group">
                     <label>Negative prompt</label>
-                    <div class="input-area"><input type="text" id="negative-prompt-2-1" placeholder="e.g. text, watermark"></div>
+                    <div class="input-area"><input type="text" id="negative-prompt-kling-2-1" placeholder="e.g. text, watermark"></div>
                 </div>
                 <div class="control-group"><label>Resolution</label><div class="resolution-selector"><button class="resolution-btn active" data-value="720p">720p</button><button class="resolution-btn" data-value="1080p">1080p</button></div></div>
                 <div class="control-group"><label>Duration</label><div class="resolution-selector"><button class="resolution-btn active" data-value="5">5 sec</button><button class="resolution-btn" data-value="10">10 sec</button></div></div>
                 <div class="control-group">
                     <label>Prompt</label>
-                    <div class="input-area"><input type="text" id="prompt-kling-2-1" placeholder="Describe your video"></div>
+                    <div class="input-area"><input type="text" id="prompt-kling-2-1" name="prompt" placeholder="Describe your video"></div>
                 </div>
             </div>
 
@@ -219,17 +219,17 @@
                          <div class="drop-placeholder"><svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span class="drop-placeholder-text">Drop Start Frame</span></div>
                          <img id="image-preview-kling-2-1-pro" src="#" alt="Preview" class="image-preview-img">
                     </label>
-                    <input type="file" id="image-file-kling-2-1-pro" accept="image/*" style="display: none;">
+                    <input type="file" id="image-file-kling-2-1-pro" name="image" accept="image/*" style="display: none;">
                 </div>
                  <div class="control-group">
                     <label>Negative prompt</label>
-                    <div class="input-area"><input type="text" id="negative-prompt-2-1-pro" placeholder="e.g. low resolution"></div>
+                    <div class="input-area"><input type="text" id="negative-prompt-kling-2-1-pro" placeholder="e.g. low resolution"></div>
                 </div>
                 <div class="control-group"><label>Aspect Ratio</label><div class="resolution-selector"><button class="resolution-btn active" data-value="16:9">16:9</button><button class="resolution-btn" data-value="9:16">9:16</button><button class="resolution-btn" data-value="1:1">1:1</button></div></div>
                 <div class="control-group"><label>Duration</label><div class="resolution-selector"><button class="resolution-btn active" data-value="5">5 sec</button><button class="resolution-btn" data-value="10">10 sec</button></div></div>
                  <div class="control-group">
                     <label>Prompt</label>
-                    <div class="input-area"><input type="text" id="prompt-kling-2-1-pro" placeholder="Describe your video"></div>
+                    <div class="input-area"><input type="text" id="prompt-kling-2-1-pro" name="prompt" placeholder="Describe your video"></div>
                 </div>
             </div>
 
@@ -252,39 +252,33 @@
 {% block page_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ОБЪЯВЛЕНИЕ ПЕРЕМЕННЫХ ---
     const tokenBalanceDisplaySpan = document.getElementById('token-balance-display');
     const mainContentWrapper = document.getElementById('main-content-wrapper');
     const resultAreaRight = document.getElementById('result-area-right');
     const appModeButtons = document.querySelectorAll('.mode-btn');
     
-    // Views
     const editView = document.getElementById('edit-view');
     const upscaleView = document.getElementById('upscale-view');
     const videoView = document.getElementById('video-view');
+    const allViews = [editView, upscaleView, videoView];
 
-    // Элементы для режима Edit
     const editModeButtons = document.querySelectorAll('#edit-view .edit-mode-btn');
     const editModeDescription = document.getElementById('edit-mode-description');
     const templatesForBasic = document.getElementById('templates-for-basic');
     const templatesForPro = document.getElementById('templates-for-pro');
+    
+    const klingModeButtons = document.querySelectorAll('#video-view .kling-mode-btn');
+    const klingControls = document.querySelectorAll('.kling-controls');
+
     const allTemplateButtons = document.querySelectorAll('.template-btn');
     const promptInputEdit = document.getElementById('prompt-edit');
     const editForm = document.getElementById('edit-form');
     const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
-
-    // Элементы для режима Upscale
     const upscaleImageInput = document.getElementById('image-file-upscale');
     
-    // Элементы для режима Video
-    const klingModeButtons = document.querySelectorAll('#video-view .kling-mode-btn');
-    const klingControls = document.querySelectorAll('.kling-controls');
-
-    // Переменные состояния
     const historyPlaceholder = document.getElementById('history-placeholder');
     let currentLoaderId = null;
 
-    // --- ОСНОВНЫЕ ФУНКЦИИ (без изменений) ---
     function showError(message) {
         const errorBox = document.getElementById('error-box');
         if (!errorBox) { console.error("Error box not found"); return; }
@@ -361,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const dropArea = previewElement.parentElement;
         const placeholder = dropArea.querySelector('.drop-placeholder');
         const reader = new FileReader();
-
         reader.onload = (e) => {
             previewElement.src = e.target.result;
             previewElement.style.display = 'block';
@@ -401,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorData.error);
                 }
                 const pollData = await pollResponse.json();
-
                 if (pollData.status === 'completed') {
                     clearInterval(interval);
                     stopLoading(pollData.output_url);
@@ -422,7 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 stopLoading(null);
             }
         }, 3000);
-
         setTimeout(() => {
             const loader = document.getElementById(currentLoaderId);
             if(loader) {
@@ -449,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             formData.append('image', imageFile);
             formData.append('prompt', document.getElementById('prompt-edit').value);
-    
         } else if (currentMode === 'upscale') {
             const imageFile = document.getElementById('image-file-upscale').files[0];
             if (!imageFile) {
@@ -462,22 +452,22 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('resemblance', document.getElementById('resemblance-slider').value);
             formData.append('dynamic', document.getElementById('hdr-slider').value);
             formData.append('fractality', document.getElementById('fractality-slider-upscale').value);
-    
         } else if (currentMode === 'video') {
             const activeKlingMode = document.querySelector('#video-view .kling-mode-btn.active').dataset.klingMode;
             formData.append('kling_mode', activeKlingMode);
             
             let imageFile, promptValue, negativePromptValue, duration, aspectRatio, resolution, creativity;
-            
             const activeControlsId = `kling-${activeKlingMode}-controls`;
+            const activeControls = document.getElementById(activeControlsId);
 
             imageFile = document.getElementById(`image-file-${activeKlingMode}`).files[0];
             promptValue = document.getElementById(`prompt-kling-${activeKlingMode}`).value;
-            negativePromptValue = document.getElementById(`negative-prompt-${activeKlingMode}`).value;
-            duration = document.querySelector(`#${activeControlsId} .resolution-selector:last-of-type button.active`).dataset.value;
+            negativePromptValue = document.getElementById(`negative-prompt-kling-${activeKlingMode}`).value;
+            
+            duration = activeControls.querySelector('.resolution-selector:last-of-type button.active').dataset.value;
 
             if (activeKlingMode === '2.0' || activeKlingMode === '2.1-pro') {
-                aspectRatio = document.querySelector(`#${activeControlsId} .resolution-selector:first-of-type button.active`).dataset.value;
+                aspectRatio = activeControls.querySelector('.resolution-selector:first-of-type button.active').dataset.value;
                 formData.append('aspect_ratio', aspectRatio);
             }
             if (activeKlingMode === '2.0') {
@@ -485,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('creativity', creativity);
             }
             if (activeKlingMode === '2.1') {
-                resolution = document.querySelector(`#${activeControlsId} .resolution-selector:first-of-type button.active`).dataset.value;
+                resolution = activeControls.querySelector('.resolution-selector:first-of-type button.active').dataset.value;
                 formData.append('resolution', resolution);
             }
             
@@ -496,10 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     
         try {
-            const response = await fetch("{{ url_for('process_image') }}", {
-                method: 'POST',
-                body: formData
-            });
+            const response = await fetch("{{ url_for('process_image') }}", { method: 'POST', body: formData });
             const data = await response.json();
             if (!response.ok) { throw new Error(data.error || 'Unknown server error'); }
             if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
@@ -513,35 +500,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- НАВЕШИВАНИЕ ОБРАБОТЧИКОВ ---
-
-    // ИСПРАВЛЕНИЕ 1: Логика переключения главных режимов
     appModeButtons.forEach(button => {
         button.addEventListener('click', () => {
             const currentMode = button.dataset.mode;
             appModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             
-            editView.style.display = 'none';
-            upscaleView.style.display = 'none';
-            videoView.style.display = 'none';
+            allViews.forEach(view => view.style.display = 'none');
             
             resetLeftPanel();
 
-            if (currentMode === 'edit') {
-                editView.style.display = 'flex';
-                // Автоматически кликаем на активный под-режим
-                document.querySelector('#edit-view .edit-mode-btn.active')?.click();
-            } else if (currentMode === 'upscale') {
-                upscaleView.style.display = 'flex';
-            } else if (currentMode === 'video') {
-                videoView.style.display = 'flex';
-                // Автоматически кликаем на активный под-режим
-                document.querySelector('#video-view .kling-mode-btn.active')?.click();
+            const viewToShow = document.getElementById(`${currentMode}-view`);
+            if (viewToShow) {
+                viewToShow.style.display = 'flex';
+                // Автоматический "клик" по активному под-режиму
+                const activeSubModeBtn = viewToShow.querySelector('.edit-mode-btn.active, .kling-mode-btn.active');
+                activeSubModeBtn?.click();
             }
         });
     });
 
-    // Логика для Basic/Pro (работает)
     editModeButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             if (e.currentTarget.disabled) return;
@@ -550,32 +528,25 @@ document.addEventListener('DOMContentLoaded', () => {
             e.currentTarget.classList.add('active');
             editModeDescription.textContent = e.currentTarget.dataset.description;
     
-            const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
             if (editMode === 'autofix') {
                 templatesForBasic.style.display = 'none';
                 templatesForPro.style.display = 'flex';
-                if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 100';
             } else {
                 templatesForBasic.style.display = 'block';
                 templatesForPro.style.display = 'none';
-                if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 65';
             }
         });
     });
 
-    // ИСПРАВЛЕНИЕ 2: Новая, правильная логика для Kling
     klingModeButtons.forEach(button => {
         button.addEventListener('click', () => {
             const klingMode = button.dataset.klingMode;
             klingModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
 
-            // Прячем все панели с контролами
             klingControls.forEach(controlDiv => {
                 controlDiv.style.display = 'none';
             });
-
-            // Показываем только нужную
             const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
             if (activeControlDiv) {
                 activeControlDiv.style.display = 'flex';
@@ -583,7 +554,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Остальные обработчики
     allTemplateButtons.forEach(button => {
         button.addEventListener('click', () => {
             promptInputEdit.value = button.dataset.prompt;
@@ -591,10 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    promptInputEdit.addEventListener('input', () => {
-        allTemplateButtons.forEach(btn => btn.classList.remove('active'));
-    });
-
     document.querySelectorAll('.resolution-selector .resolution-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const parentSelector = e.currentTarget.closest('.resolution-selector');
@@ -629,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1'), document.getElementById('image-file-kling-2-1'));
     setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1-pro'), document.getElementById('image-file-kling-2-1-pro'));
     
-    // --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ---
+    // --- ИНИЦИАЛИЗАЦИЯ ---
     if (appModeButtons.length > 0) {
         appModeButtons[0].click();
     }
