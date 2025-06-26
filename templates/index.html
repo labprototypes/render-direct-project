@@ -201,6 +201,8 @@
         const mainContentWrapper = document.getElementById('main-content-wrapper');
         const resultAreaRight = document.getElementById('result-area-right');
         const appModeButtons = document.querySelectorAll('.mode-btn');
+
+        // Views
         const editView = document.getElementById('edit-view');
         const upscaleView = document.getElementById('upscale-view');
         const videoView = document.getElementById('video-view');
@@ -208,28 +210,24 @@
         // Элементы для режима Edit
         const editModeButtons = document.querySelectorAll('.edit-mode-btn');
         const editModeDescription = document.getElementById('edit-mode-description');
-        const editControlsContainer = document.getElementById('edit-controls-container');
         const templatesForBasic = document.getElementById('templates-for-basic');
         const templatesForPro = document.getElementById('templates-for-pro');
         const allTemplateButtons = document.querySelectorAll('.template-btn');
-        const promptInput = document.getElementById('prompt-edit'); // <-- Правильный ID
-        const editForm = document.getElementById('edit-form'); 
+        const promptInput = document.getElementById('prompt-edit'); // Исправленный ID
+        const editForm = document.getElementById('edit-form');
         const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
 
-        const klingModeButtons = document.querySelectorAll('.kling-mode-btn');
-        const klingControls = document.querySelectorAll('.kling-controls');
-        
         // Элементы для режима Upscale
         const upscaleImageInput = document.getElementById('image-file-upscale');
-        const resolutionButtons = document.querySelectorAll('.resolution-btn');
-        const finalSizeDisplay = document.getElementById('final-size-display');
+        const resolutionButtons = document.querySelectorAll('#upscale-view .resolution-selector .resolution-btn'); // Уточненный селектор
         const upscaleSubmitButton = document.getElementById('submit-button-upscale');
         const upscaleTokenCost = document.getElementById('token-cost-upscale');
-        const resolutionLimitWarning = document.getElementById('resolution-limit-warning');
         
+        // Элементы для режима Video
+        const klingModeButtons = document.querySelectorAll('.kling-mode-btn');
+        const klingControls = document.querySelectorAll('.kling-controls');
+
         // Переменные состояния
-        let upscaleOriginalWidth = 0;
-        let upscaleOriginalHeight = 0;
         const historyPlaceholder = document.getElementById('history-placeholder');
         let currentLoaderId = null;
 
@@ -237,11 +235,12 @@
 
         function showError(message) {
             const errorBox = document.getElementById('error-box');
+            if (!errorBox) return;
             errorBox.textContent = message;
             errorBox.style.display = 'block';
             setTimeout(() => { errorBox.style.display = 'none'; }, 5000);
         }
-        
+
         function resetLeftPanel() {
             mainContentWrapper.classList.remove('disabled');
             document.querySelectorAll('.image-preview-img').forEach(img => {
@@ -251,36 +250,36 @@
             document.querySelectorAll('.drop-placeholder').forEach(p => {
                 if (p) p.style.display = 'flex';
             });
-            imageFileInputEdit1.value = '';
-            upscaleImageInput.value = '';
-            promptInput.value = '';
-            allTemplateButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Сброс значений инпутов
+            if(imageFileInputEdit1) imageFileInputEdit1.value = '';
+            if(upscaleImageInput) upscaleImageInput.value = '';
+            if(promptInput) promptInput.value = '';
+            
+            // Сброс инпутов для видео
+            ['image-file-kling-2-0', 'image-file-kling-2-1', 'image-file-kling-2-1-pro'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.value = '';
+            });
 
-            upscaleOriginalWidth = 0;
-            upscaleOriginalHeight = 0;
-            updateUpscaleView();
+            allTemplateButtons.forEach(btn => btn.classList.remove('active'));
         }
 
         function startLoading() {
             mainContentWrapper.classList.add('disabled');
             if (historyPlaceholder) historyPlaceholder.style.display = 'none';
-            
             currentLoaderId = 'loader-' + Date.now();
             const loaderHtml = `<div class="loader-container" id="${currentLoaderId}"><div class="pulsating-dot"></div></div>`;
             resultAreaRight.insertAdjacentHTML('afterbegin', loaderHtml);
         }
-        
+
         function createHistoryItem(url) {
             const item = document.createElement('div');
             item.className = 'history-item';
             item.innerHTML = `
                 <img src="${url}" alt="Generated Image" class="history-item-image">
                 <a href="${url}" class="download-action-link" download="generated_image.png" title="Download Image" target="_blank" rel="noopener noreferrer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </a>`;
             return item;
         }
@@ -296,12 +295,12 @@
                     loader.remove();
                 }
             }
-            if (resultAreaRight.childElementCount === 0 && historyPlaceholder) {
+            if (!resultAreaRight.firstElementChild && historyPlaceholder) {
                  historyPlaceholder.style.display = 'flex';
             }
             currentLoaderId = null;
         }
-
+        
         function handleFileSelect(file, previewElementId) {
             const previewElement = document.getElementById(previewElementId);
             const dropArea = previewElement.parentElement;
@@ -312,49 +311,8 @@
                 previewElement.src = e.target.result;
                 previewElement.style.display = 'block';
                 if (placeholder) placeholder.style.display = 'none';
-                
-                if (previewElementId === 'image-preview-upscale') {
-                    const img = new Image();
-                    img.onload = () => {
-                        upscaleOriginalWidth = img.naturalWidth;
-                        upscaleOriginalHeight = img.naturalHeight;
-                        updateUpscaleView();
-                    };
-                    img.src = e.target.result;
-                }
             }
             reader.readAsDataURL(file);
-        }
-
-        function updateUpscaleView() {
-            const upscaleTokenCostSpan = document.getElementById('token-cost-upscale').querySelector('span');
-            if (!upscaleOriginalWidth || !upscaleOriginalHeight) {
-                finalSizeDisplay.textContent = '';
-                finalSizeDisplay.style.display = 'none';
-                resolutionLimitWarning.style.display = 'none';
-                upscaleSubmitButton.disabled = false;
-                upscaleTokenCostSpan.textContent = 'Estimated cost: 17';
-                upscaleTokenCost.style.display = 'flex';
-                return;
-            }
-            const multiplier = parseInt(document.querySelector('.resolution-btn.active').dataset.value, 10);
-            const finalWidth = upscaleOriginalWidth * multiplier;
-            const finalHeight = upscaleOriginalHeight * multiplier;
-            finalSizeDisplay.textContent = `Final size: ${finalWidth} x ${finalHeight}`;
-            let cost = (multiplier <= 2) ? 17 : (multiplier <= 4) ? 65 : 150;
-            upscaleTokenCostSpan.textContent = `Estimated cost: ${cost}`;
-            const limit = 9000;
-            if (finalWidth > limit || finalHeight > limit) {
-                finalSizeDisplay.style.display = 'none';
-                resolutionLimitWarning.style.display = 'block';
-                upscaleTokenCost.style.display = 'none';
-                upscaleSubmitButton.disabled = true;
-            } else {
-                finalSizeDisplay.style.display = 'block';
-                resolutionLimitWarning.style.display = 'none';
-                upscaleTokenCost.style.display = 'flex';
-                upscaleSubmitButton.disabled = false;
-            }
         }
 
         function setupDragAndDrop(dropArea, fileInputElement) {
@@ -428,7 +386,6 @@
             }, 300000);
         }
 
-        // ЗАМЕНИТЕ ВСЮ ФУНКЦИЮ НА ЭТОТ КОД
         async function handleImageProcessing() {
             const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
             startLoading();
@@ -455,7 +412,7 @@
                     return;
                 }
                 formData.append('image', imageFile);
-                formData.append('scale_factor', document.querySelector('#upscale-view .resolution-btn.active').dataset.value);
+                formData.append('scale_factor', document.querySelector('#upscale-view .resolution-selector .resolution-btn.active').dataset.value);
         
             } else if (currentMode === 'video') {
                 const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
@@ -494,9 +451,7 @@
                     body: formData
                 });
                 const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.error || 'Unknown server error');
-                }
+                if (!response.ok) { throw new Error(data.error || 'Unknown server error'); }
                 if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
                     tokenBalanceDisplaySpan.textContent = data.new_token_balance;
                 }
@@ -507,64 +462,7 @@
             }
         }
 
-                formData.append('image', upscaleImageInput.files[0]);
-                formData.append('scale_factor', document.querySelector('.resolution-btn.active').dataset.value);
-                formData.append('creativity', document.getElementById('creativity-slider').value);
-                formData.append('resemblance', document.getElementById('resemblance-slider').value);
-                formData.append('dynamic', document.getElementById('hdr-slider').value);
-                formData.append('fractality', document.getElementById('fractality-slider-upscale').value);
-            }
-
-            } else if (currentMode === 'video') {
-                const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
-                formData.append('kling_mode', activeKlingMode);
-        
-                // Собираем данные в зависимости от активного под-режима Kling
-                if (activeKlingMode === '2.0') {
-                    const startFrameFile = document.getElementById('image-file-kling-2-0').files[0];
-                    if (startFrameFile) formData.append('image', startFrameFile);
-                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-0').value);
-                    formData.append('creativity', document.getElementById('creativity-slider-kling').value);
-                    formData.append('aspect_ratio', document.querySelector('#kling-2-0-controls .resolution-selector .resolution-btn.active').dataset.value);
-                    formData.append('duration', document.querySelector('#kling-2-0-controls .resolution-selector:last-child .resolution-btn.active').dataset.value);
-                    formData.append('prompt', document.getElementById('prompt-kling-2-0').value);
-                } else if (activeKlingMode === '2.1') {
-                    const startFrameFile = document.getElementById('image-file-kling-2-1').files[0];
-                    if (startFrameFile) formData.append('image', startFrameFile);
-                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-1').value);
-                    formData.append('resolution', document.querySelector('#kling-2-1-controls .resolution-selector .resolution-btn.active').dataset.value);
-                    formData.append('duration', document.querySelector('#kling-2-1-controls .resolution-selector:last-child .resolution-btn.active').dataset.value);
-                    formData.append('prompt', document.getElementById('prompt-kling-2-1').value);
-                } else if (activeKlingMode === '2.1-pro') {
-                    const startFrameFile = document.getElementById('image-file-kling-2-1-pro').files[0];
-                    if (startFrameFile) formData.append('image', startFrameFile);
-                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-1-pro').value);
-                    formData.append('aspect_ratio', document.querySelector('#kling-2-1-pro-controls .resolution-selector .resolution-btn.active').dataset.value);
-                    formData.append('duration', document.querySelector('#kling-2-1-pro-controls .resolution-selector:last-child .resolution-btn.active').dataset.value);
-                    formData.append('prompt', document.getElementById('prompt-kling-2-1-pro').value);
-                }
-            }
-
-
-            try {
-                const response = await fetch("{{ url_for('process_image') }}", {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                if (!response.ok) { throw new Error(data.error || 'Unknown server error'); }
-                if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
-                     tokenBalanceDisplaySpan.textContent = data.new_token_balance;
-                }
-                pollForResult(data.prediction_id);
-            } catch (error) {
-                showError("An error occurred: " + error.message);
-                stopLoading(null);
-            }
-        }
-
         // --- НАВЕШИВАНИЕ ОБРАБОТЧИКОВ ---
-
        appModeButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const currentMode = button.dataset.mode;
@@ -573,10 +471,10 @@
                 
                 editView.style.display = (currentMode === 'edit') ? 'flex' : 'none';
                 upscaleView.style.display = (currentMode === 'upscale') ? 'flex' : 'none';
-                videoView.style.display = (currentMode === 'video') ? 'flex' : 'none'; // <-- НОВАЯ ЛОГИКА
+                videoView.style.display = (currentMode === 'video') ? 'flex' : 'none';
                 
                 resetLeftPanel();
-                if(currentMode === 'edit') {
+                if (currentMode === 'edit') {
                     const activeEditMode = document.querySelector('.edit-mode-btn.active');
                     if (activeEditMode) activeEditMode.click();
                 } else if (currentMode === 'video') {
@@ -598,12 +496,12 @@
                 const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
         
                 if (editMode === 'autofix') {
-                    if(templatesForBasic) templatesForBasic.style.display = 'none';
-                    if(templatesForPro) templatesForPro.style.display = 'flex';
+                    templatesForBasic.style.display = 'none';
+                    templatesForPro.style.display = 'flex';
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 100';
                 } else {
-                    if(templatesForBasic) templatesForBasic.style.display = 'block';
-                    if(templatesForPro) templatesForPro.style.display = 'none';
+                    templatesForBasic.style.display = 'block';
+                    templatesForPro.style.display = 'none';
                     if(tokenCostSpan) tokenCostSpan.textContent = 'Estimated cost: 65';
                 }
             });
@@ -614,13 +512,9 @@
                 const klingMode = button.dataset.klingMode;
                 klingModeButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-
-                // Прячем все контейнеры с настройками
                 klingControls.forEach(controlDiv => {
                     controlDiv.style.display = 'none';
                 });
-
-                // Показываем нужный контейнер
                 const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
                 if (activeControlDiv) {
                     activeControlDiv.style.display = 'flex';
@@ -653,9 +547,8 @@
 
         resolutionButtons.forEach(button => {
             button.addEventListener('click', () => {
-                document.querySelectorAll('.resolution-btn').forEach(btn => btn.classList.remove('active'));
+                resolutionButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                updateUpscaleView();
             });
         });
 
@@ -670,10 +563,6 @@
             }
         };
         setupSlider('creativity-slider-kling', 'creativity-value-kling');
-        setupSlider('creativity-slider', 'creativity-value');
-        setupSlider('resemblance-slider', 'resemblance-value');
-        setupSlider('hdr-slider', 'hdr-value');
-        setupSlider('fractality-slider-upscale', 'fractality-value-upscale');
 
         document.getElementById('submit-button-edit').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
         document.getElementById('submit-button-upscale').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
@@ -685,31 +574,14 @@
         setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1'), document.getElementById('image-file-kling-2-1'));
         setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1-pro'), document.getElementById('image-file-kling-2-1-pro'));
         
-        // --- НОВЫЙ СКРИПТ ДЛЯ ПОДСКАЗОК ---
-        document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
-            trigger.addEventListener('click', function(e) {
-                e.stopPropagation(); // Останавливаем всплытие, чтобы не сработал клик по документу
-                // Закрываем все другие активные подсказки
-                document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
-                    if (activeTrigger !== this) {
-                        activeTrigger.classList.remove('active');
-                    }
-                });
-                // Переключаем текущую
-                this.classList.toggle('active');
-            });
-        });
-
-        // Закрываем подсказку при клике в любом другом месте
-        document.addEventListener('click', function (e) {
-            document.querySelectorAll('.tooltip-trigger.active').forEach(activeTrigger => {
-                activeTrigger.classList.remove('active');
-            });
-        });
-
         // --- ИНИЦИАЛИЗАЦИЯ ---
-        appModeButtons[0].click();
-        document.querySelector('.edit-mode-btn[data-edit-mode="edit"]').click();
+        if (appModeButtons.length > 0) {
+            appModeButtons[0].click();
+        }
+        const firstEditModeButton = document.querySelector('.edit-mode-btn:not([disabled])');
+        if (firstEditModeButton) {
+            firstEditModeButton.click();
+        }
     });
 </script>
 {% endblock %}
