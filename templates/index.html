@@ -212,7 +212,7 @@
         const templatesForBasic = document.getElementById('templates-for-basic');
         const templatesForPro = document.getElementById('templates-for-pro');
         const allTemplateButtons = document.querySelectorAll('.template-btn');
-        const promptInput = document.getElementById('prompt');
+        const promptInput = document.getElementById('prompt-edit'); // <-- Правильный ID
         const editForm = document.getElementById('edit-form'); 
         const imageFileInputEdit1 = document.getElementById('image-file-edit-1');
 
@@ -677,7 +677,7 @@
 
         document.getElementById('submit-button-edit').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
         document.getElementById('submit-button-upscale').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
-        document.getElementById('submit-button-video').addEventListener('click', handleImageProcessing);
+        document.getElementById('submit-button-video').addEventListener('click', (e) => { e.preventDefault(); handleImageProcessing(); });
 
         setupDragAndDrop(document.getElementById('image-drop-area-edit-1'), imageFileInputEdit1);
         setupDragAndDrop(document.getElementById('image-drop-area-upscale'), upscaleImageInput);
