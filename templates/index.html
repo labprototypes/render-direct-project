@@ -508,7 +508,7 @@
                 formData.append('fractality', document.getElementById('fractality-slider-upscale').value);
             }
 
-            } else if (currentMode === 'video') {
+            } else if (currentMode === 'video')
                 const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
                 formData.append('kling_mode', activeKlingMode);
         
