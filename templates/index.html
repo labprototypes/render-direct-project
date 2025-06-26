@@ -2,41 +2,6 @@
 
 {% block title %}Changer AI - Generate{% endblock %}
 
-{% block head_extra %}
-<style>
-    /* Этот стиль заставляет все дочерние элементы .control-group выстраиваться в столбик, как в других разделах */
-    #video-view .kling-controls,
-    #edit-view,
-    #upscale-view,
-    #video-view {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        width: 100%;
-    }
-    
-    /* Копируем стиль для кнопок-переключателей, чтобы Kling выглядел как Basic/Pro */
-    .kling-mode-btn {
-        flex: 1; padding: 8px 20px; border-radius: 12px;
-        border: none; background-color: transparent;
-        color: var(--primary-text-color); cursor: pointer;
-        font-family: 'Norms', sans-serif; font-size: 0.85rem; font-weight: 500;
-        transition: all var(--transition-speed) ease; text-align: center;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    .kling-mode-btn:not(.active):hover {
-        color: var(--primary-text-color); background-color: rgba(0,0,0,0.05);
-    }
-    .kling-mode-btn.active {
-        background-color: var(--accent-color);
-        color: var(--accent-text-color);
-        box-shadow: 0 4px 15px var(--accent-glow);
-        font-weight: 700;
-    }
-</style>
-{% endblock %}
-
-
 {% block mode_selector %}
 <div class="mode-selector">
     <button class="mode-btn active" data-mode="edit">Edit</button>
@@ -565,18 +530,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const klingMode = button.dataset.klingMode;
             klingModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-    
-            // Прячем все контейнеры с настройками
             klingControls.forEach(controlDiv => {
                 controlDiv.style.display = 'none';
             });
-    
-            // Находим нужный контейнер и ПРАВИЛЬНО его показываем
             const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
             if (activeControlDiv) {
                 activeControlDiv.style.display = 'flex';
-                activeControlDiv.style.flexDirection = 'column'; // <-- Эта строка все исправит
-                activeControlDiv.style.gap = '20px';             // <-- И эта для отступов
+                activeControlDiv.style.flexDirection = 'column';
+                activeControlDiv.style.gap = '20px';
                 activeControlDiv.style.width = '100%';
             }
         });
