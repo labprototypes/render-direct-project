@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.currentTarget.disabled) return;
             const editMode = e.currentTarget.dataset.editMode;
             editModeButtons.forEach(btn => btn.classList.remove('active'));
-            e.currentTarget.classList.add('active');
+e.currentTarget.classList.add('active');
             editModeDescription.textContent = e.currentTarget.dataset.description;
     
             const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
