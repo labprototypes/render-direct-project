@@ -239,7 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Элементы для режима Upscale
     const upscaleImageInput = document.getElementById('image-file-upscale');
-    const resolutionButtonsUpscale = document.querySelectorAll('#upscale-view .resolution-selector .resolution-btn');
     
     // Элементы для режима Video
     const klingModeButtons = document.querySelectorAll('.kling-mode-btn');
@@ -510,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.currentTarget.disabled) return;
             const editMode = e.currentTarget.dataset.editMode;
             editModeButtons.forEach(btn => btn.classList.remove('active'));
-e.currentTarget.classList.add('active');
+            e.currentTarget.classList.add('active');
             editModeDescription.textContent = e.currentTarget.dataset.description;
     
             const tokenCostSpan = document.querySelector('#edit-view .token-cost span');
