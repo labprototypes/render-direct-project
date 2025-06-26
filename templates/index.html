@@ -2,6 +2,42 @@
 
 {% block title %}Changer AI - Generate{% endblock %}
 
+{% block head_extra %}
+<style>
+    /* Эти стили обеспечивают правильное отображение всех секций */
+    #edit-view, #upscale-view, #video-view {
+        display: none; /* Изначально все скрыты */
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+    }
+    #video-view .kling-controls {
+        display: none; /* Изначально все наборы контролов для Kling скрыты */
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+    }
+    .kling-mode-btn {
+        flex: 1; padding: 8px 20px; border-radius: 12px;
+        border: none; background-color: transparent;
+        color: var(--primary-text-color); cursor: pointer;
+        font-family: 'Norms', sans-serif; font-size: 0.85rem; font-weight: 500;
+        transition: all var(--transition-speed) ease; text-align: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .kling-mode-btn:not(.active):hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    .kling-mode-btn.active {
+        background-color: var(--accent-color);
+        color: var(--accent-text-color);
+        box-shadow: 0 4px 15px var(--accent-glow);
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+
 {% block mode_selector %}
 <div class="mode-selector">
     <button class="mode-btn active" data-mode="edit">Edit</button>
@@ -62,7 +98,7 @@
             </div>
         </div>
 
-        <div id="upscale-view" style="display: none;">
+        <div id="upscale-view">
             <label for="image-file-upscale" id="image-drop-area-upscale" class="image-drop-area">
                 <div class="drop-placeholder">
                     <svg class="drop-placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
@@ -119,7 +155,7 @@
             </div>
         </div>
 
-        <div id="video-view" style="display: none;">
+        <div id="video-view">
             <div class="control-group">
                 <div class="edit-mode-selector">
                     <button class="kling-mode-btn active" data-kling-mode="2.0">Kling 2.0</button>
@@ -155,7 +191,7 @@
                 </div>
             </div>
 
-            <div id="kling-2-1-controls" class="kling-controls" style="display: none;">
+            <div id="kling-2-1-controls" class="kling-controls">
                 <div class="control-group">
                     <label>Start frame (optional)</label>
                     <label for="image-file-kling-2-1" class="image-drop-area">
@@ -176,7 +212,7 @@
                 </div>
             </div>
 
-            <div id="kling-2-1-pro-controls" class="kling-controls" style="display: none;">
+            <div id="kling-2-1-pro-controls" class="kling-controls">
                 <div class="control-group">
                     <label>Start frame (optional)</label>
                     <label for="image-file-kling-2-1-pro" class="image-drop-area">
@@ -496,9 +532,15 @@ document.addEventListener('DOMContentLoaded', () => {
             upscaleView.style.display = 'none';
             videoView.style.display = 'none';
 
-            if (currentMode === 'edit') editView.style.display = 'flex';
-            else if (currentMode === 'upscale') upscaleView.style.display = 'flex';
-            else if (currentMode === 'video') videoView.style.display = 'flex';
+            if (currentMode === 'edit') {
+                editView.style.display = 'flex';
+                document.querySelector('#edit-view .edit-mode-btn.active')?.click();
+            } else if (currentMode === 'upscale') {
+                upscaleView.style.display = 'flex';
+            } else if (currentMode === 'video') {
+                videoView.style.display = 'flex';
+                document.querySelector('#video-view .kling-mode-btn.active')?.click();
+            }
             
             resetLeftPanel();
         });
@@ -530,15 +572,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const klingMode = button.dataset.klingMode;
             klingModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
+
             klingControls.forEach(controlDiv => {
                 controlDiv.style.display = 'none';
             });
             const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
             if (activeControlDiv) {
                 activeControlDiv.style.display = 'flex';
-                activeControlDiv.style.flexDirection = 'column';
-                activeControlDiv.style.gap = '20px';
-                activeControlDiv.style.width = '100%';
             }
         });
     });
@@ -597,10 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ИНИЦИАЛИЗАЦИЯ ---
     if (appModeButtons.length > 0) {
         appModeButtons[0].click();
-    }
-    const firstEditModeButton = document.querySelector('.edit-mode-btn:not([disabled])');
-    if (firstEditModeButton) {
-        firstEditModeButton.click();
     }
 });
 </script>
