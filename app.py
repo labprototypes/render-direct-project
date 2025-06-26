@@ -754,34 +754,23 @@ def process_image():
             return jsonify({'prediction_id': new_prediction.id, 'new_token_balance': current_user.token_balance})
 
         elif mode == 'video':
+            # --- НОВАЯ, КОРРЕКТНАЯ ЛОГИКА ДЛЯ VIDEO ---
             print("!!! РЕЖИМ: Video")
-            
-            # Определяем, какой под-режим Kling был выбран
             kling_mode = request.form.get('kling_mode')
-            model_version_id = ""
-            replicate_input = {}
+            token_cost = 150
+            if current_user.token_balance < token_cost: return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
+
+            replicate_input = {
+                "prompt": request.form.get('prompt', ''),
+                "negative_prompt": request.form.get('negative_prompt', ''),
+                "duration_s": int(request.form.get('duration', 5))
+            }
             
-            # Общие поля для всех видео
-            prompt = request.form.get('prompt', '')
-            negative_prompt = request.form.get('negative_prompt', '')
-            duration = int(request.form.get('duration', 5))
-            token_cost = 150 # Placeholder, можете настроить разную стоимость
-
-            if current_user.token_balance < token_cost:
-                return jsonify({'error': f'Insufficient tokens. Need {token_cost}.'}), 403
-
-            # Загружаем стартовый кадр, если он есть
             if 'image' in request.files:
-                start_frame_url = upload_file_to_s3(request.files['image'])
-                replicate_input['start_frame'] = start_frame_url
+                start_frame_file = request.files.get('image')
+                if start_frame_file.filename != '':
+                    replicate_input['start_frame'] = upload_file_to_s3(start_frame_file)
 
-            replicate_input.update({
-                "prompt": prompt,
-                "negative_prompt": negative_prompt,
-                "duration_s": duration
-            })
-
-            # Настраиваем параметры в зависимости от под-режима
             if kling_mode == '2.0':
                 model_version_id = "kwaivgi/kling-v2.0:def3f5383a15291726a7932630536125a331168519448332463e258607144d2d"
                 replicate_input['aspect_ratio'] = request.form.get('aspect_ratio', '16:9')
