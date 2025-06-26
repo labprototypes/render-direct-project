@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoView = document.getElementById('video-view');
 
     // Элементы для режима Edit
-    const editModeButtons = document.querySelectorAll('.edit-mode-btn');
+    const editModeButtons = document.querySelectorAll('#edit-view .edit-mode-btn');
     const editModeDescription = document.getElementById('edit-mode-description');
     const templatesForBasic = document.getElementById('templates-for-basic');
     const templatesForPro = document.getElementById('templates-for-pro');
@@ -277,15 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const upscaleImageInput = document.getElementById('image-file-upscale');
     
     // Элементы для режима Video
-    const klingModeButtons = document.querySelectorAll('.kling-mode-btn');
+    const klingModeButtons = document.querySelectorAll('#video-view .kling-mode-btn');
     const klingControls = document.querySelectorAll('.kling-controls');
 
     // Переменные состояния
     const historyPlaceholder = document.getElementById('history-placeholder');
     let currentLoaderId = null;
 
-    // --- ОСНОВНЫЕ ФУНКЦИИ ---
-
+    // --- ОСНОВНЫЕ ФУНКЦИИ (без изменений) ---
     function showError(message) {
         const errorBox = document.getElementById('error-box');
         if (!errorBox) { console.error("Error box not found"); return; }
@@ -446,8 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const imageFile = document.getElementById('image-file-edit-1').files[0];
             if (!imageFile) {
                 showError("Please select an image to edit.");
-                stopLoading(null);
-                return;
+                stopLoading(null); return;
             }
             formData.append('image', imageFile);
             formData.append('prompt', document.getElementById('prompt-edit').value);
@@ -456,8 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const imageFile = document.getElementById('image-file-upscale').files[0];
             if (!imageFile) {
                 showError("Please select an image to upscale.");
-                stopLoading(null);
-                return;
+                stopLoading(null); return;
             }
             formData.append('image', imageFile);
             formData.append('scale_factor', document.querySelector('#upscale-view .resolution-selector .resolution-btn.active').dataset.value);
@@ -471,31 +468,25 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('kling_mode', activeKlingMode);
             
             let imageFile, promptValue, negativePromptValue, duration, aspectRatio, resolution, creativity;
+            
+            const activeControlsId = `kling-${activeKlingMode}-controls`;
 
+            imageFile = document.getElementById(`image-file-${activeKlingMode}`).files[0];
+            promptValue = document.getElementById(`prompt-kling-${activeKlingMode}`).value;
+            negativePromptValue = document.getElementById(`negative-prompt-${activeKlingMode}`).value;
+            duration = document.querySelector(`#${activeControlsId} .resolution-selector:last-of-type button.active`).dataset.value;
+
+            if (activeKlingMode === '2.0' || activeKlingMode === '2.1-pro') {
+                aspectRatio = document.querySelector(`#${activeControlsId} .resolution-selector:first-of-type button.active`).dataset.value;
+                formData.append('aspect_ratio', aspectRatio);
+            }
             if (activeKlingMode === '2.0') {
-                imageFile = document.getElementById('image-file-kling-2-0').files[0];
-                promptValue = document.getElementById('prompt-kling-2-0').value;
-                negativePromptValue = document.getElementById('negative-prompt-2-0').value;
-                duration = document.querySelector('#kling-2-0-controls .resolution-selector:last-of-type button.active').dataset.value;
-                aspectRatio = document.querySelector('#kling-2-0-controls .resolution-selector:first-of-type button.active').dataset.value;
                 creativity = document.getElementById('creativity-slider-kling').value;
-                
-                formData.append('aspect_ratio', aspectRatio);
                 formData.append('creativity', creativity);
-            } else if (activeKlingMode === '2.1') {
-                imageFile = document.getElementById('image-file-kling-2-1').files[0];
-                promptValue = document.getElementById('prompt-kling-2-1').value;
-                negativePromptValue = document.getElementById('negative-prompt-2-1').value;
-                duration = document.querySelector('#kling-2-1-controls .resolution-selector:last-of-type button.active').dataset.value;
-                resolution = document.querySelector('#kling-2-1-controls .resolution-selector:first-of-type button.active').dataset.value;
+            }
+            if (activeKlingMode === '2.1') {
+                resolution = document.querySelector(`#${activeControlsId} .resolution-selector:first-of-type button.active`).dataset.value;
                 formData.append('resolution', resolution);
-            } else if (activeKlingMode === '2.1-pro') {
-                imageFile = document.getElementById('image-file-kling-2-1-pro').files[0];
-                promptValue = document.getElementById('prompt-kling-2-1-pro').value;
-                negativePromptValue = document.getElementById('negative-prompt-2-1-pro').value;
-                duration = document.querySelector('#kling-2-1-pro-controls .resolution-selector:last-of-type button.active').dataset.value;
-                aspectRatio = document.querySelector('#kling-2-1-pro-controls .resolution-selector:first-of-type button.active').dataset.value;
-                formData.append('aspect_ratio', aspectRatio);
             }
             
             if (imageFile && imageFile.size > 0) formData.append('image', imageFile);
@@ -522,6 +513,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- НАВЕШИВАНИЕ ОБРАБОТЧИКОВ ---
+
+    // ИСПРАВЛЕНИЕ 1: Логика переключения главных режимов
     appModeButtons.forEach(button => {
         button.addEventListener('click', () => {
             const currentMode = button.dataset.mode;
@@ -531,21 +524,24 @@ document.addEventListener('DOMContentLoaded', () => {
             editView.style.display = 'none';
             upscaleView.style.display = 'none';
             videoView.style.display = 'none';
+            
+            resetLeftPanel();
 
             if (currentMode === 'edit') {
                 editView.style.display = 'flex';
+                // Автоматически кликаем на активный под-режим
                 document.querySelector('#edit-view .edit-mode-btn.active')?.click();
             } else if (currentMode === 'upscale') {
                 upscaleView.style.display = 'flex';
             } else if (currentMode === 'video') {
                 videoView.style.display = 'flex';
+                // Автоматически кликаем на активный под-режим
                 document.querySelector('#video-view .kling-mode-btn.active')?.click();
             }
-            
-            resetLeftPanel();
         });
     });
 
+    // Логика для Basic/Pro (работает)
     editModeButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             if (e.currentTarget.disabled) return;
@@ -567,15 +563,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ИСПРАВЛЕНИЕ 2: Новая, правильная логика для Kling
     klingModeButtons.forEach(button => {
         button.addEventListener('click', () => {
             const klingMode = button.dataset.klingMode;
             klingModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
 
+            // Прячем все панели с контролами
             klingControls.forEach(controlDiv => {
                 controlDiv.style.display = 'none';
             });
+
+            // Показываем только нужную
             const activeControlDiv = document.getElementById(`kling-${klingMode}-controls`);
             if (activeControlDiv) {
                 activeControlDiv.style.display = 'flex';
@@ -583,22 +583,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
+    // Остальные обработчики
     allTemplateButtons.forEach(button => {
         button.addEventListener('click', () => {
             promptInputEdit.value = button.dataset.prompt;
             promptInputEdit.focus();
-            allTemplateButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
         });
     });
     
     promptInputEdit.addEventListener('input', () => {
         allTemplateButtons.forEach(btn => btn.classList.remove('active'));
     });
-
-    if (editForm) {
-        editForm.addEventListener('submit', handleImageProcessing);
-    }
 
     document.querySelectorAll('.resolution-selector .resolution-btn').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -634,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1'), document.getElementById('image-file-kling-2-1'));
     setupDragAndDrop(document.getElementById('image-drop-area-kling-2-1-pro'), document.getElementById('image-file-kling-2-1-pro'));
     
-    // --- ИНИЦИАЛИЗАЦИЯ ---
+    // --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ---
     if (appModeButtons.length > 0) {
         appModeButtons[0].click();
     }
