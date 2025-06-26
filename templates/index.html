@@ -428,27 +428,78 @@
             }, 300000);
         }
 
+        // ЗАМЕНИТЕ ВСЮ ФУНКЦИЮ НА ЭТОТ КОД
         async function handleImageProcessing() {
             const currentMode = document.querySelector('.mode-btn.active').dataset.mode;
             startLoading();
             const formData = new FormData();
             formData.append('mode', currentMode);
-
+        
             if (currentMode === 'edit') {
                 const editMode = document.querySelector('.edit-mode-btn.active').dataset.editMode;
                 formData.append('edit_mode', editMode);
-                if (!imageFileInputEdit1.files[0]) {
+                if (!document.getElementById('image-file-edit-1').files[0]) {
                     showError("Please select an image to " + editMode + ".");
                     stopLoading(null); return;
                 }
-                formData.append('image', imageFileInputEdit1.files[0]);
-                formData.append('prompt', promptInput.value);
-                
+                formData.append('image', document.getElementById('image-file-edit-1').files[0]);
+                formData.append('prompt', document.getElementById('prompt-edit').value);
+            
             } else if (currentMode === 'upscale') {
-                if (!upscaleImageInput.files[0]) {
+                if (!document.getElementById('image-file-upscale').files[0]) {
                     showError("Please select an image to upscale.");
                     stopLoading(null); return;
                 }
+                formData.append('image', document.getElementById('image-file-upscale').files[0]);
+                formData.append('scale_factor', document.querySelector('#upscale-view .resolution-btn.active').dataset.value);
+                // Добавьте сюда другие параметры для upscale, если они есть
+            
+            } else if (currentMode === 'video') {
+                const activeKlingMode = document.querySelector('.kling-mode-btn.active').dataset.klingMode;
+                formData.append('kling_mode', activeKlingMode);
+        
+                if (activeKlingMode === '2.0') {
+                    const startFrameFile = document.getElementById('image-file-kling-2-0').files[0];
+                    if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-0').value);
+                    formData.append('creativity', document.getElementById('creativity-slider-kling').value);
+                    formData.append('aspect_ratio', document.querySelector('#kling-2-0-controls .resolution-selector button.active').dataset.value);
+                    formData.append('duration', document.querySelector('#kling-2-0-controls .resolution-selector:last-of-type button.active').dataset.value);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-0').value);
+                } else if (activeKlingMode === '2.1') {
+                    const startFrameFile = document.getElementById('image-file-kling-2-1').files[0];
+                    if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-1').value);
+                    formData.append('resolution', document.querySelector('#kling-2-1-controls .resolution-selector button.active').dataset.value);
+                    formData.append('duration', document.querySelector('#kling-2-1-controls .resolution-selector:last-of-type button.active').dataset.value);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-1').value);
+                } else if (activeKlingMode === '2.1-pro') {
+                    const startFrameFile = document.getElementById('image-file-kling-2-1-pro').files[0];
+                    if (startFrameFile) formData.append('image', startFrameFile);
+                    formData.append('negative_prompt', document.getElementById('negative-prompt-2-1-pro').value);
+                    formData.append('aspect_ratio', document.querySelector('#kling-2-1-pro-controls .resolution-selector button.active').dataset.value);
+                    formData.append('duration', document.querySelector('#kling-2-1-pro-controls .resolution-selector:last-of-type button.active').dataset.value);
+                    formData.append('prompt', document.getElementById('prompt-kling-2-1-pro').value);
+                }
+            }
+        
+            try {
+                const response = await fetch("{{ url_for('process_image') }}", {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (!response.ok) { throw new Error(data.error || 'Unknown server error'); }
+                if (data.new_token_balance !== undefined && tokenBalanceDisplaySpan) {
+                     tokenBalanceDisplaySpan.textContent = data.new_token_balance;
+                }
+                pollForResult(data.prediction_id);
+            } catch (error) {
+                showError("An error occurred: " + error.message);
+                stopLoading(null);
+            }
+        }
+
                 formData.append('image', upscaleImageInput.files[0]);
                 formData.append('scale_factor', document.querySelector('.resolution-btn.active').dataset.value);
                 formData.append('creativity', document.getElementById('creativity-slider').value);
