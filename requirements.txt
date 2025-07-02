@@ -19,3 +19,4 @@ firebase-admin
 redis
 Pillow
 replicate
+flask-cors
